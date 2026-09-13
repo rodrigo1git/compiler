@@ -1,8 +1,9 @@
 #define F 99
 #define E -1
 #include <ctype.h>
+#include <stat_trans_mat.h>
 
-int stat_matrix[18][19] = {
+int stat_mat[18][19] = {
     { 1,  5,  E,  4, 13,  7,  E, 12,  2,  F,  F,  0,  0,  E,  E, 14,  E,  F,  E},
     { 1,  1,  1,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
     { E,  E,  E,  E,  E,  E,  E,  E,  3,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
