@@ -1,65 +1,58 @@
-#define F 99
-#define E -1
 #include <ctype.h>
-#include <stat_trans_mat.h>
+#include "../include/stat_trans_mat.h"
 
-int stat_mat[18][19] = {
-    { 1,  5,  E,  4, 13,  7,  E, 12,  2,  F,  F,  0,  0,  E,  E, 14,  E,  F,  E},
-    { 1,  1,  1,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
-    { E,  E,  E,  E,  E,  E,  E,  E,  3,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
-    { E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  0,  E,  E,  E,  E,  E,  E,  3},
-    { E,  E,  E,  E,  F,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
-    { E,  5,  E,  E,  E,  7,  6,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E},
-    { E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F,  E,  E,  E,  E},
-    { E,  8,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E},
-    { E,  8,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  9,  E,  E,  E,  E,  F},
-    { E, 11,  E,  E,  E,  E,  E,  E,  E, 10,  E,  E,  E,  E,  E,  E,  E,  E,  E},
-    { E, 11,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E},
-    { E, 11,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F},
-    { E,  E,  E,  E,  E,  E,  E,  F,  E,  E,  E, 12,  E,  E,  E,  E,  E,  E,  E},
-    { E,  E,  E,  F,  F,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E},
-    { E, 14,  E,  E,  E,  E, 15,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F, 17,  E},
-    { E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E, 17,  E,  E,  E,  E},
-    { E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  F,  E,  E},
-    { E, 14,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E}
+int stat_mat[15][17] = {
+    // L   i   s   D   _   .   $  +-   / op*()   =  <>  !:   "  nl  ws otro
+    {  1,  1,  1,  5,  E,  7,  E,  F,  2,  F,   13, 14,  4, 12,  0,  0,  E }, // 0  - Estado inicial
+    {  1,  1,  1,  1,  1,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 1  - Identificadores
+    {  F,  F,  F,  F,  F,  F,  F,  F,  3,  F,    F,  F,  F,  F,  F,  F,  F }, // 2  - Operador / o inicio comentario
+    {  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  0,  3,  3 }, // 3  - Comentario de línea
+    {  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,    F,  E,  E,  E,  E,  E,  E }, // 4  - Operadores != y :=
+    {  E,  E,  E,  5,  E,  7,  6,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 5  - Constante entera
+    {  E,  F,  E,  E,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 6  - Sufijo de entero ($i)
+    {  E,  E,  E,  8,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 7  - Punto flotante
+    {  F,  F,  9,  8,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 8  - Decimales flotante
+    {  E,  E,  E, 11,  E,  E,  E, 10,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 9  - Exponente flotante ('s')
+    {  E,  E,  E, 11,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 10 - Signo del exponente (+ o -)
+    {  F,  F,  F, 11,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 11 - Dígitos del exponente
+    { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,   12, 12, 12,  F, 12, 12, 12 }, // 12 - Cadena de caracteres
+    {  F,  F,  F,  F,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 13 - Operadores = y ==
+    {  F,  F,  F,  F,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }  // 14 - Operadores <, >, <=, >=
 };
 
-int get_col(char c){
-    if(isalpha(c))
-        return 0;
-    else if(isdigit(c))
+int get_col(int c) {
+    if (c == 'i')
         return 1;
-    else if(c == '_')
+    else if (c == 's')
         return 2;
-    else if(c == '>' || c == '<' || c == '!' || c == ':')
-        return 3;
-    else if(c == '=')
-        return 4;
-    else if(c == '.')
-        return 5;
-    else if(c == '$')
-        return 6;
-    else if(c == '"')
-        return 7;
-    else if(c == '/')
-        return 8;
-    else if(c == '+' || c == '-')
-        return 9;
-    else if(c == '*' || c == '(' || c == ')' || c == ';')
-        return 10;
-    else if(c == 10)
-        return 11;
-    else if(c == 32 || c == 9)
-        return 12;
-    else if(c == 's')
-        return 13;
-    else if(c == 'i')
-        return 14;
-    else if(c == '[')
-        return 15;
-    else if(c == ']')
-        return 16;
-    else if(c == ',')
-        return 17;
-    else return 18;
-};
+    else if (isalpha(c))
+        return 0; // L (letras excluyendo 'i' y 's')
+    else if (isdigit(c))
+        return 3; // D
+    else if (c == '_')
+        return 4; // _
+    else if (c == '.')
+        return 5; // .
+    else if (c == '$')
+        return 6; // $
+    else if (c == '+' || c == '-')
+        return 7; // +-
+    else if (c == '/')
+        return 8; // /
+    else if (c == '*' || c == '(' || c == ')' || c == ';' || c == ',' || c == '[' || c == ']')
+        return 9; // op*()
+    else if (c == '=')
+        return 10; // =
+    else if (c == '<' || c == '>')
+        return 11; // <>
+    else if (c == '!' || c == ':')
+        return 12; // !:
+    else if (c == '"')
+        return 13; // "
+    else if (c == '\n' || c == '\r') 
+        return 14; // nl (Salto de línea y retorno de carro)
+    else if (c == ' ' || c == '\t') 
+        return 15; // ws (Espacio y tabulación)
+    else 
+        return 16; // otro
+}
