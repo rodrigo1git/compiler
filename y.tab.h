@@ -55,8 +55,8 @@ extern int yydebug;
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
     TOKEN_ID = 258,                /* TOKEN_ID  */
-    TOKEN_CONST = 259,             /* TOKEN_CONST  */
-    TOKEN_STRING = 260,            /* TOKEN_STRING  */
+    TOKEN_STRING = 259,            /* TOKEN_STRING  */
+    TOKEN_CONST = 260,             /* TOKEN_CONST  */
     TOKEN_INTEGER = 261,           /* TOKEN_INTEGER  */
     TOKEN_SINGLEF = 262,           /* TOKEN_SINGLEF  */
     TOKEN_BEGIN = 263,             /* TOKEN_BEGIN  */
@@ -89,8 +89,8 @@ extern int yydebug;
 #define YYerror 256
 #define YYUNDEF 257
 #define TOKEN_ID 258
-#define TOKEN_CONST 259
-#define TOKEN_STRING 260
+#define TOKEN_STRING 259
+#define TOKEN_CONST 260
 #define TOKEN_INTEGER 261
 #define TOKEN_SINGLEF 262
 #define TOKEN_BEGIN 263
@@ -117,7 +117,19 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+union YYSTYPE
+{
+#line 14 "src/grammar.y"
+
+      char* str_val;
+      int int_val;
+      float float_val;
+    
+
+#line 130 "y.tab.h"
+
+};
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif

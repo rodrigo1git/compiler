@@ -6,12 +6,14 @@
 #include <float.h>
 #include "../include/sa_mat.h"
 #include "../include/map.h"
+#include "../y.tab.h"
 
 char lexema[100];
 int lex_idx;
 extern FILE *s_file;
 extern int state;
 extern int cant_lin;
+extern YYSTYPE yylval;
 
 typedef int (*sem_act_t)(char);
 
@@ -176,24 +178,22 @@ int sa_identifier(char c) {
 int sa_int_const(char c) {
     lexema[lex_idx++] = c;
     lexema[lex_idx] = '\0';
-    if (c != EOF) {
-        if (c == '\n') cant_lin--;
-        // ungetc(c, s_file);
-    }
     
     long val = atol(lexema);
-    if (val < -32768 || val > 32767) {
+    
+    if (val > 32768) {
         return -1; 
     }
+    
     add_to_symbol_table(lexema, "INTEGER");
+    
+    yylval.str_val = strdup(lexema); 
+    
     return TOKEN_CONST;
 }
 
 int sa_float_const(char c) {
-    if (c != EOF){  
-        ungetc(c, s_file);
-        if (c == '\n') cant_lin--;
-    }
+    //if (c != EOF) ungetc(c, s_file);
     
     for (int i = 0; lexema[i] != '\0'; i++) {
         if (lexema[i] == 's') lexema[i] = 'e';
@@ -207,7 +207,9 @@ int sa_float_const(char c) {
     }
     
     add_to_symbol_table(lexema, "FLOAT");
-
+    
+    yylval.str_val = strdup(lexema);
+    
     return TOKEN_CONST;
 }
 
@@ -216,6 +218,7 @@ int sa_init_string(char c) {
       lexema[0] = '\0'; // Reinicia el buffer pero ignora la 'c' (la comilla de apertura)
       return -1;
 }
+
 int sa_string(char c) {
     add_to_symbol_table(lexema, "STRING");
     return TOKEN_STRING;

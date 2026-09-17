@@ -10,6 +10,7 @@ extern int lex_idx;
 extern FILE *s_file;
 extern int state;
 extern int cant_lin;
+extern YYSTYPE yylval;
 typedef int (*sem_act_t)(char);
 
 extern sem_act_t sem_act_mat[15][17];

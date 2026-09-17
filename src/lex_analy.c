@@ -5,7 +5,7 @@
 
 extern const char* sem_act_names[15][17]; // Arriba en el archivo
 
-extern int yylval;
+extern YYSTYPE yylval;
 extern char lexema[]; // Referencia al buffer global definido en sa_mat.c
 extern FILE *s_file;
 

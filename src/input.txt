@@ -14,7 +14,7 @@ end;
 class punto
 begin
     px := 0$i;
-    py := 0$i;
+    py := -0$i;
 
     integer function norma(integer p)
         integer a;
@@ -26,7 +26,7 @@ end;
 begin
     a := 10$i;
     b := 32$i;
-    promedio := 1.5s+2;          // notacion cientifica: 1.5 * 10^2
+    promedio := -1.5s+2;          // notacion cientifica: 1.5 * 10^2
     contador := suma(a, b);
 
     if (a >= b) begin
