@@ -30,7 +30,7 @@ int yylex(void) {
         if (c == '\n')
           cant_lin++;
         
-        // fprintf(stderr, "Caracter leido %c\n", c);
+        fprintf(stderr, "Caracter leido %c\n", c);
         col = get_col(c);
         
         if (state < 0 || state >= 15 || col < 0 || col >= 17) {
@@ -47,7 +47,7 @@ int yylex(void) {
         // Ejecución de la acción y cambio de estado
         tokken = sem_act(c);
 
-        // printf("[ACCION] Se ejecutara: %s (State=%d, Col=%d)\n", sem_act_names[state][col], state, col);
+        printf("[ACCION] Se ejecutara: %s (State=%d, Col=%d)\n", sem_act_names[state][col], state, col);
         
         state = stat_mat[state][col];
 

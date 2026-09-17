@@ -103,7 +103,6 @@
     
     assign:
           TOKEN_ID TOKEN_ASSIGN expr
-        | TOKEN_ID TOKEN_ASSIGN call
         ;
     
     expr:
@@ -139,6 +138,7 @@
     
     factor:
           TOKEN_ID '=' factor
+        | call
         | TOKEN_ID
         | constant
         | TOKEN_STRING
@@ -146,7 +146,6 @@
     
     call:
           TOKEN_ID '(' arg_list ')' '[' const_list ']'
-        | TOKEN_ID '(' arg_list ')'
         ;
     
     arg_list:
@@ -194,17 +193,18 @@
         ;
 
     class_def:
-          TOKEN_CLASS id_list TOKEN_BEGIN assign_list func_list TOKEN_END ';'
+          TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';'
         ;
 
-    assign_list:
-          assign_list assign ';'
-        | assign ';'
+    class_body:
+          class_body class_member
+        | class_member
         ;
 
-    func_list:
-          func_list func_def
+    class_member:
+          var_decl
         | func_def
+        | assign ';'
         ;
 
     attr_access:

@@ -193,7 +193,7 @@ int sa_int_const(char c) {
 }
 
 int sa_float_const(char c) {
-    //if (c != EOF) ungetc(c, s_file);
+    if (c != EOF) ungetc(c, s_file);
     
     for (int i = 0; lexema[i] != '\0'; i++) {
         if (lexema[i] == 's') lexema[i] = 'e';
