@@ -1,5 +1,5 @@
-#ifndef MAP_H
-#define MAP_H
+#ifndef SYMBOL_TABLE_H
+#define SYMBOL_TABLE_H
 
 #include <stdbool.h>
 
@@ -24,5 +24,5 @@ extern void map_put(hash_map_t* map, const char* key, const char* value);
 extern void map_free(hash_map_t* map);
 extern void map_print(hash_map_t* map);
 
-#endif\
+#endif /* SYMBOL_TABLE_H */
 

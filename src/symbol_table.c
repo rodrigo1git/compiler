@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/map.h"
+#include "../include/symbol_table.h"
 
 hash_map_t* symbol_table = NULL;
 
-// Función hash djb2
+// djb2 hash function
 static unsigned long hash_func(const char* str) {
     unsigned long hash = 5381;
     int c;
@@ -61,11 +61,11 @@ void map_free(hash_map_t* map) {
     free(map);
 }
 void map_print(hash_map_t* map) {
-    printf("\n--- TABLA DE SIMBOLOS ---\n");
+    printf("\n--- SYMBOL TABLE ---\n");
     for (int i = 0; i < map->capacity; i++) {
         map_node_t* current = map->buckets[i];
         while (current != NULL) {
-            printf("Lexema: %s | Tipo: %s\n", current->key, current->value);
+            printf("Lexeme: %s | Type: %s\n", current->key, current->value);
             current = current->next;
         }
     }

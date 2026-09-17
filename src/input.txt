@@ -1,1 +1,11 @@
-prog class punto begin px := 0$i; integer function norma(integer p) begin ret p; end; begin a := 1$i; end;
+prog class punto begin px := 0$i; integer function norma(integer p) begin ret p; end; end; begin a := 1$i; end;prog class punto 
+begin 
+    px := 0$i; 
+    integer function norma(integer p) 
+begin 
+    ret p; 
+end;
+end;
+begin 
+    a := 1$i;
+end;

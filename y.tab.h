@@ -83,50 +83,19 @@ extern int yydebug;
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
-/* Token kinds.  */
-#define YYEMPTY -2
-#define YYEOF 0
-#define YYerror 256
-#define YYUNDEF 257
-#define TOKEN_ID 258
-#define TOKEN_STRING 259
-#define TOKEN_CONST 260
-#define TOKEN_INTEGER 261
-#define TOKEN_SINGLEF 262
-#define TOKEN_BEGIN 263
-#define TOKEN_END 264
-#define TOKEN_IF 265
-#define TOKEN_END_IF 266
-#define TOKEN_ELSE 267
-#define TOKEN_FROM 268
-#define TOKEN_TO 269
-#define TOKEN_BY 270
-#define TOKEN_REPEAT 271
-#define TOKEN_FUNCTION 272
-#define TOKEN_CLASS 273
-#define TOKEN_TOI 274
-#define TOKEN_POUT 275
-#define TOKEN_POUT_LOWER 276
-#define TOKEN_RET 277
-#define TOKEN_COMPTIME 278
-#define TOKEN_ASSIGN 279
-#define TOKEN_EQUAL 280
-#define TOKEN_NOT_EQUAL 281
-#define TOKEN_LESS_EQUAL 282
-#define TOKEN_GREATER_EQUAL 283
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 14 "src/grammar.y"
+#line 13 "src/grammar.y"
 
       char* str_val;
       int int_val;
       float float_val;
     
 
-#line 130 "y.tab.h"
+#line 99 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

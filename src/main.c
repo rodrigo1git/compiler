@@ -1,40 +1,40 @@
 #include <stdio.h> 
-#include "../include/lex_analy.h"
-#include "../include/sa_mat.h" 
-#include "../include/map.h"
+#include "../include/lexer.h"
+#include "../include/semantic_actions.h" 
+#include "../include/symbol_table.h"
 #include "../y.tab.h"
 
-FILE *s_file = NULL;
+FILE *source_file = NULL;
 extern int yyparse();
-extern int cant_lin;
+extern int current_line;
 
 int main(int argc, char *argv[]) {
-    // 1. Validar argumentos
+    // Validate args
     if (argc < 2) {
-        printf("Error: Falta indicar el archivo de entrada.\n");
+        printf("Error: Missing input file.\n");
         return 1;
     }
 
-    // 2. Abrir el archivo pasado por consola
-    s_file = fopen(argv[1], "r");
-    if (!s_file) {
-        printf("Error al abrir el archivo: %s\n", argv[1]);
+    // Open source file
+    source_file = fopen(argv[1], "r");
+    if (!source_file) {
+        printf("Error opening file: %s\n", argv[1]);
         return 1;
     }
 
-    // 3. Inicializar e invocar el parser
+    // Parse
     init_symbol_table();
 
     if (yyparse() == 0) {
-        printf("Análisis sintáctico exitoso.\n");
+        printf("Parsing successful.\n");
     }
 
-    // 4. Imprimir tabla y cerrar
+    // Dump symbol table
     print_symbol_table();
-    fclose(s_file);
+    fclose(source_file);
     return 0;
 }
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Error en la línea %d, lexema: %s\n", cant_lin, lexema);
+    fprintf(stderr, "Line %d: Syntax error: %s (near '%s')\n", current_line, s, lexeme_buffer);
 }

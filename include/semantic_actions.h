@@ -3,13 +3,13 @@
 
 #include <stdio.h>
 #include "../y.tab.h"
-#include "lex_analy.h"
+#include "lexer.h"
 
-extern char lexema[100];
-extern int lex_idx;
-extern FILE *s_file;
+extern char lexeme_buffer[100];
+extern int lexeme_length;
+extern FILE *source_file;
 extern int state;
-extern int cant_lin;
+extern int current_line;
 extern YYSTYPE yylval;
 typedef int (*sem_act_t)(char);
 
@@ -31,4 +31,4 @@ int check_reserved_words(const char* word);
 void add_to_symbol_table(const char* lex, const char* type);
 extern void print_symbol_table();
 
-#endif // SA_MAT_H
+#endif /* SEMANTIC_ACTIONS_H */

@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include "../include/transition_table.h"
+#include "../include/semantic_actions.h"
+#include "../include/lexer.h"
+
+extern const char* sem_act_names[15][17];
+
+extern YYSTYPE yylval;
+extern char lexeme_buffer[];
+extern FILE *source_file;
+
+int state = 0;
+int current_line = 1;
+
+int yylex(void) {
+    char c;
+    int token_id = -1;
+    int col;
+
+    state = 0;
+
+    while (token_id == -1) {
+        c = fgetc(source_file);
+        
+        if (c == EOF) {
+            return 0;
+        }
+
+        if (c == '\n')
+          current_line++;
+        
+        col = get_col(c);
+        
+        if (state < 0 || state >= 15 || col < 0 || col >= 17) {
+            fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line); state = 0;
+            token_id = -1;
+            lexeme_length = 0; 
+            lexeme_buffer[0] = '\0';
+        }
+
+        sem_act_t sem_act = sem_act_mat[state][col];
+
+        token_id = sem_act(c);
+
+        state = transition_table[state][col];
+
+    }
+
+    printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n", token_id, lexeme_buffer, current_line);
+
+    return token_id;
+}
