@@ -12,8 +12,6 @@
     /* Token declarations */
     %union {
       char* str_val;
-      int int_val;
-      float float_val;
     }
     %token TOKEN_ID TOKEN_STRING
     %token <str_val> TOKEN_CONST
@@ -56,9 +54,10 @@
         ;
     
     var_decl:
-          type id_list ';' { printf("[SYNTAX] Line %d: Variable declaration\n", current_line); }
-        | error ';' { yyerrok; }
-        ;
+      type id_list ';' { printf("[SYNTAX] Line %d: Variable declaration\n", current_line); }
+    | TOKEN_COMPTIME type id_list ';' { printf("[SYNTAX] Line %d: Comptime variable declaration\n", current_line); }
+    | error ';' { yyerrok; }
+    ;
     
     id_list:
           TOKEN_ID
@@ -81,7 +80,6 @@
         | attr_access ';'
         | pout_stmt ';'
         | ret_stmt ';'
-        | toi_call ';'
         | error ';' { yyerrok; }
         ;
     
@@ -91,13 +89,13 @@
         | attr_access ';'
         | pout_stmt ';'
         | ret_stmt ';'
-        | toi_call ';'
         | error ';' { yyerrok; }
         ;
     
     type:
           TOKEN_INTEGER
         | TOKEN_SINGLEF
+        | TOKEN_ID
         ;
     
     assign:
@@ -117,31 +115,46 @@
         ;
     
     constant:
-          TOKEN_CONST {
+      TOKEN_CONST {
+          if (strchr($1, '.') != NULL || strchr($1, 'e') != NULL) {
+              add_to_symbol_table($1, "SINGLEF");
+          } else {
               long val = atol($1);
               if (val > 32767) {
                   yyerror("Semantic error: Positive constant out of range");
+                  YYERROR;
+              } else {
+                  add_to_symbol_table($1, "INTEGER");
               }
           }
-        | '-' TOKEN_CONST {
-              char neg_str[100];
-              sprintf(neg_str, "-%s", $2);
+      }
+    | '-' TOKEN_CONST {
+          char neg_str[100];
+          sprintf(neg_str, "-%s", $2);
+          
+          if (strchr($2, '.') != NULL || strchr($2, 'e') != NULL) {
+              add_to_symbol_table(neg_str, "SINGLEF");
+          } else {
               long val = atol(neg_str);
               if (val < -32768) {
                   yyerror("Semantic error: Negative constant out of range");
+                  YYERROR;
               } else {
                   add_to_symbol_table(neg_str, "INTEGER");
               }
           }
-        ;
+      }
+    ;
+    
     
     factor:
-          TOKEN_ID '=' factor
-        | call
-        | TOKEN_ID
-        | constant
-        | TOKEN_STRING
-        ;
+      TOKEN_ID '=' factor
+    | call
+    | TOKEN_ID
+    | constant
+    | TOKEN_STRING
+    | TOKEN_TOI '(' expr ')' { printf("[SYNTAX] Line %d: TOI call\n", current_line); }
+    ;
     
     call:
           TOKEN_ID '(' arg_list ')' '[' const_list ']'
@@ -167,9 +180,10 @@
         ;
     
     if_stmt:
-          TOKEN_IF '(' cond ')' TOKEN_BEGIN compound_stmt TOKEN_END else_stmt TOKEN_END_IF
-        | TOKEN_IF '(' cond ')' single_stmt else_stmt TOKEN_END_IF
-        | TOKEN_IF '(' cond ')' single_stmt TOKEN_END_IF { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+          TOKEN_IF '(' cond ')' TOKEN_BEGIN compound_stmt TOKEN_END else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' TOKEN_BEGIN compound_stmt TOKEN_END TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' single_stmt else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' single_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
         ;
 
     else_stmt:
@@ -178,11 +192,12 @@
         ;
 
     for_loop:
-          TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT compound_stmt ';' { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
+          TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT single_stmt { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
         ;
 
     func_def:
-          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';'
+          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
         | type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
         ;
 
@@ -191,8 +206,14 @@
         | type TOKEN_ID ',' param_decl_list
         ;
 
+    method_def:
+          type TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
+        | type TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
+        ;
+
     class_def:
-          TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration\n", current_line); }
+          TOKEN_CLASS TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration\n", current_line); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
         ;
 
     class_body:
@@ -200,9 +221,10 @@
         | class_member
         ;
 
+    
     class_member:
           var_decl
-        | func_def
+        | method_def
         | assign ';'
         ;
 
@@ -211,9 +233,6 @@
         | TOKEN_ID '[' TOKEN_ID ']' '=' expr
         ;
 
-    toi_call:
-          TOKEN_TOI '(' expr ')' { printf("[SYNTAX] Line %d: TOI call\n", current_line); }
-        ;
 
     pout_stmt:
           TOKEN_POUT '(' expr ')' { printf("[SYNTAX] Line %d: POUT statement\n", current_line); }
@@ -221,8 +240,8 @@
         ;
 
     ret_stmt:
-          TOKEN_RET expr { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
-        | TOKEN_RET { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
+          TOKEN_RET '(' expr ')' { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
+        | TOKEN_RET '(' ')' { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
         ;
 
     %%

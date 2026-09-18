@@ -22,37 +22,37 @@ int transition_table[15][17] = {
 
 int get_col(int c) {
     if (c == 'i')
-        return 1;
+        return COL_I;
     else if (c == 's')
-        return 2;
+        return COL_S;
     else if (isalpha(c))
-        return 0; // letters except 'i' and 's'
+        return COL_L; // letters except 'i' and 's'
     else if (isdigit(c))
-        return 3; // D
+        return COL_D;
     else if (c == '_')
-        return 4; // _
+        return COL_UND;
     else if (c == '.')
-        return 5; // .
+        return COL_DOT;
     else if (c == '$')
-        return 6; // $
+        return COL_DOLLAR;
     else if (c == '+' || c == '-')
-        return 7; // +-
+        return COL_ADD;
     else if (c == '/')
-        return 8; // /
+        return COL_SLASH;
     else if (c == '*' || c == '(' || c == ')' || c == ';' || c == ',' || c == '[' || c == ']')
-        return 9; // op*()
+        return COL_SYM;
     else if (c == '=')
-        return 10; // =
+        return COL_EQ;
     else if (c == '<' || c == '>')
-        return 11; // <>
+        return COL_CMP;
     else if (c == '!' || c == ':')
-        return 12; // !:
+        return COL_EXCL;
     else if (c == '"')
-        return 13; // "
+        return COL_QUOTE;
     else if (c == '\n' || c == '\r') 
-        return 14; // newline
+        return COL_NL;
     else if (c == ' ' || c == '\t') 
-        return 15; // whitespace
+        return COL_WS;
     else 
-        return 16; // other
+        return COL_OTHER;
 }

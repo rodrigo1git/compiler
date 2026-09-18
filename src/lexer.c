@@ -44,6 +44,12 @@ int yylex(void) {
 
         state = transition_table[state][col];
 
+        if (token_id == -1 && state == F) {
+            state = 0;
+            lexeme_length = 0; 
+            lexeme_buffer[0] = '\0';
+        }
+
     }
 
     printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n", token_id, lexeme_buffer, current_line);

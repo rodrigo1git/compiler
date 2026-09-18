@@ -1,5 +1,5 @@
-#ifndef SA_MAT_H 
-#define LEXER_H
+#ifndef SEMANTIC_ACTIONS_H 
+#define SEMANTIC_ACTIONS_H
 
 #include <stdio.h>
 #include "../y.tab.h"

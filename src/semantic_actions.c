@@ -183,10 +183,11 @@ int sa_int_const(char c) {
     long val = atol(lexeme_buffer);
     
     if (val > 32768) {
+        printf("Line %d: Lexical error: Integer constant '%s' out of range.\n", current_line, lexeme_buffer);
         return -1; 
     }
     
-    add_to_symbol_table(lexeme_buffer, "INTEGER");
+    //add_to_symbol_table(lexeme_buffer, "INTEGER");
     
     yylval.str_val = strdup(lexeme_buffer); 
     
@@ -204,10 +205,11 @@ int sa_float_const(char c) {
     double abs_val = val < 0 ? -val : val;
     
     if (abs_val > 0.0 && (abs_val < 1.17549435e-38 || abs_val > 3.40282347e+38)) {
+        printf("Line %d: Lexical error: Float constant '%s' out of range.\n", current_line, lexeme_buffer);
         return -1;
     }
     
-    add_to_symbol_table(lexeme_buffer, "FLOAT");
+    //add_to_symbol_table(lexeme_buffer, "FLOAT");
     
     yylval.str_val = strdup(lexeme_buffer);
     

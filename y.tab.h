@@ -91,11 +91,9 @@ union YYSTYPE
 #line 13 "src/grammar.y"
 
       char* str_val;
-      int int_val;
-      float float_val;
     
 
-#line 99 "y.tab.h"
+#line 97 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

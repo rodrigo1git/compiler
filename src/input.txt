@@ -1,11 +1,23 @@
-prog class punto begin px := 0$i; integer function norma(integer p) begin ret p; end; end; begin a := 1$i; end;prog class punto 
-begin 
-    px := 0$i; 
-    integer function norma(integer p) 
-begin 
-    ret p; 
-end;
-end;
-begin 
-    a := 1$i;
+prueba_constantes
+integer var_int;
+singlef var_float;
+begin
+    // Enteros validos (limites de 16 bits)
+    var_int := 32767$i;
+    var_int := -32768$i;
+    var_int := 0$i;
+
+    // Enteros fuera de rango (deben reportar error)
+    var_int := 32768$i;
+    var_int := -32769$i;
+
+    // Flotantes validos con y sin signo, con y sin exponente
+    var_float := 1.0;
+    var_float := .6;
+    var_float := -1.2;
+    var_float := 3.0s-5;
+    var_float := .2s34;
+    var_float := 2.5s-1;
+    var_float := 15.2;
+    var_float := 0.0;
 end;
