@@ -3,7 +3,7 @@
 set -e
 
 echo "Cleaning old build files..."
-rm -f compilador compiler y.tab.c y.tab.h y.output
+rm -f compiler compiler y.tab.c y.tab.h y.output
 
 echo "Generating parser..."
 bison -d -o y.tab.c src/grammar.y
@@ -16,14 +16,14 @@ gcc -Wall -Wextra -std=gnu99 -Iinclude -I. \
     src/transition_table.c \
     src/symbol_table.c \
     y.tab.c \
-    -o compilador
+    -o compiler
 
 echo "Build successful."
 
 if [ -n "$1" ]; then
     echo "--------------------------------------------------------"
     echo "Running compiler with: $1"
-    ./compilador "$1"
+    ./compiler "$1"
 else
     echo "Usage: ./build.sh <input_file>"
 fi

@@ -31,7 +31,7 @@ sem_act_t sem_act_mat[15][17] = {
     {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_string,        sa_append,        sa_append,        sa_append       }, // 12
-    {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 13
+    {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 13
     {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }  // 14
 };
 const char* sem_act_names[15][17] = {
@@ -49,7 +49,7 @@ const char* sem_act_names[15][17] = {
     {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 10
     {"sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_append",        "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const"  }, // 11
     {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_string",        "sa_append",        "sa_append",        "sa_append"       }, // 12
-    {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 13
+    {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 13
     {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }  // 14
 };
 
@@ -182,12 +182,9 @@ int sa_int_const(char c) {
     
     long val = atol(lexeme_buffer);
     
-    if (val > 32768) {
-        printf("Line %d: Lexical error: Integer constant '%s' out of range.\n", current_line, lexeme_buffer);
-        return -1; 
+    if (val <= 32768) {
+        add_to_symbol_table(lexeme_buffer, "INTEGER");
     }
-    
-    //add_to_symbol_table(lexeme_buffer, "INTEGER");
     
     yylval.str_val = strdup(lexeme_buffer); 
     
@@ -205,14 +202,13 @@ int sa_float_const(char c) {
     double abs_val = val < 0 ? -val : val;
     
     if (abs_val > 0.0 && (abs_val < 1.17549435e-38 || abs_val > 3.40282347e+38)) {
-        printf("Line %d: Lexical error: Float constant '%s' out of range.\n", current_line, lexeme_buffer);
+        fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", current_line, lexeme_buffer);
         return -1;
     }
     
-    //add_to_symbol_table(lexeme_buffer, "FLOAT");
+    // El parser de grammar.y se encarga de agregar los floats válidos a la tabla
     
     yylval.str_val = strdup(lexeme_buffer);
-    
     return TOKEN_CONST;
 }
 
@@ -232,7 +228,9 @@ int sa_multi_char_op(char c) {
     lexeme_buffer[lexeme_length] = '\0';
     if (strcmp(lexeme_buffer, ":=") == 0) return TOKEN_ASSIGN;
     if (strcmp(lexeme_buffer, ">=") == 0) return TOKEN_GREATER_EQUAL;
+    if (strcmp(lexeme_buffer, "=>") == 0) return TOKEN_GREATER_EQUAL;
     if (strcmp(lexeme_buffer, "<=") == 0) return TOKEN_LESS_EQUAL;
+    if (strcmp(lexeme_buffer, "=<") == 0) return TOKEN_LESS_EQUAL;
     if (strcmp(lexeme_buffer, "==") == 0) return TOKEN_EQUAL;
     if (strcmp(lexeme_buffer, "!=") == 0) return TOKEN_NOT_EQUAL;
     

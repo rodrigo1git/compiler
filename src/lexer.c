@@ -32,10 +32,23 @@ int yylex(void) {
         col = get_col(c);
         
         if (state < 0 || state >= 15 || col < 0 || col >= 17) {
-            fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line); state = 0;
+            fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
+            
+            // --- MODO PÁNICO LÉXICO ---
+            // Consumimos caracteres hasta encontrar un delimitador limpio
+            while (c != ' ' && c != '\t' && c != '\n' && c != ';' && c != EOF) {
+                c = fgetc(source_file);
+            }
+            // Si el delimitador salvavidas no es EOF, lo devolvemos para que se lea en el siguiente ciclo
+            if (c != EOF) {
+                ungetc(c, source_file);
+            }
+            
+            state = 0;
             token_id = -1;
             lexeme_length = 0; 
             lexeme_buffer[0] = '\0';
+            continue;
         }
 
         sem_act_t sem_act = sem_act_mat[state][col];
