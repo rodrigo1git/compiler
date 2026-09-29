@@ -22,8 +22,8 @@ int sa_ignore(char c);
 int sa_identifier(char c);
 int sa_int_const(char c);
 int sa_float_const(char c);
-int sa_init_string(char c);
-int sa_string(char c);
+int sa_init_chain(char c);
+int sa_chain(char c);
 int sa_multi_char_op(char c);
 int sa_error(char c);
 

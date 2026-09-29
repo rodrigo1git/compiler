@@ -2,22 +2,22 @@
 #include "../include/transition_table.h"
 
 int transition_table[15][17] = {
-    // L   i   s   D   _   .   $  +-   / op*()   =  <>  !:   "  nl  ws otro
-    {  1,  1,  1,  5,  E,  7,  E,  F,  2,  F,   13, 14,  4, 12,  0,  0,  E }, // 0: start
-    {  1,  1,  1,  1,  1,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 1: identifier
-    {  F,  F,  F,  F,  F,  F,  F,  F,  3,  F,    F,  F,  F,  F,  F,  F,  F }, // 2: slash / comment start
-    {  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  0,  3,  3 }, // 3: line comment
-    {  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,    F,  E,  E,  E,  E,  E,  E }, // 4: != and :=
-    {  E,  E,  E,  5,  E,  7,  6,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 5: integer constant
-    {  E,  F,  E,  E,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 6: integer suffix ($i)
-    {  E,  E,  E,  8,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 7: float dot
-    {  F,  F,  9,  8,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 8: float decimals
-    {  E,  E,  E, 11,  E,  E,  E, 10,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 9: float exponent ('s')
-    {  E,  E,  E, 11,  E,  E,  E,  E,  E,  E,    E,  E,  E,  E,  E,  E,  E }, // 10: exponent sign (+/-)
-    {  F,  F,  F, 11,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 11: exponent digits
-    { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,   12, 12, 12,  F, 12, 12, 12 }, // 12: string literal
-    {  F,  F,  F,  F,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }, // 13: = and ==
-    {  F,  F,  F,  F,  F,  F,  F,  F,  F,  F,    F,  F,  F,  F,  F,  F,  F }  // 14: relational ops
+    // L       i       s       D       _       .       $       +-        /       op*()     =         <>        !:        "       nl      ws      otro
+    {  1,      1,      1,      5,      E,      7,      E,      F_CONS,   2,      F_CONS,   13,       14,       4,        12,     0,      0,      E }, // 0: start
+    {  1,      1,      1,      1,      1,      F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 1: identifier
+    {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    3,      F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 2: slash / comment start
+    {  3,      3,      3,      3,      3,      3,      3,      3,        3,      3,        3,        3,        3,        3,      0,      3,      3 }, // 3: line comment
+    {  E,      E,      E,      E,      E,      E,      E,      E,        E,      E,        F_CONS,   E,        E,        E,      E,      E,      E }, // 4: != and :=
+    {  E,      E,      E,      5,      E,      7,      6,      E,        E,      E,        E,        E,        E,        E,      E,      E,      E }, // 5: integer constant
+    {  E,      F_CONS, E,      E,      E,      E,      E,      E,        E,      E,        E,        E,        E,        E,      E,      E,      E }, // 6: integer suffix ($i)
+    {  E,      E,      E,      8,      E,      E,      E,      E,        E,      E,        E,        E,        E,        E,      E,      E,      E }, // 7: float dot
+    {  F_RET,  F_RET,  9,      8,      F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 8: float decimals
+    {  E,      E,      E,      11,     E,      E,      E,      10,       E,      E,        E,        E,        E,        E,      E,      E,      E }, // 9: float exponent ('s')
+    {  E,      E,      E,      11,     E,      E,      E,      E,        E,      E,        E,        E,        E,        E,      E,      E,      E }, // 10: exponent sign (+/-)
+    {  F_RET,  F_RET,  F_RET,  11,     F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 11: exponent digits
+    {  12,     12,     12,     12,     12,     12,     12,     12,       12,     12,       12,       12,       12,       F_CONS, 12,     12,     12 }, // 12: chain literal
+    {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_CONS,   F_CONS,   F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 13: = and ==
+    {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_CONS,   F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }  // 14: relational ops
 };
 
 int get_col(int c) {

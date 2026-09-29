@@ -17,8 +17,8 @@ extern YYSTYPE yylval;
 typedef int (*sem_act_t)(char);
 
 sem_act_t sem_act_mat[15][17] = {
-    // L               i                 s                 D                 _                 .                 $                 +-                /                 op*()             =                 <>                !:                "                 nl                ws                other
-    {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_ascii_token,   sa_init,          sa_ascii_token,   sa_init,          sa_init,          sa_init,          sa_init_string,          sa_ignore,        sa_ignore,        sa_error        }, // 0
+    //              L               i                      s                      D                 _                        .                 $                 +-                /                 op*()             =                 <>                !:                "                 nl                ws                other
+    {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_ascii_token,   sa_init,          sa_ascii_token,   sa_init,          sa_init,          sa_init,          sa_init_chain,           sa_ignore,        sa_ignore,        sa_error        }, // 0
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier   }, // 1
     {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ignore,        sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 2
     {  sa_ignore,      sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore       }, // 3
@@ -30,13 +30,13 @@ sem_act_t sem_act_mat[15][17] = {
     {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 9
     {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
-    {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_string,        sa_append,        sa_append,        sa_append       }, // 12
+    {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_chain,         sa_append,        sa_append,        sa_append       }, // 12
     {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 13
     {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }  // 14
 };
 const char* sem_act_names[15][17] = {
     // L                   i                   s                   D                   _                   .                   $                   +-                  /                   op*()               =                   <>                  !:                  "                   nl                  ws                  other
-    {"sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_error",         "sa_init",          "sa_error",         "sa_ascii_token",   "sa_init",          "sa_ascii_token",   "sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_ignore",        "sa_ignore",        "sa_error"        }, // 0
+    {"sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_error",         "sa_init",          "sa_error",         "sa_ascii_token",   "sa_init",          "sa_ascii_token",   "sa_init",          "sa_init",          "sa_init",          "sa_init_chain",    "sa_ignore",        "sa_ignore",        "sa_error"        }, // 0
     {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier"   }, // 1
     {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ignore",        "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 2
     {"sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore"       }, // 3
@@ -48,7 +48,7 @@ const char* sem_act_names[15][17] = {
     {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 9
     {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 10
     {"sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_append",        "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const"  }, // 11
-    {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_string",        "sa_append",        "sa_append",        "sa_append"       }, // 12
+    {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_chain",         "sa_append",        "sa_append",        "sa_append"       }, // 12
     {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 13
     {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }  // 14
 };
@@ -93,59 +93,27 @@ int sa_append(char c) {
 }
 
 void add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
-    if (!map_contains(symbol_table, lexeme_buffer)) {
-        map_put(symbol_table, lexeme_buffer, tipo);
-    }
+    map_put(symbol_table, lexeme_buffer, tipo);
 }
 
 int sa_ascii_token(char c) {
-    switch (state) {
-        case 0:
-            // Single-char tokens from state 0
-            lexeme_length = 0;
-            lexeme_buffer[lexeme_length++] = c;
-            lexeme_buffer[lexeme_length] = '\0';
-            return (unsigned char)c;
-            
-        case 2:
-            // Standalone '/'
-            if (c != EOF) {
-                if (c == '\n') current_line--;
-                ungetc(c, source_file);
-            }
-            return '/';
-            
-        case 13:
-            // Standalone '='
-            if (c != EOF) {
-                if (c == '\n') current_line--;
-                ungetc(c, source_file);
-            }
-            return '=';
-            
-        case 14:
-            // Relational '<' or '>'
-            if (c != EOF) {
-                if (c == '\n') current_line--;
-                ungetc(c, source_file);
-            }
-            return lexeme_buffer[0];
-            
-        default:
-            return -1;
+    if (state == 0) {
+        // Single-char tokens from state 0
+        lexeme_length = 0;
+        lexeme_buffer[lexeme_length++] = c;
+        lexeme_buffer[lexeme_length] = '\0';
+        return (unsigned char)c;
     }
+    // For states 2, 13, 14, the token is simply the first char in lexeme_buffer
+    return lexeme_buffer[0];
 }
 
 int sa_ignore(char c) { (void)c;
     return -1;
 }
 
-int sa_identifier(char c) {
+int sa_identifier(char c) { (void)c;
     char original_lexeme[256]; strcpy(original_lexeme, lexeme_buffer);
-    if (c != EOF) {
-        if (c == '\n') current_line--;
-        ungetc(c, source_file);
-    }
     
     char lexeme_buffer_lower[256];
     for (int i = 0; i < lexeme_length; i++) {
@@ -191,9 +159,7 @@ int sa_int_const(char c) {
     return TOKEN_CONST;
 }
 
-int sa_float_const(char c) {
-    if (c != EOF) ungetc(c, source_file);
-    
+int sa_float_const(char c) { (void)c;
     for (int i = 0; lexeme_buffer[i] != '\0'; i++) {
         if (lexeme_buffer[i] == 's') lexeme_buffer[i] = 'e';
     }
@@ -212,15 +178,15 @@ int sa_float_const(char c) {
     return TOKEN_CONST;
 }
 
-int sa_init_string(char c) { (void)c;
+int sa_init_chain(char c) { (void)c;
       lexeme_length = 0;
       lexeme_buffer[0] = '\0'; // Reset buffer and skip opening quote
       return -1;
 }
 
-int sa_string(char c) { (void)c;
-    add_to_symbol_table(lexeme_buffer, "STRING");
-    return TOKEN_STRING;
+int sa_chain(char c) { (void)c;
+    add_to_symbol_table(lexeme_buffer, "CHAIN");
+    return TOKEN_CHAIN;
 }
 
 int sa_multi_char_op(char c) {

@@ -13,7 +13,7 @@
     %union {
       char* str_val;
     }
-    %token TOKEN_ID TOKEN_STRING
+    %token TOKEN_ID TOKEN_CHAIN
     %token <str_val> TOKEN_CONST
     %token TOKEN_INTEGER TOKEN_SINGLEF
     %token TOKEN_BEGIN TOKEN_END TOKEN_IF TOKEN_END_IF TOKEN_ELSE
@@ -152,7 +152,7 @@
     | call
     | TOKEN_ID
     | constant
-    | TOKEN_STRING
+    | TOKEN_CHAIN
     | TOKEN_TOI '(' expr ')' { printf("[SYNTAX] Line %d: TOI call\n", current_line); }
     ;
     

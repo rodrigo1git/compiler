@@ -4,7 +4,8 @@
 #define N_STATES  15
 #define N_COLS    17
 
-#define F   99    /* Final state */
+#define F_CONS 99    /* Final state (consumes char) */
+#define F_RET  100   /* Final state (returns/ungets char) */
 #define E   (-1)  /* Error state */
 
 /* Column indices matching get_col */

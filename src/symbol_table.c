@@ -22,27 +22,24 @@ hash_map_t* map_create(int capacity) {
     return map;
 }
 
-bool map_contains(hash_map_t* map, const char* key) {
+bool map_contains(hash_map_t* map, const char* key, const char* value) {
     unsigned long index = hash_func(key) % map->capacity;
     map_node_t* current = map->buckets[index];
     
     while (current != NULL) {
-        if (strcmp(current->key, key) == 0) return true;
+        if (strcmp(current->key, key) == 0 && strcmp(current->value, value) == 0) return true;
         current = current->next;
     }
     return false;
 }
 
 void map_put(hash_map_t* map, const char* key, const char* value) {
-    if (map_contains(map, key)) return;
+    if (map_contains(map, key, value)) return;
 
     unsigned long index = hash_func(key) % map->capacity;
     map_node_t* new_node = (map_node_t*)malloc(sizeof(map_node_t));
-    
-    strncpy(new_node->key, key, 255);
-    new_node->key[255] = '\0';
-    strncpy(new_node->value, value, 31);
-    new_node->value[31] = '\0';
+    new_node->key = strdup(key);
+    new_node->value = strdup(value);
     
     new_node->next = map->buckets[index];
     map->buckets[index] = new_node;
@@ -54,12 +51,15 @@ void map_free(hash_map_t* map) {
         while (current != NULL) {
             map_node_t* temp = current;
             current = current->next;
+            free(temp->key);
+            free(temp->value);
             free(temp);
         }
     }
     free(map->buckets);
     free(map);
 }
+
 void map_print(hash_map_t* map) {
     printf("\n--- SYMBOL TABLE ---\n");
     for (int i = 0; i < map->capacity; i++) {
@@ -71,6 +71,7 @@ void map_print(hash_map_t* map) {
     }
     printf("-------------------------\n");
 }
+
 void init_symbol_table(void) {
     if (symbol_table == NULL) {
         symbol_table = map_create(256); 

@@ -16,6 +16,7 @@ int yylex(void) {
     char c;
     int token_id = -1;
     int col;
+    static char last_c = '\0';
 
     state = 0;
 
@@ -26,20 +27,26 @@ int yylex(void) {
             return 0;
         }
 
-        if (c == '\n')
-          current_line++;
+        int incremented = 0;
+        if (c == '\n') {
+            if (last_c != '\r') {
+                current_line++;
+                incremented = 1;
+            }
+        } else if (c == '\r') {
+            current_line++;
+            incremented = 1;
+        }
+        last_c = c;
         
         col = get_col(c);
         
         if (state < 0 || state >= 15 || col < 0 || col >= 17) {
             fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
             
-            // --- MODO PÁNICO LÉXICO ---
-            // Consumimos caracteres hasta encontrar un delimitador limpio
             while (c != ' ' && c != '\t' && c != '\n' && c != ';' && c != EOF) {
                 c = fgetc(source_file);
             }
-            // Si el delimitador salvavidas no es EOF, lo devolvemos para que se lea en el siguiente ciclo
             if (c != EOF) {
                 ungetc(c, source_file);
             }
@@ -55,9 +62,19 @@ int yylex(void) {
 
         token_id = sem_act(c);
 
-        state = transition_table[state][col];
+        int next_state = transition_table[state][col];
 
-        if (token_id == -1 && state == F) {
+        if (next_state == F_RET) {
+            if (c != EOF) {
+                if (incremented) current_line--;
+                ungetc(c, source_file);
+                last_c = '\0';
+            }
+        }
+
+        state = next_state;
+
+        if (token_id == -1 && (state == F_CONS || state == F_RET)) {
             state = 0;
             lexeme_length = 0; 
             lexeme_buffer[0] = '\0';
