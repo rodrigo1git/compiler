@@ -1,0 +1,6 @@
+/* ========================================= */
+/* TEST: Identifier over 22 characters       */
+/* EXPECTED: Truncation or Lexical Error     */
+/* ========================================= */
+
+this_variable_has_more_than_22_characters = 1$i

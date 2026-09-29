@@ -1,0 +1,16 @@
+/* ========================================= */
+/* TEST: Errors in IF and loops              */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+/* IF without parentheses */
+IF a > b
+    a := 1$i;
+END_IF;
+
+/* IF without END_IF */
+IF (a > b)
+    a := 1$i;
+
+/* Iteration without body (depending on your keyword) */
+WHILE (a < 10$i) ;

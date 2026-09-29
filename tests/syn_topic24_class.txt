@@ -1,0 +1,7 @@
+/* ========================================= */
+/* TEST: TOPIC 24 - Class without body/code  */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+CLASS MyClass BEGIN
+END;

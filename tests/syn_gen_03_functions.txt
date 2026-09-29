@@ -1,0 +1,13 @@
+/* ========================================= */
+/* TEST: Malformed function declarations     */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+/* Missing function name */
+FUNCTION (INTEGER a) BEGIN END;
+
+/* Missing formal parameter name */
+FUNCTION my_func (INTEGER) BEGIN END;
+
+/* Missing formal parameter type */
+FUNCTION my_func2 (a) BEGIN END;

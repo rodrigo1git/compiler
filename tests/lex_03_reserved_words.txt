@@ -1,0 +1,8 @@
+/* ========================================= */
+/* TEST: Reserved words (Case sensitivity)   */
+/* EXPECTED: Successful recognition          */
+/* ========================================= */
+
+IF (a > b)
+If (a > b)
+wHiLe (a <= 10$i)

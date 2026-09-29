@@ -1,0 +1,8 @@
+/* ========================================= */
+/* TEST: TOPIC 32 - EXTENDS without name     */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+CLASS MyClass EXTENDS BEGIN
+    INTEGER a;
+END;

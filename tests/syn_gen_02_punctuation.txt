@@ -1,0 +1,11 @@
+/* ========================================= */
+/* TEST: Missing ';' and ','                 */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+/* Missing comma between variables */
+INTEGER a b;
+
+/* Missing semicolon at the end of statement */
+a := 1$i
+b := 2$i;

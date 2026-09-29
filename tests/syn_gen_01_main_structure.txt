@@ -1,0 +1,9 @@
+/* ========================================= */
+/* TEST: Missing program name and/or block   */
+/*       delimiters                          */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+BEGIN
+    a := 1$i;
+/* Missing program name before BEGIN or missing END */

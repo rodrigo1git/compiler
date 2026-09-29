@@ -1,0 +1,10 @@
+/* ========================================= */
+/* TEST: TOPIC 14 - Missing elements in      */
+/*       iteration (id, from, to, constants) */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+/* Missing identifier and FROM/TO */
+ITERATE TO 10$i BEGIN
+    a := 1$i;
+END;

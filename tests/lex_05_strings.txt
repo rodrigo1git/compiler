@@ -1,0 +1,7 @@
+/* ========================================= */
+/* TEST: Correct and incorrect strings       */
+/* EXPECTED: String ok, then lexical error   */
+/* ========================================= */
+
+valid_string := "hello world"
+invalid_string := "hello unclosed

@@ -1,0 +1,8 @@
+/* ========================================= */
+/* TEST: TOPIC 19 - Missing evaluation order */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+/* Missing IN, OUT, INOUT modifier required by Topic 19 */
+FUNCTION calculate (INTEGER x) BEGIN
+END;

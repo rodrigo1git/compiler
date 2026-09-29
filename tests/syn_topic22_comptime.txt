@@ -1,0 +1,6 @@
+/* ========================================= */
+/* TEST: TOPIC 22 - COMPTIME without type    */
+/* EXPECTED: Syntax error                    */
+/* ========================================= */
+
+COMPTIME my_variable;
