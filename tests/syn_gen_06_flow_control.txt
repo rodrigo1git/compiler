@@ -12,5 +12,5 @@ END_IF;
 IF (a > b)
     a := 1$i;
 
-/* Iteration without body (depending on your keyword) */
-WHILE (a < 10$i) ;
+/* Iteration without body */
+FROM i := 1$i TO 10$i BY 1$i REPEAT ;

@@ -11,6 +11,8 @@ extern FILE *source_file;
 
 int state = 0;
 int current_line = 1;
+int prev_token = 0;
+int cur_token = 0;
 
 int yylex(void) {
     char c;
@@ -24,6 +26,8 @@ int yylex(void) {
         c = fgetc(source_file);
         
         if (c == EOF) {
+            prev_token = cur_token;
+            cur_token = 0;
             return 0;
         }
 
@@ -83,6 +87,9 @@ int yylex(void) {
     }
 
     printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n", token_id, lexeme_buffer, current_line);
+
+    prev_token = cur_token;
+    cur_token = token_id;
 
     return token_id;
 }

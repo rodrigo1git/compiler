@@ -5,4 +5,4 @@
 
 IF (a > b)
 If (a > b)
-wHiLe (a <= 10$i)
+fRoM (a <= 10$i)

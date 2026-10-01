@@ -4,7 +4,7 @@
 /* EXPECTED: Syntax error                    */
 /* ========================================= */
 
-/* Missing identifier and FROM/TO */
-ITERATE TO 10$i BEGIN
+/* Missing identifier and assignment */
+FROM TO 10$i BY 1$i REPEAT BEGIN
     a := 1$i;
 END;

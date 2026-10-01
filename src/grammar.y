@@ -5,6 +5,7 @@
     
     extern int yylex();
     extern int current_line;
+    extern int prev_token;
     void yyerror(const char *s);
     void add_to_symbol_table(const char* lexeme_buffer, const char* tipo);
     %}
@@ -19,7 +20,7 @@
     %token TOKEN_BEGIN TOKEN_END TOKEN_IF TOKEN_END_IF TOKEN_ELSE
     %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
     %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
-    %token TOKEN_COMPTIME
+    %token TOKEN_COMPTIME TOKEN_EXTENDS
     
     /* Relational and assignment operators */
     %token TOKEN_ASSIGN          /* := */
@@ -28,7 +29,8 @@
     %token TOKEN_LESS_EQUAL      /* <= */
     %token TOKEN_GREATER_EQUAL   /* >= */
     
-    %define parse.error verbose
+    %define parse.error custom
+    %define parse.lac full
 
 %start statements
     
@@ -56,12 +58,14 @@
     var_decl:
       type id_list ';' { printf("[SYNTAX] Line %d: Variable declaration\n", current_line); }
     | TOKEN_COMPTIME type id_list ';' { printf("[SYNTAX] Line %d: Comptime variable declaration\n", current_line); }
+    | type error ';' { yyerrok; }
+    | TOKEN_COMPTIME type error ';' { yyerrok; }
     | error ';' { yyerrok; }
     ;
     
     id_list:
           TOKEN_ID
-        | TOKEN_ID ',' id_list
+        | id_list ',' TOKEN_ID
         ;
     
     statement:
@@ -79,7 +83,6 @@
         | for_loop
         | attr_access ';'
         | pout_stmt ';'
-        | ret_stmt ';'
         | error ';' { yyerrok; }
         ;
     
@@ -88,10 +91,33 @@
         | if_stmt
         | attr_access ';'
         | pout_stmt ';'
-        | ret_stmt ';'
         | error ';' { yyerrok; }
         ;
+
+    func_compound_stmt:                                                                       
+          func_compound_stmt func_simple_stmt                                                 
+        | func_simple_stmt                                                                    
+        ;
     
+    func_simple_stmt:                                                                         
+          assign ';'                                                                          
+        | func_if_stmt                          
+        | func_for_loop
+        | attr_access ';'                                                                     
+        | pout_stmt ';'                                                                       
+        | ret_stmt ';'
+        | error ';' { yyerrok; }                                                              
+        ;  
+
+    func_single_stmt:                                                                         
+          assign ';'                                                                          
+        | func_if_stmt  
+        | attr_access ';'                                                                     
+        | pout_stmt ';'                                                                       
+        | ret_stmt ';'                              
+        | error ';' { yyerrok; }                                                              
+        ;                      
+
     type:
           TOKEN_INTEGER
         | TOKEN_SINGLEF
@@ -100,6 +126,7 @@
     
     assign:
           TOKEN_ID TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Assignment\n", current_line); }
+        | TOKEN_ID TOKEN_ASSIGN error { yyerrok; }
         ;
     
     expr:
@@ -146,28 +173,40 @@
       }
     ;
     
-    
+
+    assign_chain:
+      TOKEN_ID '='
+    | assign_chain TOKEN_ID '='
+    ;
+
     factor:
-      TOKEN_ID '=' factor
-    | call
+      assign_chain TOKEN_ID                                          
+    | assign_chain constant                                   
+    | factor_base 
+    ;
+    
+    factor_base:
+      call
     | TOKEN_ID
     | constant
     | TOKEN_CHAIN
-    | TOKEN_TOI '(' expr ')' { printf("[SYNTAX] Line %d: TOI call\n", current_line); }
+    | TOKEN_TOI '(' expr ')'
+    | attr_ref
     ;
     
     call:
           TOKEN_ID '(' arg_list ')' '[' const_list ']'
+        | TOKEN_ID '(' error ')' '[' const_list ']' { yyerrok; }
         ;
     
     arg_list:
           expr
-        | expr ',' arg_list
+        | arg_list ',' expr 
         ;
     
     const_list:
           constant
-        | constant ',' const_list
+        | const_list ',' constant
         ;
     
     cond:
@@ -184,6 +223,10 @@
         | TOKEN_IF '(' cond ')' TOKEN_BEGIN compound_stmt TOKEN_END TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
         | TOKEN_IF '(' cond ')' single_stmt else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
         | TOKEN_IF '(' cond ')' single_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' error ')' TOKEN_BEGIN compound_stmt TOKEN_END else_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' TOKEN_BEGIN compound_stmt TOKEN_END TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' single_stmt else_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' single_stmt TOKEN_END_IF ';' { yyerrok; }
         ;
 
     else_stmt:
@@ -196,24 +239,53 @@
         | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT single_stmt { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
         ;
 
+    func_if_stmt:
+          TOKEN_IF '(' cond ')' TOKEN_BEGIN func_compound_stmt TOKEN_END func_else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' TOKEN_BEGIN func_compound_stmt TOKEN_END TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' func_single_stmt func_else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' cond ')' func_single_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
+        | TOKEN_IF '(' error ')' TOKEN_BEGIN func_compound_stmt TOKEN_END func_else_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' TOKEN_BEGIN func_compound_stmt TOKEN_END TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' func_single_stmt func_else_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' error ')' func_single_stmt TOKEN_END_IF ';' { yyerrok; }
+        ;
+
+    func_else_stmt:
+          TOKEN_ELSE TOKEN_BEGIN func_compound_stmt TOKEN_END
+        | TOKEN_ELSE func_single_stmt
+        ;
+
+    func_for_loop:
+          TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT func_single_stmt { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
+        ;
+    
+    
+
     func_def:
-          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
-        | type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
+          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
+        | type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
+        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { yyerrok; }
+        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { yyerrok; }
         ;
 
     param_decl_list:
           type TOKEN_ID
-        | type TOKEN_ID ',' param_decl_list
+        | param_decl_list ',' type TOKEN_ID 
         ;
 
     method_def:
-          type TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
-        | type TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
+          type TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
+        | type TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
+        | type TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { yyerrok; }
+        | type TOKEN_ID '(' error ')' TOKEN_BEGIN func_compound_stmt TOKEN_END ';' { yyerrok; }
         ;
 
     class_def:
           TOKEN_CLASS TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration\n", current_line); }
         | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_EXTENDS id_list TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration with extends\n", current_line); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_EXTENDS id_list TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24) with extends\n", current_line); }
         ;
 
     class_body:
@@ -221,16 +293,24 @@
         | class_member
         ;
 
+    extends_stmt:
+          TOKEN_EXTENDS id_list ';' { printf("[SYNTAX] Line %d: Extends statement\n", current_line); }
+        ;
     
     class_member:
           var_decl
         | method_def
-        | assign ';'
+        | extends_stmt
+        ;
+
+    attr_ref:
+          TOKEN_ID '[' constant ']'
+        | TOKEN_ID '[' TOKEN_ID ']'
         ;
 
     attr_access:
-          TOKEN_ID '[' constant ']' '=' expr
-        | TOKEN_ID '[' TOKEN_ID ']' '=' expr
+          attr_ref '=' expr
+        | attr_ref '=' error { yyerrok; }
         ;
 
 
@@ -241,7 +321,53 @@
 
     ret_stmt:
           TOKEN_RET '(' expr ')' { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
-        | TOKEN_RET '(' ')' { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
         ;
 
     %%
+
+    static int yyreport_syntax_error(const yypcontext_t *ctx) {
+        yysymbol_kind_t unexp = yypcontext_token(ctx);
+        const char *unexp_name = yysymbol_name(unexp);
+
+        if (prev_token == TOKEN_ASSIGN && strcmp(unexp_name, "';'") == 0) {
+            fprintf(stderr, "Line %d: Syntax error: Missing expression in assignment\n", current_line);
+            return 0;
+        }
+
+        if (prev_token == '=' && strcmp(unexp_name, "';'") == 0) {
+            fprintf(stderr, "Line %d: Syntax error: Missing expression in attribute assignment\n", current_line);
+            return 0;
+        }
+
+        if ((prev_token == '<' || prev_token == '>' || prev_token == TOKEN_LESS_EQUAL ||
+             prev_token == TOKEN_GREATER_EQUAL || prev_token == TOKEN_EQUAL || prev_token == TOKEN_NOT_EQUAL) &&
+            strcmp(unexp_name, "')'") == 0) {
+            fprintf(stderr, "Line %d: Syntax error: Incomplete condition (missing operand)\n", current_line);
+            return 0;
+        }
+
+        if (prev_token == ',' && strcmp(unexp_name, "')'") == 0) {
+            fprintf(stderr, "Line %d: Syntax error: Missing parameter or argument after ','\n", current_line);
+            return 0;
+        }
+
+        if (strcmp(unexp_name, "TOKEN_RET") == 0) {
+            fprintf(stderr, "Line %d: Syntax error: Return statement not allowed outside of a function\n", current_line);
+            return 0;
+        }
+
+        yysymbol_kind_t expected[10];
+        int n = yypcontext_expected_tokens(ctx, expected, 10);
+        fprintf(stderr, "Line %d: Syntax error: Unexpected %s", current_line, unexp_name);
+        if (n > 0) {
+            fprintf(stderr, ", expecting ");
+            for (int i = 0; i < n; i++) {
+                if (i > 0) {
+                    fprintf(stderr, " or ");
+                }
+                fprintf(stderr, "%s", yysymbol_name(expected[i]));
+            }
+        }
+        fprintf(stderr, "\n");
+        return 0;
+    }

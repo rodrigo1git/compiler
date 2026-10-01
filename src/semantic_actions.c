@@ -73,6 +73,7 @@ int check_reserved_words(const char* word) {
     if (strcmp(word, "comptime") == 0) return TOKEN_COMPTIME;
     if (strcmp(word, "toi") == 0) return TOKEN_TOI;
     if (strcmp(word, "pout") == 0) return TOKEN_POUT_LOWER;
+    if (strcmp(word, "extends") == 0) return TOKEN_EXTENDS;
     
     return -1;
 }

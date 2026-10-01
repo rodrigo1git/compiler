@@ -4,10 +4,10 @@
 /* ========================================= */
 
 /* Missing function name */
-FUNCTION (INTEGER a) BEGIN END;
+integer FUNCTION (integer a) BEGIN END;
 
 /* Missing formal parameter name */
-FUNCTION my_func (INTEGER) BEGIN END;
+integer FUNCTION my_func (integer) BEGIN END;
 
 /* Missing formal parameter type */
-FUNCTION my_func2 (a) BEGIN END;
+integer FUNCTION my_func2 (a) BEGIN END;

@@ -36,5 +36,5 @@ int main(int argc, char *argv[]) {
 }
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Line %d: Syntax error: %s (near '%s')\n", current_line, s, lexeme_buffer);
+    fprintf(stderr, "Line %d: %s\n", current_line, s);
 }
