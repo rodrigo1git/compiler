@@ -29,8 +29,9 @@ int main(int argc, char *argv[]) {
         printf("Parsing successful.\n");
     }
 
-    // Dump symbol table
     print_symbol_table();
+    map_free(symbol_table);
+    free_lexeme_buffer();
     fclose(source_file);
     return 0;
 }

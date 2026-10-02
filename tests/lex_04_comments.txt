@@ -1,10 +1,10 @@
-/* ========================================= */
-/* TEST: Correct and incorrect comments      */
-/* EXPECTED: First is ignored, second hits   */
-/* EOF and throws an error                   */
-/* ========================================= */
+// =========================================
+// TEST: Correct and incorrect comments
+// EXPECTED: First is ignored, second hits
+// EOF and throws an error
+// =========================================
 
-/* This is a perfect comment */
+// This is a perfect comment
 a := 1$i
 
-/* This comment never closes
+// This comment never closes

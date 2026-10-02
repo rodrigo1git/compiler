@@ -7,8 +7,44 @@
 #include "../include/symbol_table.h"
 #include "../y.tab.h"
 
-char lexeme_buffer[100];
-int lexeme_length;
+char *lexeme_buffer = NULL;
+size_t lexeme_capacity = 0;
+int lexeme_length = 0;
+
+static void ensure_lexeme_capacity(size_t needed) {
+    if (lexeme_buffer == NULL) {
+        lexeme_capacity = (needed > 128) ? needed + 64 : 128;
+        lexeme_buffer = (char *)malloc(lexeme_capacity);
+        lexeme_buffer[0] = '\0';
+    } else if (needed >= lexeme_capacity) {
+        while (needed >= lexeme_capacity) {
+            lexeme_capacity *= 2;
+        }
+        lexeme_buffer = (char *)realloc(lexeme_buffer, lexeme_capacity);
+    }
+}
+
+static void append_to_lexeme(char c) {
+    ensure_lexeme_capacity(lexeme_length + 2);
+    lexeme_buffer[lexeme_length++] = c;
+    lexeme_buffer[lexeme_length] = '\0';
+}
+
+void reset_lexeme_buffer(void) {
+    ensure_lexeme_capacity(1);
+    lexeme_length = 0;
+    lexeme_buffer[0] = '\0';
+}
+
+void free_lexeme_buffer(void) {
+    if (lexeme_buffer != NULL) {
+        free(lexeme_buffer);
+        lexeme_buffer = NULL;
+        lexeme_capacity = 0;
+        lexeme_length = 0;
+    }
+}
+
 extern FILE *source_file;
 extern int state;
 extern int current_line;
@@ -80,15 +116,13 @@ int check_reserved_words(const char* word) {
 
 int sa_init(char c) {
     lexeme_length = 0;
-    lexeme_buffer[lexeme_length++] = c;
-    lexeme_buffer[lexeme_length] = '\0';
+    append_to_lexeme(c);
     return -1;
 }
 
 int sa_append(char c) {
     if (c != '\n' && c != '\r') {
-        lexeme_buffer[lexeme_length++] = c;
-        lexeme_buffer[lexeme_length] = '\0';
+        append_to_lexeme(c);
     }
     return -1;
 }
@@ -99,14 +133,11 @@ void add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
 
 int sa_ascii_token(char c) {
     if (state == 0) {
-        // Single-char tokens from state 0
         lexeme_length = 0;
-        lexeme_buffer[lexeme_length++] = c;
-        lexeme_buffer[lexeme_length] = '\0';
+        append_to_lexeme(c);
         return (unsigned char)c;
     }
-    // For states 2, 13, 14, the token is simply the first char in lexeme_buffer
-    return lexeme_buffer[0];
+    return (lexeme_buffer != NULL) ? (unsigned char)lexeme_buffer[0] : (unsigned char)c;
 }
 
 int sa_ignore(char c) { (void)c;
@@ -114,23 +145,25 @@ int sa_ignore(char c) { (void)c;
 }
 
 int sa_identifier(char c) { (void)c;
-    char original_lexeme[256]; strcpy(original_lexeme, lexeme_buffer);
-    
-    char lexeme_buffer_lower[256];
+    char *original_lexeme = strdup(lexeme_buffer ? lexeme_buffer : "");
+    char *lexeme_buffer_lower = (char *)malloc(lexeme_length + 1);
     for (int i = 0; i < lexeme_length; i++) {
-        lexeme_buffer_lower[i] = tolower(lexeme_buffer[i]);
+        lexeme_buffer_lower[i] = tolower((unsigned char)lexeme_buffer[i]);
     }
     lexeme_buffer_lower[lexeme_length] = '\0';
     
     int token = check_reserved_words(lexeme_buffer_lower);
-    
     if (token != -1) {
+        free(original_lexeme);
+        free(lexeme_buffer_lower);
         return token;
     }
     
     for (int i = 0; i < lexeme_length; i++) {
-        if (isupper(lexeme_buffer[i])) {
+        if (isupper((unsigned char)lexeme_buffer[i])) {
             printf("Lexical error: Identifier contains uppercase letters.\n");
+            free(original_lexeme);
+            free(lexeme_buffer_lower);
             return -1; 
         }
     }
@@ -142,21 +175,22 @@ int sa_identifier(char c) { (void)c;
         printf("Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", current_line, original_lexeme, lexeme_buffer_lower);
     }
     add_to_symbol_table(lexeme_buffer, "ID");
+    free(original_lexeme);
+    free(lexeme_buffer_lower);
     return TOKEN_ID;
 }
 
 int sa_int_const(char c) {
-    lexeme_buffer[lexeme_length++] = c;
-    lexeme_buffer[lexeme_length] = '\0';
-    
+    append_to_lexeme(c);
     long val = atol(lexeme_buffer);
     
-    if (val <= 32768) {
-        add_to_symbol_table(lexeme_buffer, "INTEGER");
+    if (val > 32768) {
+        fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", current_line, lexeme_buffer);
+        return -1;
     }
     
+    add_to_symbol_table(lexeme_buffer, "INTEGER");
     yylval.str_val = strdup(lexeme_buffer); 
-    
     return TOKEN_CONST;
 }
 
@@ -173,16 +207,14 @@ int sa_float_const(char c) { (void)c;
         return -1;
     }
     
-    // El parser de grammar.y se encarga de agregar los floats válidos a la tabla
-    
+    add_to_symbol_table(lexeme_buffer, "SINGLEF");
     yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_CONST;
 }
 
 int sa_init_chain(char c) { (void)c;
-      lexeme_length = 0;
-      lexeme_buffer[0] = '\0'; // Reset buffer and skip opening quote
-      return -1;
+    reset_lexeme_buffer();
+    return -1;
 }
 
 int sa_chain(char c) { (void)c;
@@ -191,8 +223,7 @@ int sa_chain(char c) { (void)c;
 }
 
 int sa_multi_char_op(char c) {
-    lexeme_buffer[lexeme_length++] = c;
-    lexeme_buffer[lexeme_length] = '\0';
+    append_to_lexeme(c);
     if (strcmp(lexeme_buffer, ":=") == 0) return TOKEN_ASSIGN;
     if (strcmp(lexeme_buffer, ">=") == 0) return TOKEN_GREATER_EQUAL;
     if (strcmp(lexeme_buffer, "=>") == 0) return TOKEN_GREATER_EQUAL;
@@ -200,7 +231,6 @@ int sa_multi_char_op(char c) {
     if (strcmp(lexeme_buffer, "=<") == 0) return TOKEN_LESS_EQUAL;
     if (strcmp(lexeme_buffer, "==") == 0) return TOKEN_EQUAL;
     if (strcmp(lexeme_buffer, "!=") == 0) return TOKEN_NOT_EQUAL;
-    
     return -1;
 }
 

@@ -1,7 +1,7 @@
-/* ========================================= */
-/* TEST: Reserved words (Case sensitivity)   */
-/* EXPECTED: Successful recognition          */
-/* ========================================= */
+// =========================================
+// TEST: Reserved words (Case sensitivity)
+// EXPECTED: Successful recognition
+// =========================================
 
 IF (a > b)
 If (a > b)

@@ -1,0 +1,22 @@
+# Build artifacts
+compiler
+y.output
+
+# Bison/Flex generated parsers
+*.tab.c
+*.tab.h
+
+# Logs and test output
+*.log
+
+# Local backups
+src_backup/
+include_backup/
+
+*.txt
+
+*.md
+
+*.output
+
+test_empty.y 

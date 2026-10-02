@@ -6,7 +6,7 @@
 extern const char* sem_act_names[15][17];
 
 extern YYSTYPE yylval;
-extern char lexeme_buffer[];
+extern char *lexeme_buffer;
 extern FILE *source_file;
 
 int state = 0;
@@ -57,8 +57,7 @@ int yylex(void) {
             
             state = 0;
             token_id = -1;
-            lexeme_length = 0; 
-            lexeme_buffer[0] = '\0';
+            reset_lexeme_buffer();
             continue;
         }
 
@@ -80,8 +79,7 @@ int yylex(void) {
 
         if (token_id == -1 && (state == F_CONS || state == F_RET)) {
             state = 0;
-            lexeme_length = 0; 
-            lexeme_buffer[0] = '\0';
+            reset_lexeme_buffer();
         }
 
     }

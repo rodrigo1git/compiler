@@ -1,7 +1,7 @@
-/* ========================================= */
-/* TEST: TOPIC 18 - Usage of := instead of = */
-/* EXPECTED: Syntax error                    */
-/* ========================================= */
+// =========================================
+// TEST: TOPIC 18 - Usage of := instead of =
+// EXPECTED: Syntax error
+// =========================================
 
-/* Assuming strict rule requires = in declarations or parameters */
+// Assuming strict rule requires = in declarations or parameters
 INTEGER a := 5$i;

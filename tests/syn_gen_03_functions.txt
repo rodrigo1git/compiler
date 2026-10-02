@@ -1,13 +1,13 @@
-/* ========================================= */
-/* TEST: Malformed function declarations     */
-/* EXPECTED: Syntax error                    */
-/* ========================================= */
+// =========================================
+// TEST: Malformed function declarations
+// EXPECTED: Syntax error
+// =========================================
 
-/* Missing function name */
+// Missing function name
 integer FUNCTION (integer a) BEGIN END;
 
-/* Missing formal parameter name */
+// Missing formal parameter name
 integer FUNCTION my_func (integer) BEGIN END;
 
-/* Missing formal parameter type */
+// Missing formal parameter type
 integer FUNCTION my_func2 (a) BEGIN END;

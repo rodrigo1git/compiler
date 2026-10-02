@@ -1,16 +1,16 @@
-/* ========================================= */
-/* TEST: Errors in IF and loops              */
-/* EXPECTED: Syntax error                    */
-/* ========================================= */
+// =========================================
+// TEST: Errors in IF and loops
+// EXPECTED: Syntax error
+// =========================================
 
-/* IF without parentheses */
+// IF without parentheses
 IF a > b
     a := 1$i;
 END_IF;
 
-/* IF without END_IF */
+// IF without END_IF
 IF (a > b)
     a := 1$i;
 
-/* Iteration without body */
+// Iteration without body
 FROM i := 1$i TO 10$i BY 1$i REPEAT ;

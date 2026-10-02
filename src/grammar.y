@@ -143,15 +143,11 @@
     
     constant:
       TOKEN_CONST {
-          if (strchr($1, '.') != NULL || strchr($1, 'e') != NULL) {
-              add_to_symbol_table($1, "SINGLEF");
-          } else {
+          if (strchr($1, '.') == NULL && strchr($1, 'e') == NULL) {
               long val = atol($1);
               if (val > 32767) {
                   yyerror("Semantic error: Positive constant out of range");
                   YYERROR;
-              } else {
-                  add_to_symbol_table($1, "INTEGER");
               }
           }
       }
@@ -284,8 +280,6 @@
     class_def:
           TOKEN_CLASS TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration\n", current_line); }
         | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
-        | TOKEN_CLASS TOKEN_ID TOKEN_EXTENDS id_list TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration with extends\n", current_line); }
-        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_EXTENDS id_list TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24) with extends\n", current_line); }
         ;
 
     class_body:
@@ -295,6 +289,7 @@
 
     extends_stmt:
           TOKEN_EXTENDS id_list ';' { printf("[SYNTAX] Line %d: Extends statement\n", current_line); }
+        | TOKEN_EXTENDS error ';' { yyerrok; }
         ;
     
     class_member:

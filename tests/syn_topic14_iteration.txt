@@ -1,10 +1,10 @@
-/* ========================================= */
-/* TEST: TOPIC 14 - Missing elements in      */
-/*       iteration (id, from, to, constants) */
-/* EXPECTED: Syntax error                    */
-/* ========================================= */
+// =========================================
+// TEST: TOPIC 14 - Missing elements in
+// iteration (id, from, to, constants)
+// EXPECTED: Syntax error
+// =========================================
 
-/* Missing identifier and assignment */
+// Missing identifier and assignment
 FROM TO 10$i BY 1$i REPEAT BEGIN
     a := 1$i;
 END;

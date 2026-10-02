@@ -5,8 +5,10 @@
 #include "../y.tab.h"
 #include "lexer.h"
 
-extern char lexeme_buffer[100];
+extern char *lexeme_buffer;
 extern int lexeme_length;
+void reset_lexeme_buffer(void);
+void free_lexeme_buffer(void);
 extern FILE *source_file;
 extern int state;
 extern int current_line;
