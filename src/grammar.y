@@ -233,6 +233,8 @@
         | TOKEN_IF '(' error ')' TOKEN_BEGIN compound_stmt TOKEN_END TOKEN_END_IF ';' { yyerrok; }
         | TOKEN_IF '(' error ')' single_stmt else_stmt TOKEN_END_IF ';' { yyerrok; }
         | TOKEN_IF '(' error ')' single_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' cond ')' TOKEN_BEGIN compound_stmt TOKEN_END error ';' { yyerrok; }
+        | TOKEN_IF '(' cond ')' single_stmt error ';' { yyerrok; }
         ;
 
     else_stmt:
@@ -254,6 +256,8 @@
         | TOKEN_IF '(' error ')' TOKEN_BEGIN func_compound_stmt TOKEN_END TOKEN_END_IF ';' { yyerrok; }
         | TOKEN_IF '(' error ')' func_single_stmt func_else_stmt TOKEN_END_IF ';' { yyerrok; }
         | TOKEN_IF '(' error ')' func_single_stmt TOKEN_END_IF ';' { yyerrok; }
+        | TOKEN_IF '(' cond ')' TOKEN_BEGIN func_compound_stmt TOKEN_END error ';' { yyerrok; }
+        | TOKEN_IF '(' cond ')' func_single_stmt error ';' { yyerrok; }
         ;
 
     func_else_stmt:
@@ -288,8 +292,8 @@
         ;
 
     class_def:
-          TOKEN_CLASS TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration\n", current_line); }
-        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
+          TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN error TOKEN_END ';' { yyerrok; }
         ;
 
     class_body:

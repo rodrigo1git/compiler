@@ -276,7 +276,13 @@ int sa_multi_char_op(char c) {
     return -1;
 }
 
-int sa_error(char c) { (void)c;
+int sa_error(char c) {
+    extern int token_start_line;
+    extern int global_errors;
+    if (c != EOF) {
+        fprintf(stderr, "Line %d: Lexical error: Invalid character '%c'\n", token_start_line, c);
+        global_errors++;
+    }
     return TOKEN_LEX_ERROR;
 }
 void print_symbol_table() {
