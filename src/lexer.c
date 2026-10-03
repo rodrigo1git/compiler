@@ -15,7 +15,7 @@ int prev_token = 0;
 int cur_token = 0;
 
 int yylex(void) {
-    char c;
+    int c;
     int token_id = -1;
     int col;
     static char last_c = '\0';

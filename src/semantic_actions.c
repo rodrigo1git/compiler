@@ -20,7 +20,12 @@ static void ensure_lexeme_capacity(size_t needed) {
         while (needed >= lexeme_capacity) {
             lexeme_capacity *= 2;
         }
-        lexeme_buffer = (char *)realloc(lexeme_buffer, lexeme_capacity);
+        char *tmp = (char *)realloc(lexeme_buffer, lexeme_capacity);
+        if (tmp == NULL) {
+            fprintf(stderr, "Fatal Error: Memory allocation failed during realloc.\n");
+            exit(1);
+        }
+        lexeme_buffer = tmp;
     }
 }
 
@@ -178,6 +183,7 @@ int sa_identifier(char c) { (void)c;
     add_to_symbol_table(lexeme_buffer, "ID");
     free(original_lexeme);
     free(lexeme_buffer_lower);
+    yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_ID;
 }
 
@@ -220,6 +226,7 @@ int sa_init_chain(char c) { (void)c;
 
 int sa_chain(char c) { (void)c;
     add_to_symbol_table(lexeme_buffer, "CHAIN");
+    yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_CHAIN;
 }
 
