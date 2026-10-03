@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <float.h>
+#include <errno.h>
 #include "../include/semantic_actions.h"
 #include "../include/symbol_table.h"
 #include "../y.tab.h"
@@ -202,11 +203,21 @@ int sa_int_const(char c) {
 }
 
 int sa_float_const(char c) { (void)c;
-    for (int i = 0; lexeme_buffer[i] != '\0'; i++) {
-        if (lexeme_buffer[i] == 's') lexeme_buffer[i] = 'e';
+    char *temp_buf = strdup(lexeme_buffer);
+    for (int i = 0; temp_buf[i] != '\0'; i++) {
+        if (temp_buf[i] == 's') temp_buf[i] = 'e';
     }
     
-    double val = atof(lexeme_buffer);
+    errno = 0;
+    char *endptr;
+    double val = strtod(temp_buf, &endptr);
+    free(temp_buf);
+    
+    if (errno == ERANGE) {
+        fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", current_line, lexeme_buffer);
+        return -1;
+    }
+
     double abs_val = val < 0 ? -val : val;
     
     if (abs_val > 0.0 && (abs_val < 1.17549435e-38 || abs_val > 3.40282347e+38)) {
