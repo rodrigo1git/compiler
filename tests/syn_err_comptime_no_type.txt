@@ -1,0 +1,8 @@
+// EXPECTED: 1 syntax error (COMPTIME without type)
+miprograma
+comptime c_var;
+
+integer d;
+begin
+    d := 1$i;
+end;

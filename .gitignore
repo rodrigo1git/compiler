@@ -1,22 +1,22 @@
 # Build artifacts
 compiler
-y.output
+*.o
+*.output
 
-# Bison/Flex generated parsers
+# Bison/Flex generated source files
 *.tab.c
 *.tab.h
+lex.yy.c
 
-# Logs and test output
+# Logs and backups
 *.log
-
-# Local backups
 src_backup/
 include_backup/
 
-*.txt
-
-*.md
-
-*.output
-
-test_empty.y 
+# Archivos temporales o de scratch del usuario
+test_empty.y
+test_errores.txt
+test_exitoso.txt
+test_otros_errores.txt
+tp1_text.txt
+tp2_text.txt

@@ -46,7 +46,6 @@ void free_lexeme_buffer(void) {
 }
 
 extern FILE *source_file;
-extern int state;
 extern int current_line;
 extern YYSTYPE yylval;
 
@@ -54,9 +53,9 @@ typedef int (*sem_act_t)(char);
 
 sem_act_t sem_act_mat[15][17] = {
     //              L               i                      s                      D                 _                        .                 $                 +-                /                 op*()             =                 <>                !:                "                 nl                ws                other
-    {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_ascii_token,   sa_init,          sa_ascii_token,   sa_init,          sa_init,          sa_init,          sa_init_chain,           sa_ignore,        sa_ignore,        sa_error        }, // 0
+    {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_token_consume, sa_init,          sa_token_consume, sa_init,          sa_init,          sa_init,          sa_init_chain,           sa_ignore,        sa_ignore,        sa_error        }, // 0
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier   }, // 1
-    {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ignore,        sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 2
+    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_ignore,        sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 2
     {  sa_ignore,      sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore       }, // 3
     {  sa_error,       sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_multi_char_op, sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 4
     {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_append,        sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 5
@@ -67,14 +66,14 @@ sem_act_t sem_act_mat[15][17] = {
     {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_chain,         sa_append,        sa_append,        sa_append       }, // 12
-    {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }, // 13
-    {  sa_ascii_token, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_multi_char_op, sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token,   sa_ascii_token  }  // 14
+    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
+    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }  // 14
 };
 const char* sem_act_names[15][17] = {
     // L                   i                   s                   D                   _                   .                   $                   +-                  /                   op*()               =                   <>                  !:                  "                   nl                  ws                  other
-    {"sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_error",         "sa_init",          "sa_error",         "sa_ascii_token",   "sa_init",          "sa_ascii_token",   "sa_init",          "sa_init",          "sa_init",          "sa_init_chain",    "sa_ignore",        "sa_ignore",        "sa_error"        }, // 0
+    {"sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_error",         "sa_init",          "sa_error",         "sa_token_consume", "sa_init",          "sa_token_consume", "sa_init",          "sa_init",          "sa_init",          "sa_init_chain",    "sa_ignore",        "sa_ignore",        "sa_error"        }, // 0
     {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier"   }, // 1
-    {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ignore",        "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 2
+    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_ignore",        "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered" }, // 2
     {"sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore"       }, // 3
     {"sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_multi_char_op", "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 4
     {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_append",        "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 5
@@ -85,8 +84,8 @@ const char* sem_act_names[15][17] = {
     {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 10
     {"sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_append",        "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const"  }, // 11
     {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_chain",         "sa_append",        "sa_append",        "sa_append"       }, // 12
-    {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }, // 13
-    {"sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_multi_char_op", "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token",   "sa_ascii_token"  }  // 14
+    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_multi_char_op", "sa_multi_char_op", "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered"}, // 13
+    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_multi_char_op", "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered"}  // 14
 };
 
 
@@ -131,12 +130,14 @@ void add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
     map_put(symbol_table, lexeme_buffer, tipo);
 }
 
-int sa_ascii_token(char c) {
-    if (state == 0) {
-        lexeme_length = 0;
-        append_to_lexeme(c);
-        return (unsigned char)c;
-    }
+int sa_token_consume(char c) {
+    lexeme_length = 0;
+    append_to_lexeme(c);
+    return (unsigned char)c;
+}
+
+int sa_token_buffered(char c) {
+    (void)c;
     return (lexeme_buffer != NULL) ? (unsigned char)lexeme_buffer[0] : (unsigned char)c;
 }
 

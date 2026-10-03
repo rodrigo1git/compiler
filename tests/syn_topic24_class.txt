@@ -1,7 +1,10 @@
-// =========================================
-// TEST: TOPIC 24 - Class without body/code
-// EXPECTED: Syntax error
-// =========================================
-
-CLASS MyClass BEGIN
-END;
+// EXPECTED: Parsing successful
+miprograma
+class perro
+begin
+    integer patas;
+end;
+perro p;
+begin
+    p[patas] = 4$i;
+end;

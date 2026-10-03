@@ -1,0 +1,6 @@
+// EXPECTED: 1 syntax error (Missing end of program)
+miprograma
+integer a;
+begin
+    a := 1$i;
+// Missing end;

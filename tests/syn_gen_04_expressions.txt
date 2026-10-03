@@ -1,10 +1,6 @@
-// =========================================
-// TEST: Errors in expressions
-// EXPECTED: Syntax error
-// =========================================
-
-// Missing right operand
-a := 5$i + ;
-
-// Missing operator between operands
-b := 5$i 5$i ;
+// EXPECTED: Parsing successful
+miprograma
+integer a;
+begin
+    a := 5$i + 3$i * 2$i / 1$i - 4$i;
+end;

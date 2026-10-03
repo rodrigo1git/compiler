@@ -1,0 +1,32 @@
+// =========================================
+// TEST: Recuperacion de errores sintacticos y aislamiento de retorno
+//       Verifica que el compilador reporte errores especificos en
+//       la linea exacta y continue la ejecucion sin abortar.
+// EXPECTED: 5 errores especificos y Parsing successful
+// =========================================
+
+miprogramaerrores
+integer x;
+
+// Prueba de Error de Declaracion en Parametros
+integer function rota(integer a, )
+begin
+    pout(a);
+end;
+
+begin
+    // 1. Error de condicion mal formada (Recuperacion profunda en IF)
+    if (x < )
+        x := 1$i;
+    end_if;
+
+    // 2. Falso error de ';' por descarte lexico (Lado derecho ausente)
+    x := ;
+
+    // 3. Argumentos invalidos en funcion (Recuperacion con tokens esperados)
+    x := calcular(x, , 5$i)[1$i, 2$i];
+
+    // 4. Return prohibido (Fuera del contexto de funcion)
+    ret(1$i);
+
+end;

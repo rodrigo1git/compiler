@@ -1,0 +1,9 @@
+// EXPECTED: 1 syntax error (Class without members)
+miprograma
+class perro
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;

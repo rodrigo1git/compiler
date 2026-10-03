@@ -1,0 +1,16 @@
+// EXPECTED: Parsing successful
+miprograma
+singlef float_no_int;
+singlef float_int;
+singlef float_exp_pos;
+singlef float_exp_neg;
+integer bound_min;
+integer bound_max;
+begin
+    float_no_int := .6;
+    float_int := 15.2;
+    float_exp_pos := 1.2s+10;
+    float_exp_neg := 1.2s-10;
+    bound_min := -32768$i;
+    bound_max := 32767$i;
+end;

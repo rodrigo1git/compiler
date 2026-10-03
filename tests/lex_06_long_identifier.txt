@@ -1,6 +1,8 @@
-// =========================================
-// TEST: Identifier over 22 characters
-// EXPECTED: Truncation or Lexical Error
-// =========================================
-
-this_variable_has_more_than_22_characters = 1$i
+// EXPECTED: Warning truncated
+miprograma
+integer identificador_de_22_ok;
+integer identificador_de_23_mal;
+begin
+    identificador_de_22_ok := 1$i;
+    identificador_de_23_mal := 1$i;
+end;

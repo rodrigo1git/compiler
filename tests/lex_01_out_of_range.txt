@@ -1,7 +1,9 @@
-// =========================================
-// TEST: Out of range constants
-// EXPECTED: Lexical error
-// =========================================
-
-32769$i
-1.0s-45
+// EXPECTED: 3 errores lexicos (out of range) + 3 errores sintacticos en cascada
+miprograma
+singlef f;
+integer x;
+begin
+    x := 32769$i; // Out of int range
+    f := 1.0s-45; // Out of singlef min range
+    f := 1.0s+45; // Out of singlef max range
+end;

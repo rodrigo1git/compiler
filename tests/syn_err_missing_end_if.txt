@@ -1,0 +1,6 @@
+// EXPECTED: 1 syntax error (Missing END_IF)
+miprograma
+integer a;
+begin
+    if (a < 5$i) begin
+        a := 1$i;

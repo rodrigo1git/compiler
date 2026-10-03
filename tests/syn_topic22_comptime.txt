@@ -1,6 +1,6 @@
-// =========================================
-// TEST: TOPIC 22 - COMPTIME without type
-// EXPECTED: Syntax error
-// =========================================
-
-COMPTIME my_variable;
+// EXPECTED: Parsing successful
+miprograma
+comptime integer c_var;
+begin
+    c_var := 10$i;
+end;

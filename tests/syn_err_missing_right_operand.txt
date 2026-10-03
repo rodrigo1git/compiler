@@ -1,0 +1,6 @@
+// EXPECTED: 1 syntax error (Missing right operand)
+miprograma
+integer a;
+begin
+    a := 5$i + ;
+end;

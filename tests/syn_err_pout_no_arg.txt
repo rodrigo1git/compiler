@@ -1,0 +1,6 @@
+// EXPECTED: 1 syntax error (POUT without argument)
+miprograma
+integer a;
+begin
+    pout();
+end;

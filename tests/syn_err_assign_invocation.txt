@@ -1,0 +1,7 @@
+// EXPECTED: 1 syntax error (= with invocation) + 1 cascade
+miprograma
+integer a, b;
+integer function mi_func(integer x) begin ret(1$i); end;
+begin
+    a := b = mi_func(1$i)[1$i];
+end;

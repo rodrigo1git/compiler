@@ -1,0 +1,7 @@
+// EXPECTED: 1 syntax error (Missing param)
+miprograma
+integer a;
+integer function test(integer x) begin ret(x); end;
+begin
+    a := test(x, );
+end;

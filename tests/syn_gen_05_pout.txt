@@ -1,6 +1,7 @@
-// =========================================
-// TEST: POUT without argument
-// EXPECTED: Syntax error
-// =========================================
-
-POUT();
+// EXPECTED: Parsing successful
+miprograma
+integer a;
+begin
+    pout(a);
+    pout("hola");
+end;

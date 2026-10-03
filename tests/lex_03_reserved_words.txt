@@ -1,8 +1,11 @@
-// =========================================
-// TEST: Reserved words (Case sensitivity)
-// EXPECTED: Successful recognition
-// =========================================
-
-IF (a > b)
-If (a > b)
-fRoM (a <= 10$i)
+// EXPECTED: Parsing successful (tolowers to valid keyword)
+miprograma
+integer x;
+begin
+    IF (x < 1$i) begin // El lexer aplica tolower, IF -> if (palabra reservada)
+        x := 2$i;
+    end end_if;
+    if (x > 1$i) begin // Minúscula (ambas deben compilar limpio)
+        x := 2$i;
+    end end_if;
+end;

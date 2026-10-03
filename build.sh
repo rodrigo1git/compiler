@@ -9,7 +9,7 @@ echo "Generating parser..."
 bison -d -o y.tab.c src/grammar.y
 
 echo "Compiling C source files..."
-gcc -Wall -Wextra -std=gnu99 -Iinclude -I. \
+gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/main.c \
     src/lexer.c \
     src/semantic_actions.c \

@@ -1,0 +1,57 @@
+// =========================================
+// TEST: Programa completo sintacticamente valido
+//       Cubre declaracion de clases, herencia multiple (Tema 32),
+//       metodos, funciones, retorno anidado en IF,
+//       invocaciones con orden de evaluacion (Tema 19),
+//       asignaciones en expresiones (Tema 18) y
+//       acceso posicional a atributos (Tema 29).
+// EXPECTED: Parsing successful (0 errores)
+// =========================================
+
+miprograma
+integer x, y, z;
+
+class animal
+begin
+    integer patas;
+end;
+
+class perro
+begin
+    integer raza;
+    
+    // Prueba de Herencia Multiple (Tema 32)
+    extends animal, mascota; 
+    
+    integer ladrar(integer veces)
+    begin
+        pout(veces);
+        // Prueba de Return permitido dentro del metodo
+        ret(1$i);
+    end;
+end;
+
+integer function calcular(integer a, integer b)
+integer local;
+begin
+    if (a < b)
+        // Prueba de Return anidado dentro del IF de una funcion
+        ret(a);
+    end_if;
+    ret(b);
+end;
+
+begin
+    x := 10$i;
+    
+    // Prueba de Invocacion con orden de evaluacion obligatorio (Tema 19)
+    y := calcular(x, 5$i)[1$i, 2$i];
+    
+    // Prueba de Asignacion en expresiones (Tema 18)
+    z := x = 2$i + y;
+    
+    // Prueba de Acceso posicional a atributos en lectura y escritura (Tema 29)
+    x := obj[1$i] + 10$i;
+    obj[x] = 20$i;
+
+end;

@@ -1,0 +1,11 @@
+// EXPECTED: 1 syntax error (Missing function name) + 1 cascade
+miprograma
+integer function (integer x)
+begin
+    ret(1$i);
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;

@@ -1,10 +1,8 @@
-// =========================================
-// TEST: TOPIC 14 - Missing elements in
-// iteration (id, from, to, constants)
-// EXPECTED: Syntax error
-// =========================================
-
-// Missing identifier and assignment
-FROM TO 10$i BY 1$i REPEAT BEGIN
-    a := 1$i;
-END;
+// EXPECTED: Parsing successful
+miprograma
+integer i, a;
+begin
+    from i := 1$i to 10$i by 1$i repeat begin
+        a := a + i;
+    end;
+end;

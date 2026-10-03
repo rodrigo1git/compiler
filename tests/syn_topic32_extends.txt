@@ -1,8 +1,11 @@
-// =========================================
-// TEST: TOPIC 32 - EXTENDS without name
-// EXPECTED: Syntax error
-// =========================================
+miprograma
+class perro
+begin
+    integer patas;
+    extends animal;
+end;
 
-CLASS MyClass EXTENDS BEGIN
-    INTEGER a;
-END;
+integer x;
+begin
+    x := 1$i;
+end;

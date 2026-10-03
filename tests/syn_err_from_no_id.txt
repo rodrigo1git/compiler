@@ -1,0 +1,8 @@
+// EXPECTED: 1 syntax error (FROM without identifier) + 1 cascade
+miprograma
+integer a;
+begin
+    from := 1$i to 10$i by 1$i repeat begin
+        a := a + 1$i;
+    end;
+end;

@@ -1,13 +1,10 @@
-// =========================================
-// TEST: Malformed function declarations
-// EXPECTED: Syntax error
-// =========================================
-
-// Missing function name
-integer FUNCTION (integer a) BEGIN END;
-
-// Missing formal parameter name
-integer FUNCTION my_func (integer) BEGIN END;
-
-// Missing formal parameter type
-integer FUNCTION my_func2 (a) BEGIN END;
+// EXPECTED: Parsing successful
+miprograma
+integer a;
+integer function mi_func(integer x)
+begin
+    ret(x + 1$i);
+end;
+begin
+    a := mi_func(5$i)[1$i];
+end;

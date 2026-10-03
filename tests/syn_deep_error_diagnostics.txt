@@ -1,0 +1,30 @@
+// =========================================
+// TEST: Diagnosticos de errores sintacticos y semanticos
+//       Verifica listas mal formadas, ret sin parametro,
+//       atributos sin expresion, condiciones incompletas,
+//       constantes fuera de rango y falta de delimitador ';'.
+// EXPECTED: Diagnosticos detallados y Parsing successful
+// =========================================
+
+miprogramaotros
+integer x, y;
+integer a, ;
+
+integer function prueba(integer p)
+begin
+    ret();
+end;
+
+begin
+    obj[1$i] = ;
+
+    if (x >= )
+        x := 1$i;
+    end_if;
+
+    x := 35000$i;
+    y := -40000$i;
+
+    x := 10$i
+    y := 20$i;
+end;

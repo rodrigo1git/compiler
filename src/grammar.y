@@ -127,6 +127,8 @@
     assign:
           TOKEN_ID TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Assignment\n", current_line); }
         | TOKEN_ID TOKEN_ASSIGN error { yyerrok; }
+        | attr_ref TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Attribute Assignment\n", current_line); }
+        | attr_ref TOKEN_ASSIGN error { yyerrok; }
         ;
     
     expr:
@@ -146,24 +148,27 @@
           if (strchr($1, '.') == NULL && strchr($1, 'e') == NULL) {
               long val = atol($1);
               if (val > 32767) {
-                  yyerror("Semantic error: Positive constant out of range");
+                  fprintf(stderr, "Line %d: Lexical error: Positive constant out of range\n", current_line);
                   YYERROR;
               }
           }
       }
     | '-' TOKEN_CONST {
-          char neg_str[100];
-          sprintf(neg_str, "-%s", $2);
-          
           if (strchr($2, '.') != NULL || strchr($2, 'e') != NULL) {
+              char *neg_str = malloc(strlen($2) + 2);
+              sprintf(neg_str, "-%s", $2);
               add_to_symbol_table(neg_str, "SINGLEF");
+              free(neg_str);
           } else {
-              long val = atol(neg_str);
+              long val = -atol($2);
               if (val < -32768) {
-                  yyerror("Semantic error: Negative constant out of range");
+                  fprintf(stderr, "Line %d: Lexical error: Negative constant out of range\n", current_line);
                   YYERROR;
               } else {
+                  char *neg_str = malloc(strlen($2) + 2);
+                  sprintf(neg_str, "-%s", $2);
                   add_to_symbol_table(neg_str, "INTEGER");
+                  free(neg_str);
               }
           }
       }
@@ -351,16 +356,25 @@
             return 0;
         }
 
-        yysymbol_kind_t expected[10];
-        int n = yypcontext_expected_tokens(ctx, expected, 10);
         fprintf(stderr, "Line %d: Syntax error: Unexpected %s", current_line, unexp_name);
+        
+        int n = yypcontext_expected_tokens(ctx, NULL, 0);
         if (n > 0) {
-            fprintf(stderr, ", expecting ");
-            for (int i = 0; i < n; i++) {
-                if (i > 0) {
-                    fprintf(stderr, " or ");
+            yysymbol_kind_t *expected = malloc(n * sizeof(yysymbol_kind_t));
+            if (expected != NULL) {
+                yypcontext_expected_tokens(ctx, expected, n);
+                fprintf(stderr, ", expecting ");
+                int limit = (n > 8) ? 8 : n;
+                for (int i = 0; i < limit; i++) {
+                    if (i > 0) {
+                        fprintf(stderr, " or ");
+                    }
+                    fprintf(stderr, "%s", yysymbol_name(expected[i]));
                 }
-                fprintf(stderr, "%s", yysymbol_name(expected[i]));
+                if (n > 8) {
+                    fprintf(stderr, " ... (and %d more)", n - 8);
+                }
+                free(expected);
             }
         }
         fprintf(stderr, "\n");
