@@ -21,6 +21,7 @@
     %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
     %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
     %token TOKEN_COMPTIME TOKEN_EXTENDS
+    %token TOKEN_LEX_ERROR
     
     /* Relational and assignment operators */
     %token TOKEN_ASSIGN          /* := */
@@ -145,15 +146,19 @@
     
     constant:
       TOKEN_CONST {
+          extern int token_start_line;
+          extern int global_errors;
           if (strchr($1, '.') == NULL && strchr($1, 'e') == NULL) {
               long val = atol($1);
               if (val > 32767) {
-                  fprintf(stderr, "Line %d: Lexical error: Positive constant out of range\n", current_line);
-                  YYERROR;
+                  fprintf(stderr, "Line %d: Lexical error: Positive constant out of range\n", token_start_line);
+                  global_errors++;
               }
           }
       }
     | '-' TOKEN_CONST {
+          extern int token_start_line;
+          extern int global_errors;
           if (strchr($2, '.') != NULL || strchr($2, 'e') != NULL) {
               char *neg_str = malloc(strlen($2) + 2);
               sprintf(neg_str, "-%s", $2);
@@ -162,8 +167,8 @@
           } else {
               long val = -atol($2);
               if (val < -32768) {
-                  fprintf(stderr, "Line %d: Lexical error: Negative constant out of range\n", current_line);
-                  YYERROR;
+                  fprintf(stderr, "Line %d: Lexical error: Negative constant out of range\n", token_start_line);
+                  global_errors++;
               } else {
                   char *neg_str = malloc(strlen($2) + 2);
                   sprintf(neg_str, "-%s", $2);

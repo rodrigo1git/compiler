@@ -61,22 +61,20 @@ int yylex(void) {
         }
         last_c = c;
         
+        if (state == 0 && c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != EOF) {
+            extern int token_start_line;
+            token_start_line = current_line;
+        }
+        
         col = get_col(c);
         
         if (state < 0 || state >= 15 || col < 0 || col >= 17) {
             fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
             
-            while (c != ' ' && c != '\t' && c != '\n' && c != ';' && c != EOF) {
-                c = fgetc(source_file);
-            }
-            if (c != EOF) {
-                ungetc(c, source_file);
-            }
-            
             state = 0;
-            token_id = -1;
+            token_id = TOKEN_LEX_ERROR;
             reset_lexeme_buffer();
-            continue;
+            break;
         }
 
         sem_act_t sem_act = sem_act_mat[state][col];

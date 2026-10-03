@@ -5,6 +5,8 @@
 #include "../y.tab.h"
 
 FILE *source_file = NULL;
+int global_errors = 0;
+int token_start_line = 1;
 extern int yyparse();
 extern int current_line;
 
@@ -25,8 +27,10 @@ int main(int argc, char *argv[]) {
     // Parse
     init_symbol_table();
 
-    if (yyparse() == 0) {
+    if (yyparse() == 0 && global_errors == 0) {
         printf("Parsing successful.\n");
+    } else {
+        printf("Compilation failed with %d errors.\n", global_errors);
     }
 
     print_symbol_table();
