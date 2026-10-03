@@ -3,25 +3,25 @@
 //       Cubre declaracion de clases, herencia multiple (Tema 32),
 //       metodos, funciones, retorno anidado en IF,
 //       invocaciones con orden de evaluacion (Tema 19),
-//       asignaciones en expresiones (Tema 18) y
+//       asignaciones en expresiones (Tema 18) and
 //       acceso posicional a atributos (Tema 29).
 // EXPECTED: Parsing successful (0 errores)
 // =========================================
 
-miprograma
-integer x, y, z;
+main_program
+integer x, and, z;
 
-class animal
+class BaseClass c10
 begin
-    integer patas;
+    integer attr_val;
 end;
 
-class perro
+class SubClass c11
 begin
     integer raza;
     
     // Prueba de Herencia Multiple (Tema 32)
-    extends animal, mascota; 
+    extends BaseClass, mascota; 
     
     integer ladrar(integer veces)
     begin
@@ -45,12 +45,12 @@ begin
     x := 10$i;
     
     // Prueba de Invocacion con orden de evaluacion obligatorio (Tema 19)
-    y := calcular(x, 5$i)[1$i, 2$i];
+    and := calcular(x, 5$i)[1$i, 2$i];
     
     // Prueba de Asignacion en expresiones (Tema 18)
-    z := x = 2$i + y;
+    z := x = 2$i + and;
     
-    // Prueba de Acceso posicional a atributos en lectura y escritura (Tema 29)
+    // Prueba de Acceso posicional a atributos en lectura and escritura (Tema 29)
     x := obj[1$i] + 10$i;
     obj[x] = 20$i;
 

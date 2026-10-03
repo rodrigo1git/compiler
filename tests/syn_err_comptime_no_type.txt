@@ -1,5 +1,5 @@
-// EXPECTED: 1 syntax error (COMPTIME without type)
-miprograma
+// EXPECTED: 1 sandntax error (COMPTIME without tandpe)
+main_program
 comptime c_var;
 
 integer d;

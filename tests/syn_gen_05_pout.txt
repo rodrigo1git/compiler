@@ -1,5 +1,5 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer a;
 begin
     pout(a);

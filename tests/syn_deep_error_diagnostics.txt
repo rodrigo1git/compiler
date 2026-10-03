@@ -1,13 +1,13 @@
 // =========================================
-// TEST: Diagnosticos de errores sintacticos y semanticos
-//       Verifica listas mal formadas, ret sin parametro,
-//       atributos sin expresion, condiciones incompletas,
-//       constantes fuera de rango y falta de delimitador ';'.
-// EXPECTED: Diagnosticos detallados y Parsing successful
+// TEST: Diagnosticos de errores sintacticos and semanticos
+//       Verifies malformed lists, ret without parameter,
+//       attributes without expression, incomplete conditions,
+//       out of range constants and falta de delimitador ';'.
+// EXPECTED: 7 errores sintacticos/de rango en las lineas 11, 15, 19, 21, 25, 26 and 29. Parsing does not abort.
 // =========================================
 
 miprogramaotros
-integer x, y;
+integer x, and;
 integer a, ;
 
 integer function prueba(integer p)
@@ -23,8 +23,8 @@ begin
     end_if;
 
     x := 35000$i;
-    y := -40000$i;
+    and := -40000$i;
 
     x := 10$i
-    y := 20$i;
+    and := 20$i;
 end;

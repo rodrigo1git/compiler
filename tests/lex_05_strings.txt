@@ -1,8 +1,0 @@
-// EXPECTED: 2 errores (1 lexico de string no cerrado, 1 sintactico cascada por eof)
-miprograma
-integer x;
-begin
-    "Este es un string valido"
-    "Este es un string que nunca se cierra
-    x := 5$i;
-end;

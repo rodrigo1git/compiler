@@ -1,5 +1,5 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer a;
 integer function mi_func(integer x)
 begin

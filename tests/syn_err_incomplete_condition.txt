@@ -1,5 +1,5 @@
-// EXPECTED: 1 syntax error (Incomplete condition)
-miprograma
+// EXPECTED: 1 sandntax error (Incomplete condition)
+main_program
 integer function test(integer x)
 begin
     if (x < ) begin

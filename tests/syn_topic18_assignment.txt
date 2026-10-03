@@ -1,6 +1,23 @@
-// EXPECTED: Parsing successful
-miprograma
-integer a, b, c;
+// EXPECTED: Parsing successful (0 errores)
+main_program
+integer a, b, c, d, e;
+integer function f(integer p)
 begin
-    a := b = c = 5$i;
+    ret(p);
+end;
+begin
+    a := b=2$i;
+    c := f(a=3.0)[1$i];
+    a := b=c+d*e=c/3$i;
+    a := b=2$i+d;
+    a := b+c=4$i;
+    if (a=3$i==3$i)
+        a := 1$i;
+    end_if;
+    if (a=b!=3$i)
+        a := 1$i;
+    end_if;
+    if (a=b+c==3.1)
+        a := 1$i;
+    end_if;
 end;

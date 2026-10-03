@@ -1,5 +1,5 @@
-// EXPECTED: 1 syntax error (= with invocation) + 1 cascade
-miprograma
+// EXPECTED: 2 errores sintacticos on line 6 (1 primarand error + 1 cascading error). Parsing successful.
+main_program
 integer a, b;
 integer function mi_func(integer x) begin ret(1$i); end;
 begin

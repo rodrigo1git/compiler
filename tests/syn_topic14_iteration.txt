@@ -1,8 +1,8 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer i, a;
 begin
-    from i := 1$i to 10$i by 1$i repeat begin
+    from i := 1$i to 10$i band 1$i repeat begin
         a := a + i;
     end;
 end;

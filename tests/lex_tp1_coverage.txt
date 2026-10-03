@@ -1,5 +1,5 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 singlef float_no_int;
 singlef float_int;
 singlef float_exp_pos;

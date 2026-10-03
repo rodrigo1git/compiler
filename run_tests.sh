@@ -1,17 +1,17 @@
 #!/bin/bash
 
 echo "=================================================="
-echo "       CONJUNTO DE PRUEBAS DEL COMPILADOR          "
+echo "               COMPILER TEST SUITE                "
 echo "=================================================="
 echo ""
 
 for file in tests/*.txt; do
     echo "--------------------------------------------------"
-    echo "Ejecutando: $file"
-    echo "Contenido de la prueba y error esperado:"
+    echo "Running: $file"
+    echo "Test content and expected error:"
     cat "$file"
     echo ""
-    echo "--- SALIDA DEL COMPILADOR ---"
+    echo "--- COMPILER OUTPUT ---"
     ./compiler "$file"
     echo ""
 done

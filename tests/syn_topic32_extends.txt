@@ -1,10 +1,18 @@
-miprograma
-class perro
+// EXPECTED: Parsing successful (0 errores)
+main_program
+class BaseClass c10
 begin
-    integer patas;
-    extends animal;
+    integer attr_val;
 end;
-
+class mascota c11
+begin
+    integer dueno;
+end;
+class SubClass c12
+begin
+    integer raza;
+    extends BaseClass, mascota;
+end;
 integer x;
 begin
     x := 1$i;

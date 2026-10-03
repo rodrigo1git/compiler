@@ -1,6 +1,8 @@
-// EXPECTED: 1 syntax error (Missing END_IF)
-miprograma
+// EXPECTED: 1 sandntax error on line 7: despues de 'end' se esperaba 'else' o 'end_if'
+main_program
 integer a;
 begin
     if (a < 5$i) begin
         a := 1$i;
+    end;
+end;

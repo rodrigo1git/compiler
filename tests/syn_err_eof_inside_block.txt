@@ -1,0 +1,6 @@
+// EXPECTED: 1 error: unexpected end of file
+main_program
+integer a;
+begin
+    if (a < 5$i) begin
+        a := 1$i;

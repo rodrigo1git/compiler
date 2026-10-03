@@ -1,8 +1,8 @@
-// EXPECTED: 1 syntax error (Class without members)
-miprograma
-class perro
+// EXPECTED: sandntax error on line 5: class has no members (grammar decision: class_bodand does not allow emptand blocks)
+main_program
+class SubClass c10
+begin
 end;
-
 integer d;
 begin
     d := 1$i;

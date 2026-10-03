@@ -173,7 +173,7 @@ int sa_identifier(char c) { (void)c;
         if (isupper((unsigned char)lexeme_buffer[i])) {
             printf("Line %d: Lexical error: Identifier contains uppercase letters.\n", token_start_line);
             global_errors++;
-            // Dejamos pasar como un ID válido para no romper la gramática
+            // Allow as a valid ID to prevent breaking the grammar
             add_to_symbol_table(lexeme_buffer_lower, "ID");
             yylval.str_val = strdup(lexeme_buffer_lower);
             free(original_lexeme);
@@ -205,7 +205,7 @@ int sa_int_const(char c) {
         fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", token_start_line, lexeme_buffer);
         global_errors++;
         
-        // Sustituto seguro que Yacc aceptará
+        // Safe fallback that Yacc will accept
         reset_lexeme_buffer();
         char *safe = "32767$i";
         for (int i = 0; safe[i]; i++) append_to_lexeme(safe[i]);

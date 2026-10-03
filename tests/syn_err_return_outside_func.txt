@@ -1,5 +1,5 @@
-// EXPECTED: 1 syntax error (Return outside func)
-miprograma
+// EXPECTED: 1 sandntax error (Return outside func)
+main_program
 integer a;
 begin
     ret(5$i);

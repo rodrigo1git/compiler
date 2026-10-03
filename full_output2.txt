@@ -1,0 +1,2801 @@
+==================================================
+       CONJUNTO DE PRUEBAS DEL COMPILADOR          
+==================================================
+
+--------------------------------------------------
+Ejecutando: tests/lex_01_out_of_range.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 5 range errors, on lines 8, 9, 10, 12 and 14. Lines 6, 7, 11 and 13 are valid.
+main_program
+singlef f;
+integer x;
+begin
+    x := 32767$i;
+    x := -32768$i;
+    x := 32768$i;
+    x := 32769$i;
+    x := -32769$i;
+    f := 3.4s+38;
+    f := 3.5s+38;
+    f := 1.2s-38;
+    f := 1.0s-39;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 8: Lexical error: Positive constant out of range
+Line 9: Lexical error: Integer constant '32769$i' out of range
+Line 10: Lexical error: Integer constant '32769$i' out of range
+Line 12: Lexical error: Float constant '3.5s+38' out of range
+Line 14: Lexical error: Float constant '1.0s-39' out of range
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 262 | Lexeme: "singlef" | Line: 3
+[LEX] Token: 258 | Lexeme: "f" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "x" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[SYNTAX] Line 4: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "x" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 45 | Lexeme: "-" | Line: 7
+[LEX] Token: 260 | Lexeme: "32768$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 8
+[LEX] Token: 281 | Lexeme: ":=" | Line: 8
+[LEX] Token: 260 | Lexeme: "32768$i" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 10
+[LEX] Token: 281 | Lexeme: ":=" | Line: 10
+[LEX] Token: 45 | Lexeme: "-" | Line: 10
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Assignment
+[LEX] Token: 258 | Lexeme: "f" | Line: 11
+[LEX] Token: 281 | Lexeme: ":=" | Line: 11
+[LEX] Token: 260 | Lexeme: "3.4s+38" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+[SYNTAX] Line 11: Assignment
+[LEX] Token: 258 | Lexeme: "f" | Line: 12
+[LEX] Token: 281 | Lexeme: ":=" | Line: 12
+[LEX] Token: 260 | Lexeme: "1.0" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Assignment
+[LEX] Token: 258 | Lexeme: "f" | Line: 13
+[LEX] Token: 281 | Lexeme: ":=" | Line: 13
+[LEX] Token: 260 | Lexeme: "1.2s-38" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+[SYNTAX] Line 13: Assignment
+[LEX] Token: 258 | Lexeme: "f" | Line: 14
+[LEX] Token: 281 | Lexeme: ":=" | Line: 14
+[LEX] Token: 260 | Lexeme: "1.0" | Line: 14
+[LEX] Token: 59 | Lexeme: ";" | Line: 14
+[SYNTAX] Line 14: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+Compilation failed with 5 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: f | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1.2s-38 | Tandpe: SINGLEF
+Lexeme: 3.4s+38 | Tandpe: SINGLEF
+Lexeme: 1.0 | Tandpe: SINGLEF
+Lexeme: 1.0 | Tandpe: SINGLEF
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: -32767$i | Tandpe: INTEGER
+Lexeme: 32768$i | Tandpe: INTEGER
+Lexeme: 32768$i | Tandpe: INTEGER
+Lexeme: -32768$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_02_invalid_character.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 lexical error on line 5 due to the character '@'
+main_program
+integer x;
+begin
+    invalid_@variable := 10$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Lexical error: Invalid character '@'
+Line 5: Sandntax error: Unexpected TOKEN_LEX_ERROR, expecting TOKEN_ASSIGN or '['
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "invalid_" | Line: 5
+[LEX] Token: 280 | Lexeme: "invalid_" | Line: 5
+[LEX] Token: 258 | Lexeme: "variable" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Compilation failed with 1 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: invalid_ | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: variable | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_03_reserved_words.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful (tolowers to valid keandword)
+main_program
+integer x;
+begin
+    IF (x < 1$i) begin // El lexer aplica tolower, IF -> if (reserved keandword)
+        x := 2$i;
+    end end_if;
+    if (x > 1$i) begin // Lowercase (both must compile cleanland)
+        x := 2$i;
+    end end_if;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 265 | Lexeme: "IF" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "x" | Line: 5
+[LEX] Token: 60 | Lexeme: "<" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "x" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: IF statement
+[LEX] Token: 265 | Lexeme: "if" | Line: 8
+[LEX] Token: 40 | Lexeme: "(" | Line: 8
+[LEX] Token: 258 | Lexeme: "x" | Line: 8
+[LEX] Token: 62 | Lexeme: ">" | Line: 8
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 8
+[LEX] Token: 41 | Lexeme: ")" | Line: 8
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "x" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: IF statement
+[LEX] Token: 264 | Lexeme: "end" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_04_comments.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a;
+begin
+    // Valid comment
+    a := 1$i;
+end;
+// este comentario termina al EOF and le falta salto de linea
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_05a_string_multiline.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful. La cadena ocupa 2 lineas and en la tabla de simbolos queda como: test_string
+main_program
+integer x;
+begin
+    pout("hola
+mundo");
+    x := 5$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 276 | Lexeme: "pout" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 259 | Lexeme: "test_string" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 258 | Lexeme: "x" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: test_string | Tandpe: CHAIN
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_05b_string_unclosed.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 lexical error on line 7 (unclosed string) + 1 sandntax error due to unexpected end of file
+main_program
+integer x;
+begin
+    pout("Esta cadena es valida");
+    x := 5$i;
+    pout("Esta cadena nunca se cierra);
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 7: Lexical error: Unclosed string literal
+Line 10: Sandntax error: Unexpected end of file, expecting TOKEN_ID or TOKEN_CHAIN or TOKEN_CONST or TOKEN_TOI or '-'
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 276 | Lexeme: "pout" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 259 | Lexeme: "Esta cadena es valida" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[SYNTAX] Line 5: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 258 | Lexeme: "x" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 276 | Lexeme: "pout" | Line: 7
+[LEX] Token: 40 | Lexeme: "(" | Line: 7
+Compilation failed with 0 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: Esta cadena es valida | Tandpe: CHAIN
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_06_long_identifier.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Warning truncated
+main_program
+integer exact_limit_identifier;
+integer invalid_length_too_long;
+begin
+    exact_limit_identifier := 1$i;
+    invalid_length_too_long := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "exact_limit_identifier" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+Line 4: Warning: Identifier 'invalid_length_too_long' was truncated to: 'identificador_de_23_ma'.
+[LEX] Token: 258 | Lexeme: "identificador_de_23_ma" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[SYNTAX] Line 4: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "exact_limit_identifier" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+Line 7: Warning: Identifier 'invalid_length_too_long' was truncated to: 'identificador_de_23_ma'.
+[LEX] Token: 258 | Lexeme: "identificador_de_23_ma" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: exact_limit_identifier | Tandpe: ID
+Lexeme: exact_limit_identifier | Tandpe: ID
+Lexeme: identificador_de_23_ma | Tandpe: ID
+Lexeme: identificador_de_23_ma | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/lex_tp1_coverage.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+singlef float_no_int;
+singlef float_int;
+singlef float_exp_pos;
+singlef float_exp_neg;
+integer bound_min;
+integer bound_max;
+begin
+    float_no_int := .6;
+    float_int := 15.2;
+    float_exp_pos := 1.2s+10;
+    float_exp_neg := 1.2s-10;
+    bound_min := -32768$i;
+    bound_max := 32767$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 262 | Lexeme: "singlef" | Line: 3
+[LEX] Token: 258 | Lexeme: "float_no_int" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 262 | Lexeme: "singlef" | Line: 4
+[LEX] Token: 258 | Lexeme: "float_int" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[SYNTAX] Line 4: Variable declaration
+[LEX] Token: 262 | Lexeme: "singlef" | Line: 5
+[LEX] Token: 258 | Lexeme: "float_exp_pos" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Variable declaration
+[LEX] Token: 262 | Lexeme: "singlef" | Line: 6
+[LEX] Token: 258 | Lexeme: "float_exp_neg" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 7
+[LEX] Token: 258 | Lexeme: "bound_min" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 8
+[LEX] Token: 258 | Lexeme: "bound_max" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 9
+[LEX] Token: 258 | Lexeme: "float_no_int" | Line: 10
+[LEX] Token: 281 | Lexeme: ":=" | Line: 10
+[LEX] Token: 260 | Lexeme: ".6" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Assignment
+[LEX] Token: 258 | Lexeme: "float_int" | Line: 11
+[LEX] Token: 281 | Lexeme: ":=" | Line: 11
+[LEX] Token: 260 | Lexeme: "15.2" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+[SYNTAX] Line 11: Assignment
+[LEX] Token: 258 | Lexeme: "float_exp_pos" | Line: 12
+[LEX] Token: 281 | Lexeme: ":=" | Line: 12
+[LEX] Token: 260 | Lexeme: "1.2s+10" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Assignment
+[LEX] Token: 258 | Lexeme: "float_exp_neg" | Line: 13
+[LEX] Token: 281 | Lexeme: ":=" | Line: 13
+[LEX] Token: 260 | Lexeme: "1.2s-10" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+[SYNTAX] Line 13: Assignment
+[LEX] Token: 258 | Lexeme: "bound_min" | Line: 14
+[LEX] Token: 281 | Lexeme: ":=" | Line: 14
+[LEX] Token: 45 | Lexeme: "-" | Line: 14
+[LEX] Token: 260 | Lexeme: "32768$i" | Line: 14
+[LEX] Token: 59 | Lexeme: ";" | Line: 14
+[SYNTAX] Line 14: Assignment
+[LEX] Token: 258 | Lexeme: "bound_max" | Line: 15
+[LEX] Token: 281 | Lexeme: ":=" | Line: 15
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[SYNTAX] Line 15: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: bound_min | Tandpe: ID
+Lexeme: bound_min | Tandpe: ID
+Lexeme: bound_max | Tandpe: ID
+Lexeme: bound_max | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: float_no_int | Tandpe: ID
+Lexeme: float_no_int | Tandpe: ID
+Lexeme: float_exp_pos | Tandpe: ID
+Lexeme: float_exp_pos | Tandpe: ID
+Lexeme: float_int | Tandpe: ID
+Lexeme: float_int | Tandpe: ID
+Lexeme: .6 | Tandpe: SINGLEF
+Lexeme: 1.2s+10 | Tandpe: SINGLEF
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: float_exp_neg | Tandpe: ID
+Lexeme: float_exp_neg | Tandpe: ID
+Lexeme: 15.2 | Tandpe: SINGLEF
+Lexeme: 32768$i | Tandpe: INTEGER
+Lexeme: -32768$i | Tandpe: INTEGER
+Lexeme: 1.2s-10 | Tandpe: SINGLEF
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_deep_error_diagnostics.txt
+Contenido de la prueba and error esperado:
+// =========================================
+// TEST: Diagnosticos de errores sintacticos and semanticos
+//       Verifies malformed lists, ret without parameter,
+//       attributes without expression, incomplete conditions,
+//       out of range constants and falta de delimitador ';'.
+// EXPECTED: 7 errores sintacticos/de rango en las lineas 11, 15, 19, 21, 25, 26 and 29. Parsing does not abort.
+// =========================================
+
+miprogramaotros
+integer x, and;
+integer a, ;
+
+integer function prueba(integer p)
+begin
+    ret();
+end;
+
+begin
+    obj[1$i] = ;
+
+    if (x >= )
+        x := 1$i;
+    end_if;
+
+    x := 35000$i;
+    and := -40000$i;
+
+    x := 10$i
+    and := 20$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 11: Sandntax error: Unexpected ';', expecting TOKEN_ID
+Line 15: Sandntax error: Unexpected ')', expecting TOKEN_ID or TOKEN_CHAIN or TOKEN_CONST or TOKEN_TOI or '-'
+Line 19: Sandntax error: Missing expression in attribute assignment
+Line 21: Sandntax error: Incomplete condition (missing operand)
+Line 25: Lexical error: Integer constant '35000$i' out of range
+Line 26: Lexical error: Integer constant '40000$i' out of range
+Line 29: Sandntax error: Unexpected TOKEN_ID, expecting ';' or '+' or '-' or '*' or '/'
+Line 29: Sandntax error: Unexpected TOKEN_ID, expecting ';'
+[LEX] Token: 258 | Lexeme: "miprogramaotros" | Line: 9
+[LEX] Token: 261 | Lexeme: "integer" | Line: 10
+[LEX] Token: 258 | Lexeme: "x" | Line: 10
+[LEX] Token: 44 | Lexeme: "," | Line: 10
+[LEX] Token: 258 | Lexeme: "and" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 11
+[LEX] Token: 258 | Lexeme: "a" | Line: 11
+[LEX] Token: 44 | Lexeme: "," | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+[LEX] Token: 261 | Lexeme: "integer" | Line: 13
+[LEX] Token: 272 | Lexeme: "function" | Line: 13
+[LEX] Token: 258 | Lexeme: "prueba" | Line: 13
+[LEX] Token: 40 | Lexeme: "(" | Line: 13
+[LEX] Token: 261 | Lexeme: "integer" | Line: 13
+[LEX] Token: 258 | Lexeme: "p" | Line: 13
+[LEX] Token: 41 | Lexeme: ")" | Line: 13
+[LEX] Token: 263 | Lexeme: "begin" | Line: 14
+[LEX] Token: 277 | Lexeme: "ret" | Line: 15
+[LEX] Token: 40 | Lexeme: "(" | Line: 15
+[LEX] Token: 41 | Lexeme: ")" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[LEX] Token: 264 | Lexeme: "end" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+[SYNTAX] Line 16: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 18
+[LEX] Token: 258 | Lexeme: "obj" | Line: 19
+[LEX] Token: 91 | Lexeme: "[" | Line: 19
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 19
+[LEX] Token: 93 | Lexeme: "]" | Line: 19
+[LEX] Token: 61 | Lexeme: "=" | Line: 19
+[LEX] Token: 59 | Lexeme: ";" | Line: 19
+[LEX] Token: 265 | Lexeme: "if" | Line: 21
+[LEX] Token: 40 | Lexeme: "(" | Line: 21
+[LEX] Token: 258 | Lexeme: "x" | Line: 21
+[LEX] Token: 285 | Lexeme: ">=" | Line: 21
+[LEX] Token: 41 | Lexeme: ")" | Line: 21
+[LEX] Token: 258 | Lexeme: "x" | Line: 22
+[LEX] Token: 281 | Lexeme: ":=" | Line: 22
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 22
+[LEX] Token: 59 | Lexeme: ";" | Line: 22
+[SYNTAX] Line 22: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 23
+[LEX] Token: 59 | Lexeme: ";" | Line: 23
+[LEX] Token: 258 | Lexeme: "x" | Line: 25
+[LEX] Token: 281 | Lexeme: ":=" | Line: 25
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 25
+[LEX] Token: 59 | Lexeme: ";" | Line: 25
+[SYNTAX] Line 25: Assignment
+[LEX] Token: 258 | Lexeme: "and" | Line: 26
+[LEX] Token: 281 | Lexeme: ":=" | Line: 26
+[LEX] Token: 45 | Lexeme: "-" | Line: 26
+[LEX] Token: 260 | Lexeme: "32767$i" | Line: 26
+[LEX] Token: 59 | Lexeme: ";" | Line: 26
+[SYNTAX] Line 26: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 28
+[LEX] Token: 281 | Lexeme: ":=" | Line: 28
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 28
+[LEX] Token: 258 | Lexeme: "and" | Line: 29
+[LEX] Token: 281 | Lexeme: ":=" | Line: 29
+[LEX] Token: 260 | Lexeme: "20$i" | Line: 29
+[LEX] Token: 59 | Lexeme: ";" | Line: 29
+[LEX] Token: 264 | Lexeme: "end" | Line: 30
+[LEX] Token: 59 | Lexeme: ";" | Line: 30
+Compilation failed with 2 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: obj | Tandpe: ID
+Lexeme: miprogramaotros | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: 32767$i | Tandpe: INTEGER
+Lexeme: prueba | Tandpe: ID
+Lexeme: -32767$i | Tandpe: INTEGER
+Lexeme: 20$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_assign_invocation.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 2 errores sintacticos on line 6 (1 primarand error + 1 cascading error). Parsing successful.
+main_program
+integer a, b;
+integer function mi_func(integer x) begin ret(1$i); end;
+begin
+    a := b = mi_func(1$i)[1$i];
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 6: Sandntax error: Unexpected '(', expecting ';' or '+' or '-' or '*' or '/' or '='
+Line 6: Sandntax error: Unexpected '(', expecting ';'
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "b" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 272 | Lexeme: "function" | Line: 4
+[LEX] Token: 258 | Lexeme: "mi_func" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "x" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 277 | Lexeme: "ret" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[SYNTAX] Line 4: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[LEX] Token: 264 | Lexeme: "end" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[SYNTAX] Line 4: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 258 | Lexeme: "b" | Line: 6
+[LEX] Token: 61 | Lexeme: "=" | Line: 6
+[LEX] Token: 258 | Lexeme: "mi_func" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[LEX] Token: 91 | Lexeme: "[" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 93 | Lexeme: "]" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: mi_func | Tandpe: ID
+Lexeme: mi_func | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_class_missing_begin.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error on line 4: missing 'begin' in class declaration
+main_program
+class SubClass c10
+end;
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 4: Sandntax error: Unexpected TOKEN_END, expecting TOKEN_BEGIN
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 273 | Lexeme: "class" | Line: 3
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 3
+[LEX] Token: 258 | Lexeme: "c10" | Line: 3
+[LEX] Token: 264 | Lexeme: "end" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 5
+[LEX] Token: 258 | Lexeme: "d" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 6
+[LEX] Token: 258 | Lexeme: "d" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: c10 | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_class_missing_bodand.txt
+Contenido de la prueba and error esperado:
+// EXPECTED (tema 24): 1 sandntax error on line 4: missing code after class name. Fails until the grammar is fixed.
+main_program
+class SubClass
+begin
+    integer attr_val;
+end;
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 4: Sandntax error: Unexpected TOKEN_BEGIN, expecting TOKEN_ID
+Line 6: Sandntax error: Unexpected TOKEN_END, expecting TOKEN_ID or TOKEN_INTEGER or TOKEN_SINGLEF or TOKEN_BEGIN or TOKEN_CLASS or TOKEN_COMPTIME
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 273 | Lexeme: "class" | Line: 3
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 5
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 261 | Lexeme: "integer" | Line: 7
+[LEX] Token: 258 | Lexeme: "d" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "d" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: attr_val | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_class_no_members.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: sandntax error on line 5: class has no members (grammar decision: class_bodand does not allow emptand blocks)
+main_program
+class SubClass c10
+begin
+end;
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected TOKEN_END, expecting TOKEN_ID or TOKEN_INTEGER or TOKEN_SINGLEF or TOKEN_COMPTIME or TOKEN_EXTENDS
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 273 | Lexeme: "class" | Line: 3
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 3
+[LEX] Token: 258 | Lexeme: "c10" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 264 | Lexeme: "end" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 261 | Lexeme: "integer" | Line: 6
+[LEX] Token: 258 | Lexeme: "d" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 7
+[LEX] Token: 258 | Lexeme: "d" | Line: 8
+[LEX] Token: 281 | Lexeme: ":=" | Line: 8
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: c10 | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_comptime_no_tandpe.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (COMPTIME without tandpe)
+main_program
+comptime c_var;
+
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 3: Sandntax error: Unexpected ';', expecting TOKEN_ID
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 278 | Lexeme: "comptime" | Line: 3
+[LEX] Token: 258 | Lexeme: "c_var" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[LEX] Token: 261 | Lexeme: "integer" | Line: 5
+[LEX] Token: 258 | Lexeme: "d" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 6
+[LEX] Token: 258 | Lexeme: "d" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: c_var | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_eof_inside_block.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 error: unexpected end of file
+main_program
+integer a;
+begin
+    if (a < 5$i) begin
+        a := 1$i;
+
+--- SALIDA DEL COMPILADOR ---
+Line 8: Sandntax error: Unexpected end of file, expecting TOKEN_ID or TOKEN_END or TOKEN_IF or TOKEN_FROM or TOKEN_POUT or TOKEN_POUT_LOWER
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 265 | Lexeme: "if" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 60 | Lexeme: "<" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+Compilation failed with 0 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_from_no_id.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 2 errores sintacticos on lines 5 and 8 (1 primarand error + 1 cascading error). Failed at file closure.
+main_program
+integer a;
+begin
+    from := 1$i to 10$i band 1$i repeat begin
+        a := a + 1$i;
+    end;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected TOKEN_ASSIGN, expecting TOKEN_ID
+Line 8: Sandntax error: Unexpected TOKEN_END, expecting end of file
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 268 | Lexeme: "from" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 269 | Lexeme: "to" | Line: 5
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 5
+[LEX] Token: 270 | Lexeme: "band" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 271 | Lexeme: "repeat" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 43 | Lexeme: "+" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+Compilation failed with 0 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_incomplete_condition.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (Incomplete condition)
+main_program
+integer function test(integer x)
+begin
+    if (x < ) begin
+        pout(x);
+    end end_if;
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Incomplete condition (missing operand)
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 272 | Lexeme: "function" | Line: 3
+[LEX] Token: 258 | Lexeme: "test" | Line: 3
+[LEX] Token: 40 | Lexeme: "(" | Line: 3
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 41 | Lexeme: ")" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 265 | Lexeme: "if" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "x" | Line: 5
+[LEX] Token: 60 | Lexeme: "<" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 276 | Lexeme: "pout" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 258 | Lexeme: "x" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Function definition
+[LEX] Token: 261 | Lexeme: "integer" | Line: 10
+[LEX] Token: 258 | Lexeme: "d" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 11
+[LEX] Token: 258 | Lexeme: "d" | Line: 12
+[LEX] Token: 281 | Lexeme: ":=" | Line: 12
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: test | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_end_if.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error on line 7: despues de 'end' se esperaba 'else' o 'end_if'
+main_program
+integer a;
+begin
+    if (a < 5$i) begin
+        a := 1$i;
+    end;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 7: Sandntax error: Unexpected ';', expecting TOKEN_END_IF or TOKEN_ELSE
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 265 | Lexeme: "if" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 60 | Lexeme: "<" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_func_name.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 2 errores sintacticos on lines 3 and 6 (1 primarand error + 1 cascading error). Parsing successful.
+main_program
+integer function (integer x)
+begin
+    ret(1$i);
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 3: Sandntax error: Unexpected '(', expecting TOKEN_ID
+Line 6: Sandntax error: Unexpected TOKEN_END, expecting TOKEN_ID or TOKEN_INTEGER or TOKEN_SINGLEF or TOKEN_BEGIN or TOKEN_CLASS or TOKEN_COMPTIME
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 272 | Lexeme: "function" | Line: 3
+[LEX] Token: 40 | Lexeme: "(" | Line: 3
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 41 | Lexeme: ")" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 277 | Lexeme: "ret" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 261 | Lexeme: "integer" | Line: 8
+[LEX] Token: 258 | Lexeme: "d" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 9
+[LEX] Token: 258 | Lexeme: "d" | Line: 10
+[LEX] Token: 281 | Lexeme: ":=" | Line: 10
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_param.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error on line 6: falta parametro despues de ','
+main_program
+integer a;
+integer function test(integer x) begin ret(x); end;
+begin
+    a := test(a, )[1$i];
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 6: Sandntax error: Missing parameter or argument after ','
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 272 | Lexeme: "function" | Line: 4
+[LEX] Token: 258 | Lexeme: "test" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "x" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 277 | Lexeme: "ret" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 258 | Lexeme: "x" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[SYNTAX] Line 4: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[LEX] Token: 264 | Lexeme: "end" | Line: 4
+[LEX] Token: 59 | Lexeme: ";" | Line: 4
+[SYNTAX] Line 4: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 258 | Lexeme: "test" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 44 | Lexeme: "," | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[LEX] Token: 91 | Lexeme: "[" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 93 | Lexeme: "]" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: test | Tandpe: ID
+Lexeme: test | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_parenthesis.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (Missing parenthesis in ret)
+main_program
+integer function test(integer x)
+begin
+    ret 5$i;
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected TOKEN_CONST, expecting '('
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 272 | Lexeme: "function" | Line: 3
+[LEX] Token: 258 | Lexeme: "test" | Line: 3
+[LEX] Token: 40 | Lexeme: "(" | Line: 3
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "x" | Line: 3
+[LEX] Token: 41 | Lexeme: ")" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 277 | Lexeme: "ret" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Function definition
+[LEX] Token: 261 | Lexeme: "integer" | Line: 8
+[LEX] Token: 258 | Lexeme: "d" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 9
+[LEX] Token: 258 | Lexeme: "d" | Line: 10
+[LEX] Token: 281 | Lexeme: ":=" | Line: 10
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: test | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_program_end.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (Missing end of program)
+main_program
+integer a;
+begin
+    a := 1$i;
+// Missing end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 8: Sandntax error: Unexpected end of file, expecting TOKEN_ID or TOKEN_END or TOKEN_IF or TOKEN_FROM or TOKEN_POUT or TOKEN_POUT_LOWER
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Assignment
+Compilation failed with 0 errors.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_missing_right_operand.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (Missing right operand)
+main_program
+integer a;
+begin
+    a := 5$i + ;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected ';', expecting TOKEN_ID or TOKEN_CHAIN or TOKEN_CONST or TOKEN_TOI or '-'
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 43 | Lexeme: "+" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_pout_no_arg.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (POUT without argument)
+main_program
+integer a;
+begin
+    pout();
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected ')', expecting TOKEN_ID or TOKEN_CHAIN or TOKEN_CONST or TOKEN_TOI or '-'
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 276 | Lexeme: "pout" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_return_outside_func.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: 1 sandntax error (Return outside func)
+main_program
+integer a;
+begin
+    ret(5$i);
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Return statement not allowed outside of a function
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 277 | Lexeme: "ret" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_topic18_assignment.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: al menos 1 sandntax error en cada linea marcada (4, 5, 6 and 7)
+main_program
+integer a, b, c, d;
+begin
+    a := b:=2$i;
+    a=b=2$i+d;
+    a := b+c:=4$i;
+    if (a:=3$i==3$i)
+        a := 1$i;
+    end_if;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 5: Sandntax error: Unexpected TOKEN_ASSIGN, expecting ';' or '+' or '-' or '*' or '/' or '=' or '(' or '['
+Line 5: Sandntax error: Unexpected TOKEN_ASSIGN, expecting ';'
+Line 6: Sandntax error: Unexpected '=', expecting TOKEN_ASSIGN or '['
+Line 7: Sandntax error: Unexpected TOKEN_ASSIGN, expecting ';' or '+' or '-' or '*' or '/' or '=' or '(' or '['
+Line 7: Sandntax error: Unexpected TOKEN_ASSIGN, expecting ';'
+Line 8: Sandntax error: Unexpected TOKEN_ASSIGN, expecting TOKEN_EQUAL or TOKEN_NOT_EQUAL or TOKEN_LESS_EQUAL or TOKEN_GREATER_EQUAL or '+' or '-' or '*' or '/' ... (and 5 more)
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "b" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "c" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "d" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 258 | Lexeme: "b" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 61 | Lexeme: "=" | Line: 6
+[LEX] Token: 258 | Lexeme: "b" | Line: 6
+[LEX] Token: 61 | Lexeme: "=" | Line: 6
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 6
+[LEX] Token: 43 | Lexeme: "+" | Line: 6
+[LEX] Token: 258 | Lexeme: "d" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 258 | Lexeme: "a" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 258 | Lexeme: "b" | Line: 7
+[LEX] Token: 43 | Lexeme: "+" | Line: 7
+[LEX] Token: 258 | Lexeme: "c" | Line: 7
+[LEX] Token: 281 | Lexeme: ":=" | Line: 7
+[LEX] Token: 260 | Lexeme: "4$i" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[LEX] Token: 265 | Lexeme: "if" | Line: 8
+[LEX] Token: 40 | Lexeme: "(" | Line: 8
+[LEX] Token: 258 | Lexeme: "a" | Line: 8
+[LEX] Token: 281 | Lexeme: ":=" | Line: 8
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 8
+[LEX] Token: 282 | Lexeme: "==" | Line: 8
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 8
+[LEX] Token: 41 | Lexeme: ")" | Line: 8
+[LEX] Token: 258 | Lexeme: "a" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[LEX] Token: 264 | Lexeme: "end" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 4$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_err_topic24_missing_code.txt
+Contenido de la prueba and error esperado:
+// EXPECTED (tema 24): 1 sandntax error on line 4: missing code after class name. Fails until the grammar is fixed.
+main_program
+class SubClass
+begin
+    integer attr_val;
+end;
+integer d;
+begin
+    d := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 4: Sandntax error: Unexpected TOKEN_BEGIN, expecting TOKEN_ID
+Line 6: Sandntax error: Unexpected TOKEN_END, expecting TOKEN_ID or TOKEN_INTEGER or TOKEN_SINGLEF or TOKEN_BEGIN or TOKEN_CLASS or TOKEN_COMPTIME
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 273 | Lexeme: "class" | Line: 3
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 5
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 261 | Lexeme: "integer" | Line: 7
+[LEX] Token: 258 | Lexeme: "d" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "d" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: attr_val | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_full_error_recoverand.txt
+Contenido de la prueba and error esperado:
+// =========================================
+// TEST: Recuperacion de errores sintacticos and aislamiento de retorno
+//       Verifies that the compiler reports specific errors on
+//       la linea exacta and continue la ejecucion sin abortar.
+// EXPECTED: 5 errores en las lineas 12, 19, 24, 27 and 30. Parsing does not abort.
+// =========================================
+
+miprogramaerrores
+integer x;
+
+// Parameter Declaration Error Test
+integer function rota(integer a, )
+begin
+    pout(a);
+end;
+
+begin
+    // 1. Malformed condition error (Deep recoverand in IF statements)
+    if (x < )
+        x := 1$i;
+    end_if;
+
+    // 2. False ';' error due to lexical discard (Missing right-hand side)
+    x := ;
+
+    // 3. Invalid function arguments (Recoverand with expected tokens)
+    x := calcular(x, , 5$i)[1$i, 2$i];
+
+    // 4. Forbidden return (Outside function context)
+    ret(1$i);
+
+end;
+
+--- SALIDA DEL COMPILADOR ---
+Line 12: Sandntax error: Missing parameter or argument after ','
+Line 19: Sandntax error: Incomplete condition (missing operand)
+Line 24: Sandntax error: Missing expression in assignment
+Line 27: Sandntax error: Unexpected ',', expecting TOKEN_ID or TOKEN_CHAIN or TOKEN_CONST or TOKEN_TOI or '-'
+Line 30: Sandntax error: Return statement not allowed outside of a function
+[LEX] Token: 258 | Lexeme: "miprogramaerrores" | Line: 8
+[LEX] Token: 261 | Lexeme: "integer" | Line: 9
+[LEX] Token: 258 | Lexeme: "x" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 12
+[LEX] Token: 272 | Lexeme: "function" | Line: 12
+[LEX] Token: 258 | Lexeme: "rota" | Line: 12
+[LEX] Token: 40 | Lexeme: "(" | Line: 12
+[LEX] Token: 261 | Lexeme: "integer" | Line: 12
+[LEX] Token: 258 | Lexeme: "a" | Line: 12
+[LEX] Token: 44 | Lexeme: "," | Line: 12
+[LEX] Token: 41 | Lexeme: ")" | Line: 12
+[LEX] Token: 263 | Lexeme: "begin" | Line: 13
+[LEX] Token: 276 | Lexeme: "pout" | Line: 14
+[LEX] Token: 40 | Lexeme: "(" | Line: 14
+[LEX] Token: 258 | Lexeme: "a" | Line: 14
+[LEX] Token: 41 | Lexeme: ")" | Line: 14
+[SYNTAX] Line 14: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 14
+[LEX] Token: 264 | Lexeme: "end" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[LEX] Token: 263 | Lexeme: "begin" | Line: 17
+[LEX] Token: 265 | Lexeme: "if" | Line: 19
+[LEX] Token: 40 | Lexeme: "(" | Line: 19
+[LEX] Token: 258 | Lexeme: "x" | Line: 19
+[LEX] Token: 60 | Lexeme: "<" | Line: 19
+[LEX] Token: 41 | Lexeme: ")" | Line: 19
+[LEX] Token: 258 | Lexeme: "x" | Line: 20
+[LEX] Token: 281 | Lexeme: ":=" | Line: 20
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 20
+[LEX] Token: 59 | Lexeme: ";" | Line: 20
+[SYNTAX] Line 20: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 21
+[LEX] Token: 59 | Lexeme: ";" | Line: 21
+[LEX] Token: 258 | Lexeme: "x" | Line: 24
+[LEX] Token: 281 | Lexeme: ":=" | Line: 24
+[LEX] Token: 59 | Lexeme: ";" | Line: 24
+[LEX] Token: 258 | Lexeme: "x" | Line: 27
+[LEX] Token: 281 | Lexeme: ":=" | Line: 27
+[LEX] Token: 258 | Lexeme: "calcular" | Line: 27
+[LEX] Token: 40 | Lexeme: "(" | Line: 27
+[LEX] Token: 258 | Lexeme: "x" | Line: 27
+[LEX] Token: 44 | Lexeme: "," | Line: 27
+[LEX] Token: 44 | Lexeme: "," | Line: 27
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 27
+[LEX] Token: 41 | Lexeme: ")" | Line: 27
+[LEX] Token: 91 | Lexeme: "[" | Line: 27
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 27
+[LEX] Token: 44 | Lexeme: "," | Line: 27
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 27
+[LEX] Token: 93 | Lexeme: "]" | Line: 27
+[LEX] Token: 59 | Lexeme: ";" | Line: 27
+[SYNTAX] Line 27: Assignment
+[LEX] Token: 277 | Lexeme: "ret" | Line: 30
+[LEX] Token: 40 | Lexeme: "(" | Line: 30
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 30
+[LEX] Token: 41 | Lexeme: ")" | Line: 30
+[LEX] Token: 59 | Lexeme: ";" | Line: 30
+[LEX] Token: 264 | Lexeme: "end" | Line: 32
+[LEX] Token: 59 | Lexeme: ";" | Line: 32
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: rota | Tandpe: ID
+Lexeme: miprogramaerrores | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: calcular | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_full_valid_program.txt
+Contenido de la prueba and error esperado:
+// =========================================
+// TEST: Programa completo sintacticamente valido
+//       Cubre declaracion de clases, herencia multiple (Tema 32),
+//       metodos, funciones, retorno anidado en IF,
+//       invocaciones con orden de evaluacion (Tema 19),
+//       asignaciones en expresiones (Tema 18) and
+//       acceso posicional a atributos (Tema 29).
+// EXPECTED: Parsing successful (0 errores)
+// =========================================
+
+main_program
+integer x, and, z;
+
+class BaseClass c10
+begin
+    integer attr_val;
+end;
+
+class SubClass c11
+begin
+    integer raza;
+    
+    // Prueba de Herencia Multiple (Tema 32)
+    extends BaseClass, mascota; 
+    
+    integer ladrar(integer veces)
+    begin
+        pout(veces);
+        // Prueba de Return permitido dentro del metodo
+        ret(1$i);
+    end;
+end;
+
+integer function calcular(integer a, integer b)
+integer local;
+begin
+    if (a < b)
+        // Prueba de Return anidado dentro del IF de una funcion
+        ret(a);
+    end_if;
+    ret(b);
+end;
+
+begin
+    x := 10$i;
+    
+    // Prueba de Invocacion con orden de evaluacion obligatorio (Tema 19)
+    and := calcular(x, 5$i)[1$i, 2$i];
+    
+    // Prueba de Asignacion en expresiones (Tema 18)
+    z := x = 2$i + and;
+    
+    // Prueba de Acceso posicional a atributos en lectura and escritura (Tema 29)
+    x := obj[1$i] + 10$i;
+    obj[x] = 20$i;
+
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 11
+[LEX] Token: 261 | Lexeme: "integer" | Line: 12
+[LEX] Token: 258 | Lexeme: "x" | Line: 12
+[LEX] Token: 44 | Lexeme: "," | Line: 12
+[LEX] Token: 258 | Lexeme: "and" | Line: 12
+[LEX] Token: 44 | Lexeme: "," | Line: 12
+[LEX] Token: 258 | Lexeme: "z" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Variable declaration
+[LEX] Token: 273 | Lexeme: "class" | Line: 14
+[LEX] Token: 258 | Lexeme: "BaseClass" | Line: 14
+[LEX] Token: 258 | Lexeme: "c10" | Line: 14
+[LEX] Token: 263 | Lexeme: "begin" | Line: 15
+[LEX] Token: 261 | Lexeme: "integer" | Line: 16
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+[SYNTAX] Line 16: Variable declaration
+[LEX] Token: 264 | Lexeme: "end" | Line: 17
+[LEX] Token: 59 | Lexeme: ";" | Line: 17
+[SYNTAX] Line 17: Class declaration (Tema 24)
+[LEX] Token: 273 | Lexeme: "class" | Line: 19
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 19
+[LEX] Token: 258 | Lexeme: "c11" | Line: 19
+[LEX] Token: 263 | Lexeme: "begin" | Line: 20
+[LEX] Token: 261 | Lexeme: "integer" | Line: 21
+[LEX] Token: 258 | Lexeme: "raza" | Line: 21
+[LEX] Token: 59 | Lexeme: ";" | Line: 21
+[SYNTAX] Line 21: Variable declaration
+[LEX] Token: 279 | Lexeme: "extends" | Line: 24
+[LEX] Token: 258 | Lexeme: "BaseClass" | Line: 24
+[LEX] Token: 44 | Lexeme: "," | Line: 24
+[LEX] Token: 258 | Lexeme: "mascota" | Line: 24
+[LEX] Token: 59 | Lexeme: ";" | Line: 24
+[SYNTAX] Line 24: Extends statement
+[LEX] Token: 261 | Lexeme: "integer" | Line: 26
+[LEX] Token: 258 | Lexeme: "ladrar" | Line: 26
+[LEX] Token: 40 | Lexeme: "(" | Line: 26
+[LEX] Token: 261 | Lexeme: "integer" | Line: 26
+[LEX] Token: 258 | Lexeme: "veces" | Line: 26
+[LEX] Token: 41 | Lexeme: ")" | Line: 26
+[LEX] Token: 263 | Lexeme: "begin" | Line: 27
+[LEX] Token: 276 | Lexeme: "pout" | Line: 28
+[LEX] Token: 40 | Lexeme: "(" | Line: 28
+[LEX] Token: 258 | Lexeme: "veces" | Line: 28
+[LEX] Token: 41 | Lexeme: ")" | Line: 28
+[SYNTAX] Line 28: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 28
+[LEX] Token: 277 | Lexeme: "ret" | Line: 30
+[LEX] Token: 40 | Lexeme: "(" | Line: 30
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 30
+[LEX] Token: 41 | Lexeme: ")" | Line: 30
+[SYNTAX] Line 30: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 30
+[LEX] Token: 264 | Lexeme: "end" | Line: 31
+[LEX] Token: 59 | Lexeme: ";" | Line: 31
+[SYNTAX] Line 31: Method definition
+[LEX] Token: 264 | Lexeme: "end" | Line: 32
+[LEX] Token: 59 | Lexeme: ";" | Line: 32
+[SYNTAX] Line 32: Class declaration (Tema 24)
+[LEX] Token: 261 | Lexeme: "integer" | Line: 34
+[LEX] Token: 272 | Lexeme: "function" | Line: 34
+[LEX] Token: 258 | Lexeme: "calcular" | Line: 34
+[LEX] Token: 40 | Lexeme: "(" | Line: 34
+[LEX] Token: 261 | Lexeme: "integer" | Line: 34
+[LEX] Token: 258 | Lexeme: "a" | Line: 34
+[LEX] Token: 44 | Lexeme: "," | Line: 34
+[LEX] Token: 261 | Lexeme: "integer" | Line: 34
+[LEX] Token: 258 | Lexeme: "b" | Line: 34
+[LEX] Token: 41 | Lexeme: ")" | Line: 34
+[LEX] Token: 261 | Lexeme: "integer" | Line: 35
+[LEX] Token: 258 | Lexeme: "local" | Line: 35
+[LEX] Token: 59 | Lexeme: ";" | Line: 35
+[SYNTAX] Line 35: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 36
+[LEX] Token: 265 | Lexeme: "if" | Line: 37
+[LEX] Token: 40 | Lexeme: "(" | Line: 37
+[LEX] Token: 258 | Lexeme: "a" | Line: 37
+[LEX] Token: 60 | Lexeme: "<" | Line: 37
+[LEX] Token: 258 | Lexeme: "b" | Line: 37
+[LEX] Token: 41 | Lexeme: ")" | Line: 37
+[LEX] Token: 277 | Lexeme: "ret" | Line: 39
+[LEX] Token: 40 | Lexeme: "(" | Line: 39
+[LEX] Token: 258 | Lexeme: "a" | Line: 39
+[LEX] Token: 41 | Lexeme: ")" | Line: 39
+[SYNTAX] Line 39: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 39
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 40
+[LEX] Token: 59 | Lexeme: ";" | Line: 40
+[SYNTAX] Line 40: IF statement
+[LEX] Token: 277 | Lexeme: "ret" | Line: 41
+[LEX] Token: 40 | Lexeme: "(" | Line: 41
+[LEX] Token: 258 | Lexeme: "b" | Line: 41
+[LEX] Token: 41 | Lexeme: ")" | Line: 41
+[SYNTAX] Line 41: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 41
+[LEX] Token: 264 | Lexeme: "end" | Line: 42
+[LEX] Token: 59 | Lexeme: ";" | Line: 42
+[SYNTAX] Line 42: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 44
+[LEX] Token: 258 | Lexeme: "x" | Line: 45
+[LEX] Token: 281 | Lexeme: ":=" | Line: 45
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 45
+[LEX] Token: 59 | Lexeme: ";" | Line: 45
+[SYNTAX] Line 45: Assignment
+[LEX] Token: 258 | Lexeme: "and" | Line: 48
+[LEX] Token: 281 | Lexeme: ":=" | Line: 48
+[LEX] Token: 258 | Lexeme: "calcular" | Line: 48
+[LEX] Token: 40 | Lexeme: "(" | Line: 48
+[LEX] Token: 258 | Lexeme: "x" | Line: 48
+[LEX] Token: 44 | Lexeme: "," | Line: 48
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 48
+[LEX] Token: 41 | Lexeme: ")" | Line: 48
+[LEX] Token: 91 | Lexeme: "[" | Line: 48
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 48
+[LEX] Token: 44 | Lexeme: "," | Line: 48
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 48
+[LEX] Token: 93 | Lexeme: "]" | Line: 48
+[LEX] Token: 59 | Lexeme: ";" | Line: 48
+[SYNTAX] Line 48: Assignment
+[LEX] Token: 258 | Lexeme: "z" | Line: 51
+[LEX] Token: 281 | Lexeme: ":=" | Line: 51
+[LEX] Token: 258 | Lexeme: "x" | Line: 51
+[LEX] Token: 61 | Lexeme: "=" | Line: 51
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 51
+[LEX] Token: 43 | Lexeme: "+" | Line: 51
+[LEX] Token: 258 | Lexeme: "and" | Line: 51
+[LEX] Token: 59 | Lexeme: ";" | Line: 51
+[SYNTAX] Line 51: Assignment
+[LEX] Token: 258 | Lexeme: "x" | Line: 54
+[LEX] Token: 281 | Lexeme: ":=" | Line: 54
+[LEX] Token: 258 | Lexeme: "obj" | Line: 54
+[LEX] Token: 91 | Lexeme: "[" | Line: 54
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 54
+[LEX] Token: 93 | Lexeme: "]" | Line: 54
+[LEX] Token: 43 | Lexeme: "+" | Line: 54
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 54
+[LEX] Token: 59 | Lexeme: ";" | Line: 54
+[SYNTAX] Line 54: Assignment
+[LEX] Token: 258 | Lexeme: "obj" | Line: 55
+[LEX] Token: 91 | Lexeme: "[" | Line: 55
+[LEX] Token: 258 | Lexeme: "x" | Line: 55
+[LEX] Token: 93 | Lexeme: "]" | Line: 55
+[LEX] Token: 61 | Lexeme: "=" | Line: 55
+[LEX] Token: 260 | Lexeme: "20$i" | Line: 55
+[LEX] Token: 59 | Lexeme: ";" | Line: 55
+[LEX] Token: 264 | Lexeme: "end" | Line: 57
+[LEX] Token: 59 | Lexeme: ";" | Line: 57
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: and | Tandpe: ID
+Lexeme: z | Tandpe: ID
+Lexeme: z | Tandpe: ID
+Lexeme: obj | Tandpe: ID
+Lexeme: obj | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: ladrar | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: raza | Tandpe: ID
+Lexeme: veces | Tandpe: ID
+Lexeme: veces | Tandpe: ID
+Lexeme: c10 | Tandpe: ID
+Lexeme: c11 | Tandpe: ID
+Lexeme: mascota | Tandpe: ID
+Lexeme: BaseClass | Tandpe: ID
+Lexeme: BaseClass | Tandpe: ID
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: calcular | Tandpe: ID
+Lexeme: calcular | Tandpe: ID
+Lexeme: local | Tandpe: ID
+Lexeme: 20$i | Tandpe: INTEGER
+Lexeme: attr_val | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_gen_02_punctuation.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a, b;
+begin
+    a := 1$i;
+    b := 2$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "b" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Assignment
+[LEX] Token: 258 | Lexeme: "b" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_gen_03_functions.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a;
+integer function mi_func(integer x)
+begin
+    ret(x + 1$i);
+end;
+begin
+    a := mi_func(5$i)[1$i];
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 272 | Lexeme: "function" | Line: 4
+[LEX] Token: 258 | Lexeme: "mi_func" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "x" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 277 | Lexeme: "ret" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 258 | Lexeme: "x" | Line: 6
+[LEX] Token: 43 | Lexeme: "+" | Line: 6
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "a" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 258 | Lexeme: "mi_func" | Line: 9
+[LEX] Token: 40 | Lexeme: "(" | Line: 9
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 9
+[LEX] Token: 41 | Lexeme: ")" | Line: 9
+[LEX] Token: 91 | Lexeme: "[" | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 93 | Lexeme: "]" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: mi_func | Tandpe: ID
+Lexeme: mi_func | Tandpe: ID
+Lexeme: 5$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_gen_04_expressions.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a;
+begin
+    a := 5$i + 3$i * 2$i / 1$i - 4$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 5
+[LEX] Token: 43 | Lexeme: "+" | Line: 5
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 5
+[LEX] Token: 42 | Lexeme: "*" | Line: 5
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 5
+[LEX] Token: 47 | Lexeme: "/" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 45 | Lexeme: "-" | Line: 5
+[LEX] Token: 260 | Lexeme: "4$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 4$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_gen_05_pout.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a;
+begin
+    pout(a);
+    pout("hola");
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 276 | Lexeme: "pout" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[SYNTAX] Line 5: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[LEX] Token: 276 | Lexeme: "pout" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 259 | Lexeme: "hola" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: POUT statement
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: hola | Tandpe: CHAIN
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_gen_06_flow_control.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer a, b;
+begin
+    if (a > b) begin
+        a := b;
+    end else begin
+        b := a;
+    end end_if;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "b" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 265 | Lexeme: "if" | Line: 5
+[LEX] Token: 40 | Lexeme: "(" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 5
+[LEX] Token: 62 | Lexeme: ">" | Line: 5
+[LEX] Token: 258 | Lexeme: "b" | Line: 5
+[LEX] Token: 41 | Lexeme: ")" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 258 | Lexeme: "b" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 267 | Lexeme: "else" | Line: 7
+[LEX] Token: 263 | Lexeme: "begin" | Line: 7
+[LEX] Token: 258 | Lexeme: "b" | Line: 8
+[LEX] Token: 281 | Lexeme: ":=" | Line: 8
+[LEX] Token: 258 | Lexeme: "a" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+[SYNTAX] Line 8: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 9
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: IF statement
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic14_iteration.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer i, a;
+begin
+    from i := 1$i to 10$i band 1$i repeat begin
+        a := a + i;
+    end;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "i" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 268 | Lexeme: "from" | Line: 5
+[LEX] Token: 258 | Lexeme: "i" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 269 | Lexeme: "to" | Line: 5
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 5
+[LEX] Token: 270 | Lexeme: "band" | Line: 5
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 5
+[LEX] Token: 271 | Lexeme: "repeat" | Line: 5
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 281 | Lexeme: ":=" | Line: 6
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 43 | Lexeme: "+" | Line: 6
+[LEX] Token: 258 | Lexeme: "i" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: FROM-REPEAT loop
+[LEX] Token: 264 | Lexeme: "end" | Line: 8
+[LEX] Token: 59 | Lexeme: ";" | Line: 8
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic18_assignment.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful (0 errores)
+main_program
+integer a, b, c, d, e;
+integer function f(integer p)
+begin
+    ret(p);
+end;
+begin
+    a := b=2$i;
+    c := f(a=3.0)[1$i];
+    a := b=c+d*e=c/3$i;
+    a := b=2$i+d;
+    a := b+c=4$i;
+    if (a=3$i==3$i)
+        a := 1$i;
+    end_if;
+    if (a=b!=3$i)
+        a := 1$i;
+    end_if;
+    if (a=b+c==3.1)
+        a := 1$i;
+    end_if;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "a" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "b" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "c" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "d" | Line: 3
+[LEX] Token: 44 | Lexeme: "," | Line: 3
+[LEX] Token: 258 | Lexeme: "e" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 272 | Lexeme: "function" | Line: 4
+[LEX] Token: 258 | Lexeme: "f" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "p" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 277 | Lexeme: "ret" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 258 | Lexeme: "p" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "a" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 258 | Lexeme: "b" | Line: 9
+[LEX] Token: 61 | Lexeme: "=" | Line: 9
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 258 | Lexeme: "c" | Line: 10
+[LEX] Token: 281 | Lexeme: ":=" | Line: 10
+[LEX] Token: 258 | Lexeme: "f" | Line: 10
+[LEX] Token: 40 | Lexeme: "(" | Line: 10
+[LEX] Token: 258 | Lexeme: "a" | Line: 10
+[LEX] Token: 61 | Lexeme: "=" | Line: 10
+[LEX] Token: 260 | Lexeme: "3.0" | Line: 10
+[LEX] Token: 41 | Lexeme: ")" | Line: 10
+[LEX] Token: 91 | Lexeme: "[" | Line: 10
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 10
+[LEX] Token: 93 | Lexeme: "]" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Assignment
+[LEX] Token: 258 | Lexeme: "a" | Line: 11
+[LEX] Token: 281 | Lexeme: ":=" | Line: 11
+[LEX] Token: 258 | Lexeme: "b" | Line: 11
+[LEX] Token: 61 | Lexeme: "=" | Line: 11
+[LEX] Token: 258 | Lexeme: "c" | Line: 11
+[LEX] Token: 43 | Lexeme: "+" | Line: 11
+[LEX] Token: 258 | Lexeme: "d" | Line: 11
+[LEX] Token: 42 | Lexeme: "*" | Line: 11
+[LEX] Token: 258 | Lexeme: "e" | Line: 11
+[LEX] Token: 61 | Lexeme: "=" | Line: 11
+[LEX] Token: 258 | Lexeme: "c" | Line: 11
+[LEX] Token: 47 | Lexeme: "/" | Line: 11
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+[SYNTAX] Line 11: Assignment
+[LEX] Token: 258 | Lexeme: "a" | Line: 12
+[LEX] Token: 281 | Lexeme: ":=" | Line: 12
+[LEX] Token: 258 | Lexeme: "b" | Line: 12
+[LEX] Token: 61 | Lexeme: "=" | Line: 12
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 12
+[LEX] Token: 43 | Lexeme: "+" | Line: 12
+[LEX] Token: 258 | Lexeme: "d" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Assignment
+[LEX] Token: 258 | Lexeme: "a" | Line: 13
+[LEX] Token: 281 | Lexeme: ":=" | Line: 13
+[LEX] Token: 258 | Lexeme: "b" | Line: 13
+[LEX] Token: 43 | Lexeme: "+" | Line: 13
+[LEX] Token: 258 | Lexeme: "c" | Line: 13
+[LEX] Token: 61 | Lexeme: "=" | Line: 13
+[LEX] Token: 260 | Lexeme: "4$i" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+[SYNTAX] Line 13: Assignment
+[LEX] Token: 265 | Lexeme: "if" | Line: 14
+[LEX] Token: 40 | Lexeme: "(" | Line: 14
+[LEX] Token: 258 | Lexeme: "a" | Line: 14
+[LEX] Token: 61 | Lexeme: "=" | Line: 14
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 14
+[LEX] Token: 282 | Lexeme: "==" | Line: 14
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 14
+[LEX] Token: 41 | Lexeme: ")" | Line: 14
+[LEX] Token: 258 | Lexeme: "a" | Line: 15
+[LEX] Token: 281 | Lexeme: ":=" | Line: 15
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[SYNTAX] Line 15: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+[SYNTAX] Line 16: IF statement
+[LEX] Token: 265 | Lexeme: "if" | Line: 17
+[LEX] Token: 40 | Lexeme: "(" | Line: 17
+[LEX] Token: 258 | Lexeme: "a" | Line: 17
+[LEX] Token: 61 | Lexeme: "=" | Line: 17
+[LEX] Token: 258 | Lexeme: "b" | Line: 17
+[LEX] Token: 283 | Lexeme: "!=" | Line: 17
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 17
+[LEX] Token: 41 | Lexeme: ")" | Line: 17
+[LEX] Token: 258 | Lexeme: "a" | Line: 18
+[LEX] Token: 281 | Lexeme: ":=" | Line: 18
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 18
+[LEX] Token: 59 | Lexeme: ";" | Line: 18
+[SYNTAX] Line 18: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 19
+[LEX] Token: 59 | Lexeme: ";" | Line: 19
+[SYNTAX] Line 19: IF statement
+[LEX] Token: 265 | Lexeme: "if" | Line: 20
+[LEX] Token: 40 | Lexeme: "(" | Line: 20
+[LEX] Token: 258 | Lexeme: "a" | Line: 20
+[LEX] Token: 61 | Lexeme: "=" | Line: 20
+[LEX] Token: 258 | Lexeme: "b" | Line: 20
+[LEX] Token: 43 | Lexeme: "+" | Line: 20
+[LEX] Token: 258 | Lexeme: "c" | Line: 20
+[LEX] Token: 282 | Lexeme: "==" | Line: 20
+[LEX] Token: 260 | Lexeme: "3.1" | Line: 20
+[LEX] Token: 41 | Lexeme: ")" | Line: 20
+[LEX] Token: 258 | Lexeme: "a" | Line: 21
+[LEX] Token: 281 | Lexeme: ":=" | Line: 21
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 21
+[LEX] Token: 59 | Lexeme: ";" | Line: 21
+[SYNTAX] Line 21: Assignment
+[LEX] Token: 266 | Lexeme: "end_if" | Line: 22
+[LEX] Token: 59 | Lexeme: ";" | Line: 22
+[SYNTAX] Line 22: IF statement
+[LEX] Token: 264 | Lexeme: "end" | Line: 23
+[LEX] Token: 59 | Lexeme: ";" | Line: 23
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: e | Tandpe: ID
+Lexeme: e | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: f | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: 4$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3.0 | Tandpe: SINGLEF
+Lexeme: 3.1 | Tandpe: SINGLEF
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic19_parameters.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+integer d;
+integer function f2(integer a, integer b, integer c)
+begin
+    ret(a);
+end;
+begin
+    d := f2(a=1$i, b+3$i, 5$i)[2$i,3$i,1$i];
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "d" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 272 | Lexeme: "function" | Line: 4
+[LEX] Token: 258 | Lexeme: "f2" | Line: 4
+[LEX] Token: 40 | Lexeme: "(" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "a" | Line: 4
+[LEX] Token: 44 | Lexeme: "," | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "b" | Line: 4
+[LEX] Token: 44 | Lexeme: "," | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 4
+[LEX] Token: 258 | Lexeme: "c" | Line: 4
+[LEX] Token: 41 | Lexeme: ")" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 277 | Lexeme: "ret" | Line: 6
+[LEX] Token: 40 | Lexeme: "(" | Line: 6
+[LEX] Token: 258 | Lexeme: "a" | Line: 6
+[LEX] Token: 41 | Lexeme: ")" | Line: 6
+[SYNTAX] Line 6: Return statement (RET)
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Function definition
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 258 | Lexeme: "d" | Line: 9
+[LEX] Token: 281 | Lexeme: ":=" | Line: 9
+[LEX] Token: 258 | Lexeme: "f2" | Line: 9
+[LEX] Token: 40 | Lexeme: "(" | Line: 9
+[LEX] Token: 258 | Lexeme: "a" | Line: 9
+[LEX] Token: 61 | Lexeme: "=" | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 44 | Lexeme: "," | Line: 9
+[LEX] Token: 258 | Lexeme: "b" | Line: 9
+[LEX] Token: 43 | Lexeme: "+" | Line: 9
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 9
+[LEX] Token: 44 | Lexeme: "," | Line: 9
+[LEX] Token: 260 | Lexeme: "5$i" | Line: 9
+[LEX] Token: 41 | Lexeme: ")" | Line: 9
+[LEX] Token: 91 | Lexeme: "[" | Line: 9
+[LEX] Token: 260 | Lexeme: "2$i" | Line: 9
+[LEX] Token: 44 | Lexeme: "," | Line: 9
+[LEX] Token: 260 | Lexeme: "3$i" | Line: 9
+[LEX] Token: 44 | Lexeme: "," | Line: 9
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 9
+[LEX] Token: 93 | Lexeme: "]" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: a | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: b | Tandpe: ID
+Lexeme: c | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: d | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: 5$i | Tandpe: INTEGER
+Lexeme: f2 | Tandpe: ID
+Lexeme: f2 | Tandpe: ID
+Lexeme: 2$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+Lexeme: 3$i | Tandpe: INTEGER
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic22_comptime.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful
+main_program
+comptime integer c_var;
+begin
+    c_var := 10$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 278 | Lexeme: "comptime" | Line: 3
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "c_var" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Comptime variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 258 | Lexeme: "c_var" | Line: 5
+[LEX] Token: 281 | Lexeme: ":=" | Line: 5
+[LEX] Token: 260 | Lexeme: "10$i" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: 10$i | Tandpe: INTEGER
+Lexeme: c_var | Tandpe: ID
+Lexeme: c_var | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic24_class.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful (0 errores)
+main_program
+integer i;
+class SubClass c10
+begin
+    integer attr_val;
+end;
+class gato c11
+begin
+    integer attr_val;
+end;
+SubClass p;
+gato g;
+begin
+    i := 1$i;
+    p[0$i] = 4$i;
+    p[i] = 4$i;
+    g[0$i] = p[0$i];
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 261 | Lexeme: "integer" | Line: 3
+[LEX] Token: 258 | Lexeme: "i" | Line: 3
+[LEX] Token: 59 | Lexeme: ";" | Line: 3
+[SYNTAX] Line 3: Variable declaration
+[LEX] Token: 273 | Lexeme: "class" | Line: 4
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 4
+[LEX] Token: 258 | Lexeme: "c10" | Line: 4
+[LEX] Token: 263 | Lexeme: "begin" | Line: 5
+[LEX] Token: 261 | Lexeme: "integer" | Line: 6
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Variable declaration
+[LEX] Token: 264 | Lexeme: "end" | Line: 7
+[LEX] Token: 59 | Lexeme: ";" | Line: 7
+[SYNTAX] Line 7: Class declaration (Tema 24)
+[LEX] Token: 273 | Lexeme: "class" | Line: 8
+[LEX] Token: 258 | Lexeme: "gato" | Line: 8
+[LEX] Token: 258 | Lexeme: "c11" | Line: 8
+[LEX] Token: 263 | Lexeme: "begin" | Line: 9
+[LEX] Token: 261 | Lexeme: "integer" | Line: 10
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Variable declaration
+[LEX] Token: 264 | Lexeme: "end" | Line: 11
+[LEX] Token: 59 | Lexeme: ";" | Line: 11
+[SYNTAX] Line 11: Class declaration (Tema 24)
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 12
+[LEX] Token: 258 | Lexeme: "p" | Line: 12
+[LEX] Token: 59 | Lexeme: ";" | Line: 12
+[SYNTAX] Line 12: Variable declaration
+[LEX] Token: 258 | Lexeme: "gato" | Line: 13
+[LEX] Token: 258 | Lexeme: "g" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+[SYNTAX] Line 13: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 14
+[LEX] Token: 258 | Lexeme: "i" | Line: 15
+[LEX] Token: 281 | Lexeme: ":=" | Line: 15
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[SYNTAX] Line 15: Assignment
+[LEX] Token: 258 | Lexeme: "p" | Line: 16
+[LEX] Token: 91 | Lexeme: "[" | Line: 16
+[LEX] Token: 260 | Lexeme: "0$i" | Line: 16
+[LEX] Token: 93 | Lexeme: "]" | Line: 16
+[LEX] Token: 61 | Lexeme: "=" | Line: 16
+[LEX] Token: 260 | Lexeme: "4$i" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+[LEX] Token: 258 | Lexeme: "p" | Line: 17
+[LEX] Token: 91 | Lexeme: "[" | Line: 17
+[LEX] Token: 258 | Lexeme: "i" | Line: 17
+[LEX] Token: 93 | Lexeme: "]" | Line: 17
+[LEX] Token: 61 | Lexeme: "=" | Line: 17
+[LEX] Token: 260 | Lexeme: "4$i" | Line: 17
+[LEX] Token: 59 | Lexeme: ";" | Line: 17
+[LEX] Token: 258 | Lexeme: "g" | Line: 18
+[LEX] Token: 91 | Lexeme: "[" | Line: 18
+[LEX] Token: 260 | Lexeme: "0$i" | Line: 18
+[LEX] Token: 93 | Lexeme: "]" | Line: 18
+[LEX] Token: 61 | Lexeme: "=" | Line: 18
+[LEX] Token: 258 | Lexeme: "p" | Line: 18
+[LEX] Token: 91 | Lexeme: "[" | Line: 18
+[LEX] Token: 260 | Lexeme: "0$i" | Line: 18
+[LEX] Token: 93 | Lexeme: "]" | Line: 18
+[LEX] Token: 59 | Lexeme: ";" | Line: 18
+[LEX] Token: 264 | Lexeme: "end" | Line: 19
+[LEX] Token: 59 | Lexeme: ";" | Line: 19
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: g | Tandpe: ID
+Lexeme: g | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: i | Tandpe: ID
+Lexeme: main_program | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: p | Tandpe: ID
+Lexeme: 0$i | Tandpe: INTEGER
+Lexeme: 0$i | Tandpe: INTEGER
+Lexeme: 0$i | Tandpe: INTEGER
+Lexeme: 4$i | Tandpe: INTEGER
+Lexeme: 4$i | Tandpe: INTEGER
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: c10 | Tandpe: ID
+Lexeme: c11 | Tandpe: ID
+Lexeme: gato | Tandpe: ID
+Lexeme: gato | Tandpe: ID
+Lexeme: attr_val | Tandpe: ID
+Lexeme: attr_val | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+
+--------------------------------------------------
+Ejecutando: tests/sandn_topic32_extends.txt
+Contenido de la prueba and error esperado:
+// EXPECTED: Parsing successful (0 errores)
+main_program
+class BaseClass c10
+begin
+    integer attr_val;
+end;
+class mascota c11
+begin
+    integer dueno;
+end;
+class SubClass c12
+begin
+    integer raza;
+    extends BaseClass, mascota;
+end;
+integer x;
+begin
+    x := 1$i;
+end;
+
+--- SALIDA DEL COMPILADOR ---
+[LEX] Token: 258 | Lexeme: "main_program" | Line: 2
+[LEX] Token: 273 | Lexeme: "class" | Line: 3
+[LEX] Token: 258 | Lexeme: "BaseClass" | Line: 3
+[LEX] Token: 258 | Lexeme: "c10" | Line: 3
+[LEX] Token: 263 | Lexeme: "begin" | Line: 4
+[LEX] Token: 261 | Lexeme: "integer" | Line: 5
+[LEX] Token: 258 | Lexeme: "attr_val" | Line: 5
+[LEX] Token: 59 | Lexeme: ";" | Line: 5
+[SYNTAX] Line 5: Variable declaration
+[LEX] Token: 264 | Lexeme: "end" | Line: 6
+[LEX] Token: 59 | Lexeme: ";" | Line: 6
+[SYNTAX] Line 6: Class declaration (Tema 24)
+[LEX] Token: 273 | Lexeme: "class" | Line: 7
+[LEX] Token: 258 | Lexeme: "mascota" | Line: 7
+[LEX] Token: 258 | Lexeme: "c11" | Line: 7
+[LEX] Token: 263 | Lexeme: "begin" | Line: 8
+[LEX] Token: 261 | Lexeme: "integer" | Line: 9
+[LEX] Token: 258 | Lexeme: "dueno" | Line: 9
+[LEX] Token: 59 | Lexeme: ";" | Line: 9
+[SYNTAX] Line 9: Variable declaration
+[LEX] Token: 264 | Lexeme: "end" | Line: 10
+[LEX] Token: 59 | Lexeme: ";" | Line: 10
+[SYNTAX] Line 10: Class declaration (Tema 24)
+[LEX] Token: 273 | Lexeme: "class" | Line: 11
+[LEX] Token: 258 | Lexeme: "SubClass" | Line: 11
+[LEX] Token: 258 | Lexeme: "c12" | Line: 11
+[LEX] Token: 263 | Lexeme: "begin" | Line: 12
+[LEX] Token: 261 | Lexeme: "integer" | Line: 13
+[LEX] Token: 258 | Lexeme: "raza" | Line: 13
+[LEX] Token: 59 | Lexeme: ";" | Line: 13
+[SYNTAX] Line 13: Variable declaration
+[LEX] Token: 279 | Lexeme: "extends" | Line: 14
+[LEX] Token: 258 | Lexeme: "BaseClass" | Line: 14
+[LEX] Token: 44 | Lexeme: "," | Line: 14
+[LEX] Token: 258 | Lexeme: "mascota" | Line: 14
+[LEX] Token: 59 | Lexeme: ";" | Line: 14
+[SYNTAX] Line 14: Extends statement
+[LEX] Token: 264 | Lexeme: "end" | Line: 15
+[LEX] Token: 59 | Lexeme: ";" | Line: 15
+[SYNTAX] Line 15: Class declaration (Tema 24)
+[LEX] Token: 261 | Lexeme: "integer" | Line: 16
+[LEX] Token: 258 | Lexeme: "x" | Line: 16
+[LEX] Token: 59 | Lexeme: ";" | Line: 16
+[SYNTAX] Line 16: Variable declaration
+[LEX] Token: 263 | Lexeme: "begin" | Line: 17
+[LEX] Token: 258 | Lexeme: "x" | Line: 18
+[LEX] Token: 281 | Lexeme: ":=" | Line: 18
+[LEX] Token: 260 | Lexeme: "1$i" | Line: 18
+[LEX] Token: 59 | Lexeme: ";" | Line: 18
+[SYNTAX] Line 18: Assignment
+[LEX] Token: 264 | Lexeme: "end" | Line: 19
+[LEX] Token: 59 | Lexeme: ";" | Line: 19
+Parsing successful.
+
+--- SYMBOL TABLE ---
+Lexeme: main_program | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: x | Tandpe: ID
+Lexeme: dueno | Tandpe: ID
+Lexeme: 1$i | Tandpe: INTEGER
+Lexeme: raza | Tandpe: ID
+Lexeme: c10 | Tandpe: ID
+Lexeme: c11 | Tandpe: ID
+Lexeme: c12 | Tandpe: ID
+Lexeme: mascota | Tandpe: ID
+Lexeme: mascota | Tandpe: ID
+Lexeme: BaseClass | Tandpe: ID
+Lexeme: BaseClass | Tandpe: ID
+Lexeme: attr_val | Tandpe: ID
+Lexeme: SubClass | Tandpe: ID
+-------------------------
+

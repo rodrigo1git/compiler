@@ -1,8 +1,8 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer a;
 begin
-    // comentario valido
+    // Valid comment
     a := 1$i;
 end;
-// este comentario termina al EOF y le falta salto de linea
+// este comentario termina al EOF and le falta salto de linea

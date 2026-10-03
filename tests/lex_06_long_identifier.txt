@@ -1,8 +1,8 @@
 // EXPECTED: Warning truncated
-miprograma
-integer identificador_de_22_ok;
-integer identificador_de_23_mal;
+main_program
+integer exact_limit_identifier;
+integer invalid_length_too_long;
 begin
-    identificador_de_22_ok := 1$i;
-    identificador_de_23_mal := 1$i;
+    exact_limit_identifier := 1$i;
+    invalid_length_too_long := 1$i;
 end;

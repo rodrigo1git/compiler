@@ -1,5 +1,5 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer d;
 integer function f2(integer a, integer b, integer c)
 begin

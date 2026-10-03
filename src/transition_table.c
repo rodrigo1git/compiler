@@ -2,7 +2,7 @@
 #include "../include/transition_table.h"
 
 int transition_table[15][17] = {
-    // L       i       s       D       _       .       $       +-        /       op*()     =         <>        !:        "       nl      ws      otro
+    // L       i       s       D       _       .       $       +-        /       op*()     =         <>        !:        "       nl      ws      other
     {  1,      1,      1,      5,      E,      7,      E,      F_CONS,   2,      F_CONS,   13,       14,       4,        12,     0,      0,      E }, // 0: start
     {  1,      1,      1,      1,      1,      F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 1: identifier
     {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    3,      F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 2: slash / comment start

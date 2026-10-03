@@ -1,5 +1,5 @@
 // EXPECTED: Parsing successful
-miprograma
+main_program
 integer a;
 begin
     a := 5$i + 3$i * 2$i / 1$i - 4$i;

@@ -1,5 +1,5 @@
-// EXPECTED: 1 syntax error (Missing function name) + 1 cascade
-miprograma
+// EXPECTED: 2 errores sintacticos on lines 3 and 6 (1 primarand error + 1 cascading error). Parsing successful.
+main_program
 integer function (integer x)
 begin
     ret(1$i);

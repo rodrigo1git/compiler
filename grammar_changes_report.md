@@ -1,12 +1,12 @@
-# Informe de Modificaciones a la Gramática (YACC/Bison)
+# Grammar Modifications Report (YACC/Bison)
 
 El presente informe consolida todas las modificaciones realizadas sobre el archivo `grammar.y` para optimizar el análisis sintáctico, cumplir con las normativas estrictas del Trabajo Práctico y mejorar drásticamente la recuperación ante errores.
 
-## 1. Transformación a Recursividad a la Izquierda
+## 1. Transformation to Left Recursion
 Se corrigieron todas las reglas de listas para usar recursividad a la izquierda (`id_list`, `arg_list`, `const_list`, `param_decl_list`), evitando desbordamientos de la pila de Bison.
 Se refactorizó la regla `factor` creando un acumulador `assign_chain` que permite resolver asignaciones anidadas (`a = b = 3`) sin caer en recursividad a la derecha.
 
-## 2. Aislamiento Estructural de la Sentencia Return (`ret_stmt`)
+## 2. Structural Isolation of the Return Statement (`ret_stmt`)
 Se eliminó la posibilidad de escribir un `return` en el bloque de código principal. Para ello, se creó un contexto de ejecución paralelo exclusivo para funciones (`func_compound_stmt`, `func_simple_stmt`, etc.) y flujos de control gemelos (`func_if_stmt`, `func_for_loop`). Solo dentro de estas estructuras es gramaticalmente válido encontrar un `ret_stmt`.
 
 ## 3. Asignaciones Estrictas en Expresiones (Tema 18)
@@ -21,7 +21,7 @@ Se separó el concepto de atributo en dos reglas:
 Se descubrió mediante análisis del documento que la cláusula `extends` pertenece al cuerpo de la clase y no a la firma. 
 Se agregó el token `%token TOKEN_EXTENDS` y se creó la sentencia `extends_stmt: TOKEN_EXTENDS id_list ';'`. Esta sentencia fue añadida como una opción dentro de `class_member` para respetar fielmente el código de ejemplo del TP. Adicionalmente, se retiró `assign ';'` de `class_member` ya que carecía de justificación semántica en la definición de la estructura.
 
-## 6. Recuperación Profunda de Errores Sintácticos (Requerimiento Grave)
+## 6. Deep Syntax Error Recovery (Critical Requirement)
 Se abandonó la dependencia exclusiva del `error ';'` global para no perder contexto ante fallas sintácticas. Se agregaron reglas de error en los puntos de sincronización naturales:
 - **Control de Flujo:** Se añadieron tokens de error dentro de los paréntesis del IF. Si el usuario olvida cerrar el paréntesis, el error se atrapa localmente emitiendo: `"Syntax error: Malformed condition in IF statement"`.
 - **Invocaciones:** Si una llamada a función posee argumentos inválidos, se captura el error dentro de la llamada: `"Syntax error: Invalid arguments in function call"`.
@@ -42,14 +42,14 @@ Para evitar el confuso mensaje de "punto y coma inesperado", se introdujo una re
   
   • Situación: La gramática actual acepta el extends en dos lugares distintos:
       1. Dentro del cuerpo de la clase (lo que pide el TP pág. 7):
-        class perro begin
-            integer edad;
-            extends animal;
+        class SubClass begin
+            integer count;
+            extends BaseClass;
         end;
   
       2. En la cabecera de la clase (estilo Java/C++):
-        class perro extends animal begin
-            integer edad;
+        class SubClass extends BaseClass begin
+            integer count;
         end;
   
   • ¿Es un error? No genera conflictos en Bison (0 conflictos shift/reduce). Pero si la cátedra es     
@@ -143,7 +143,7 @@ Se implementaron dos mejoras estructurales orientadas a robustecer el análisis 
         | TOKEN_EXTENDS error ';' { yyerrok; }
         ;
     ```
-- **Verificación:** Se comprobó la correcta compilación de clases con herencia múltiple en el cuerpo (`class perro begin integer patas; extends animal; end;`) y la detección sintáctica adecuada ante cláusulas mal ubicadas o incompletas.
+- **Verificación:** Se comprobó la correcta compilación de clases con herencia múltiple en el cuerpo (`class SubClass begin integer attr_val; extends BaseClass; end;`) y la detección sintáctica adecuada ante cláusulas mal ubicadas o incompletas.
 
 ---
 
@@ -183,7 +183,7 @@ Se implementó el primer bloque de correcciones críticas solicitadas por el cue
 ## 12. Creación y Adaptación de la Batería de Pruebas (Fase 3)
 
 ### Pruebas Léxicas Completadas
-El compilador ahora cuenta con la batería de pruebas requerida por la cátedra para el analizador léxico, envueltas en un bloque de programa válido (`miprograma ... begin ... end;`) para no romper el parser prematuramente:
+El compilador ahora cuenta con la batería de pruebas requerida por la cátedra para el analizador léxico, envueltas en un bloque de programa válido (`main_program ... begin ... end;`) para no romper el parser prematuramente:
 - `tests/lex_comments.txt`: Evalúa comentarios de una sola línea, comentarios que nunca cierran y la correcta detección e ignorado de caracteres blancos como tabulaciones y retornos de carro (`\r\t`).
 - `tests/lex_strings.txt`: Comprueba el parseo de literales de cadena ("strings") bien formados y strings inválidos sin cierre de comillas.
 - `tests/lex_long_id.txt`: Verifica que el compilador advierta (Warning) y trunque correctamente identificadores que exceden el límite de 22 caracteres sin corromper la memoria, gracias a la reserva dinámica y truncado manual incorporado en `sa_identifier`.
@@ -218,8 +218,8 @@ Se aplicaron correcciones finales basadas en un análisis exhaustivo del comport
 Se realizó una reconstrucción profunda del directorio `tests/` para asegurar que cada archivo cumpla su propósito de diseño sin falsos positivos sintácticos:
 
 1. **Eliminación de Basura (12 archivos):** Se eliminaron archivos temporales de debugging (`temp*.txt`), archivos de cobertura solapados y duplicados. El inventario se redujo de 35 a 24 archivos canónicos perfectamente delineados.
-2. **Cobertura Exhaustiva TP1 (`lex_tp1_coverage.txt`):** Se crearon variables con identificadores de exactamente 22 y 23 caracteres (`identificador_de_22_ok` y `identificador_de_23_mal`) para evidenciar el límite físico sin conteos dudosos. Se integraron casos flotantes sin parte entera (`.6`), con exponentes (`1.2s+10`) y las cotas límite numéricas exactas (`-32768$i` y `32767$i`).
-3. **Conversión de Fragmentos a Gramática Válida (11 archivos):** Los archivos de la serie `syn_gen_*` y `syn_topic*` solían fallar en la línea 1 porque les faltaba la estructura `miprograma ... begin`. Se corrigieron uno por uno para que ahora compilen de principio a fin arrojando **Parsing successful**. De este modo, no solo prueban que nos recuperamos de errores, sino que *demuestran que el compilador acepta la estructura solicitada*.
+2. **Cobertura Exhaustiva TP1 (`lex_tp1_coverage.txt`):** Se crearon variables con identificadores de exactamente 22 y 23 caracteres (`exact_limit_identifier` y `invalid_length_too_long`) para evidenciar el límite físico sin conteos dudosos. Se integraron casos flotantes sin parte entera (`.6`), con exponentes (`1.2s+10`) y las cotas límite numéricas exactas (`-32768$i` y `32767$i`).
+3. **Conversión de Fragmentos a Gramática Válida (11 archivos):** Los archivos de la serie `syn_gen_*` y `syn_topic*` solían fallar en la línea 1 porque les faltaba la estructura `main_program ... begin`. Se corrigieron uno por uno para que ahora compilen de principio a fin arrojando **Parsing successful**. De este modo, no solo prueban que nos recuperamos de errores, sino que *demuestran que el compilador acepta la estructura solicitada*.
 4. **Concentración de Errores Estructurales:**
    - `syn_custom_errors.txt`: Prueba las reglas heurísticas manuales (como faltas de parámetros y el `ret` en ámbito global).
    - `syn_missing_delimiters.txt`: Un nuevo archivo que concentra deliberadamente 9 errores estructurales catastróficos (faltas de operandos, llamadas vacías, faltas de `end_if`) centralizando el testeo del comportamiento "Fallback" del sistema Bison LAC.
