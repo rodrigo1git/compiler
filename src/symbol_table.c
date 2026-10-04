@@ -34,7 +34,7 @@ bool map_contains(hash_map_t* map, const char* key, const char* value) {
 }
 
 void map_put(hash_map_t* map, const char* key, const char* value) {
-    // if (map_contains(map, key, value)) return;
+    if (map_contains(map, key, value)) return;
 
     unsigned long index = hash_func(key) % map->capacity;
     map_node_t* new_node = (map_node_t*)malloc(sizeof(map_node_t));

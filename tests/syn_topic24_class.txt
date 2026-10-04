@@ -1,7 +1,7 @@
 // EXPECTED: Parsing successful (0 errores)
 main_program
 integer i;
-class SubClass c10
+class subclass c10
 begin
     integer attr_val;
 end;
@@ -9,7 +9,7 @@ class gato c11
 begin
     integer attr_val;
 end;
-SubClass p;
+subclass p;
 gato g;
 begin
     i := 1$i;

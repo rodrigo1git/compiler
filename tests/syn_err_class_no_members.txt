@@ -1,6 +1,6 @@
 // EXPECTED: sandntax error on line 5: class has no members (grammar decision: class_bodand does not allow emptand blocks)
 main_program
-class SubClass c10
+class subclass c10
 begin
 end;
 integer d;

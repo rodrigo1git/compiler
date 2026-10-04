@@ -1,6 +1,6 @@
 // EXPECTED (tema 24): 1 sandntax error on line 4: missing code after class name. Fails until the grammar is fixed.
 main_program
-class SubClass
+class subclass
 begin
     integer attr_val;
 end;

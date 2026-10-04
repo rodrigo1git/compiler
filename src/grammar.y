@@ -5,6 +5,9 @@
     
     extern int yylex();
     extern int current_line;
+    extern int lex_range_reported;
+    extern int token_start_line;
+    extern int global_errors;
     extern int prev_token;
     void yyerror(const char *s);
     void add_to_symbol_table(const char* lexeme_buffer, const char* tipo);
@@ -21,9 +24,7 @@
     %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
     %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
     %token TOKEN_COMPTIME TOKEN_EXTENDS
-    %token TOKEN_LEX_ERROR
-    
-    /* Relational and assignment operators */
+        /* Relational and assignment operators */
     %token TOKEN_ASSIGN          /* := */
     %token TOKEN_EQUAL           /* == */
     %token TOKEN_NOT_EQUAL       /* != */
@@ -146,9 +147,9 @@
     
     constant:
       TOKEN_CONST {
-          extern int token_start_line;
-          extern int global_errors;
-          if (strchr($1, '.') == NULL && strchr($1, 'e') == NULL) {
+          int ya = lex_range_reported;
+          lex_range_reported = 0;
+          if (!ya && strchr($1, '.') == NULL && strchr($1, 'e') == NULL) {
               long val = atol($1);
               if (val > 32767) {
                   fprintf(stderr, "Line %d: Lexical error: Positive constant out of range\n", token_start_line);
@@ -157,19 +158,26 @@
           }
       }
     | '-' TOKEN_CONST {
-          extern int token_start_line;
-          extern int global_errors;
+          int ya = lex_range_reported;
+          lex_range_reported = 0;
+          int parser_error = 0;
+          
           if (strchr($2, '.') != NULL || strchr($2, 'e') != NULL) {
-              char *neg_str = malloc(strlen($2) + 2);
-              sprintf(neg_str, "-%s", $2);
-              add_to_symbol_table(neg_str, "SINGLEF");
-              free(neg_str);
+              if (!ya) {
+                  char *neg_str = malloc(strlen($2) + 2);
+                  sprintf(neg_str, "-%s", $2);
+                  add_to_symbol_table(neg_str, "SINGLEF");
+                  free(neg_str);
+              }
           } else {
               long val = -atol($2);
-              if (val < -32768) {
+              if (!ya && val < -32768) {
                   fprintf(stderr, "Line %d: Lexical error: Negative constant out of range\n", token_start_line);
                   global_errors++;
-              } else {
+                  parser_error = 1;
+              }
+              
+              if (!ya && !parser_error) {
                   char *neg_str = malloc(strlen($2) + 2);
                   sprintf(neg_str, "-%s", $2);
                   add_to_symbol_table(neg_str, "INTEGER");
@@ -340,29 +348,29 @@
 
         if (prev_token == TOKEN_ASSIGN && strcmp(unexp_name, "';'") == 0) {
             fprintf(stderr, "Line %d: Syntax error: Missing expression in assignment\n", current_line);
-            return 0;
+            global_errors++; return 0;
         }
 
         if (prev_token == '=' && strcmp(unexp_name, "';'") == 0) {
             fprintf(stderr, "Line %d: Syntax error: Missing expression in attribute assignment\n", current_line);
-            return 0;
+            global_errors++; return 0;
         }
 
         if ((prev_token == '<' || prev_token == '>' || prev_token == TOKEN_LESS_EQUAL ||
              prev_token == TOKEN_GREATER_EQUAL || prev_token == TOKEN_EQUAL || prev_token == TOKEN_NOT_EQUAL) &&
             strcmp(unexp_name, "')'") == 0) {
             fprintf(stderr, "Line %d: Syntax error: Incomplete condition (missing operand)\n", current_line);
-            return 0;
+            global_errors++; return 0;
         }
 
         if (prev_token == ',' && strcmp(unexp_name, "')'") == 0) {
             fprintf(stderr, "Line %d: Syntax error: Missing parameter or argument after ','\n", current_line);
-            return 0;
+            global_errors++; return 0;
         }
 
         if (strcmp(unexp_name, "TOKEN_RET") == 0) {
             fprintf(stderr, "Line %d: Syntax error: Return statement not allowed outside of a function\n", current_line);
-            return 0;
+            global_errors++; return 0;
         }
 
         fprintf(stderr, "Line %d: Syntax error: Unexpected %s", current_line, unexp_name);
@@ -387,5 +395,6 @@
             }
         }
         fprintf(stderr, "\n");
+        global_errors++;
         return 0;
     }

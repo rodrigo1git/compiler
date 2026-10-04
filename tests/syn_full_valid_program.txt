@@ -11,17 +11,17 @@
 main_program
 integer x, and, z;
 
-class BaseClass c10
+class baseclass c10
 begin
     integer attr_val;
 end;
 
-class SubClass c11
+class subclass c11
 begin
     integer raza;
     
     // Prueba de Herencia Multiple (Tema 32)
-    extends BaseClass, mascota; 
+    extends baseclass, mascota; 
     
     integer ladrar(integer veces)
     begin

@@ -1,6 +1,6 @@
 // EXPECTED: Parsing successful (0 errores)
 main_program
-class BaseClass c10
+class baseclass c10
 begin
     integer attr_val;
 end;
@@ -8,10 +8,10 @@ class mascota c11
 begin
     integer dueno;
 end;
-class SubClass c12
+class subclass c12
 begin
     integer raza;
-    extends BaseClass, mascota;
+    extends baseclass, mascota;
 end;
 integer x;
 begin

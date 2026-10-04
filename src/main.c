@@ -7,6 +7,7 @@
 FILE *source_file = NULL;
 int global_errors = 0;
 int token_start_line = 1;
+int lex_range_reported = 0;
 extern int yyparse();
 extern int current_line;
 

@@ -165,10 +165,7 @@ int sa_identifier(char c) { (void)c;
         free(lexeme_buffer_lower);
         return token;
     }
-    
-    extern int token_start_line;
-    extern int global_errors;
-    
+
     for (int i = 0; i < lexeme_length; i++) {
         if (isupper((unsigned char)lexeme_buffer[i])) {
             printf("Line %d: Lexical error: Identifier contains uppercase letters.\n", token_start_line);
@@ -196,29 +193,24 @@ int sa_identifier(char c) { (void)c;
 }
 
 int sa_int_const(char c) {
-    extern int token_start_line;
-    extern int global_errors;
     append_to_lexeme(c);
     long val = atol(lexeme_buffer);
-    
+
+    lex_range_reported = 0;
     if (val > 32768) {
         fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", token_start_line, lexeme_buffer);
         global_errors++;
-        
-        // Safe fallback that Yacc will accept
-        reset_lexeme_buffer();
-        char *safe = "32767$i";
-        for (int i = 0; safe[i]; i++) append_to_lexeme(safe[i]);
+        lex_range_reported = 1;
     }
-    
-    add_to_symbol_table(lexeme_buffer, "INTEGER");
-    yylval.str_val = strdup(lexeme_buffer); 
+
+    if (!lex_range_reported) {
+        add_to_symbol_table(lexeme_buffer, "INTEGER");
+    }
+    yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_CONST;
 }
 
 int sa_float_const(char c) { (void)c;
-    extern int token_start_line;
-    extern int global_errors;
     char *temp_buf = strdup(lexeme_buffer);
     for (int i = 0; temp_buf[i] != '\0'; i++) {
         if (temp_buf[i] == 's') temp_buf[i] = 'e';
@@ -229,26 +221,24 @@ int sa_float_const(char c) { (void)c;
     double val = strtod(temp_buf, &endptr);
     free(temp_buf);
     
-    int error_found = 0;
+    lex_range_reported = 0;
     if (errno == ERANGE) {
         fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-        error_found = 1;
+        lex_range_reported = 1;
     } else {
         double abs_val = val < 0 ? -val : val;
         if (abs_val > 0.0 && (abs_val < 1.17549435e-38 || abs_val > 3.40282347e+38)) {
             fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-            error_found = 1;
+            lex_range_reported = 1;
         }
     }
     
-    if (error_found) {
+    if (lex_range_reported) {
         global_errors++;
-        reset_lexeme_buffer();
-        char *safe = "1.0";
-        for (int i = 0; safe[i]; i++) append_to_lexeme(safe[i]);
+    } else {
+        add_to_symbol_table(lexeme_buffer, "SINGLEF");
     }
     
-    add_to_symbol_table(lexeme_buffer, "SINGLEF");
     yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_CONST;
 }
@@ -277,13 +267,12 @@ int sa_multi_char_op(char c) {
 }
 
 int sa_error(char c) {
-    extern int token_start_line;
-    extern int global_errors;
+
     if (c != EOF) {
         fprintf(stderr, "Line %d: Lexical error: Invalid character '%c'\n", token_start_line, c);
         global_errors++;
     }
-    return TOKEN_LEX_ERROR;
+    return -1;
 }
 void print_symbol_table() {
     if (symbol_table != NULL) {

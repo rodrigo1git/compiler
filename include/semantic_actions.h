@@ -12,6 +12,9 @@ void free_lexeme_buffer(void);
 extern FILE *source_file;
 extern int current_line;
 extern YYSTYPE yylval;
+extern int token_start_line;
+extern int global_errors;
+extern int lex_range_reported;
 typedef int (*sem_act_t)(char);
 
 extern sem_act_t sem_act_mat[15][17];
