@@ -69,9 +69,8 @@ int yylex(void) {
         col = get_col(c);
         
         if (state < 0 || state >= 15 || col < 0 || col >= 17) {
-            fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
-            global_errors++;
-            
+            // Panic mode: consume characters until a delimiter is found.
+            // Note: The lexical error was already reported by sa_error before transitioning to state < 0.
             while (c != ' ' && c != '\t' && c != '\n' && c != ';' && c != EOF) {
                 c = fgetc(source_file);
             }
