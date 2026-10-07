@@ -1,8 +1,8 @@
-// EXPECTED: 2 errores sintacticos on lines 5 and 8 (1 primarand error + 1 cascading error). Failed at file closure.
+// EXPECTED: 2 errores sintacticos on lines 5 and 8 (1 primary error + 1 cascading error). Failed at file closure.
 main_program
 integer a;
 begin
-    from := 1$i to 10$i band 1$i repeat begin
+    from := 1$i to 10$i by 1$i repeat begin
         a := a + 1$i;
     end;
 end;

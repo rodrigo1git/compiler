@@ -1,4 +1,4 @@
-// EXPECTED: 1 lexical error on line 7 (unclosed string) + 1 sandntax error due to unexpected end of file
+// EXPECTED: 2 errors (1 lexical error on line 7 + 1 syntax error on line 9)
 main_program
 integer x;
 begin

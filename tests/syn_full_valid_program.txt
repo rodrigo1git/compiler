@@ -9,7 +9,7 @@
 // =========================================
 
 main_program
-integer x, and, z;
+integer x, y, z;
 
 class baseclass c10
 begin
@@ -45,10 +45,10 @@ begin
     x := 10$i;
     
     // Prueba de Invocacion con orden de evaluacion obligatorio (Tema 19)
-    and := calcular(x, 5$i)[1$i, 2$i];
+    y := calcular(x, 5$i)[1$i, 2$i];
     
     // Prueba de Asignacion en expresiones (Tema 18)
-    z := x = 2$i + and;
+    z := x = 2$i + y;
     
     // Prueba de Acceso posicional a atributos en lectura and escritura (Tema 29)
     x := obj[1$i] + 10$i;

@@ -1,4 +1,4 @@
-// EXPECTED: 5 range errors, on lines 8, 9, 10, 12 and 14. Lines 6, 7, 11 and 13 are valid.
+// EXPECTED: 5 range errors, on lines 8, 9, 10, 12 and 14. 6, 7, 11 and 13 are valid.
 main_program
 singlef f;
 integer x;

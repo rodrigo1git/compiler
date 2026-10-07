@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error on line 4: missing 'begin' in class declaration
+// EXPECTED: 1 syntax error on line 4: missing 'begin' in class declaration
 main_program
 class subclass c10
 end;

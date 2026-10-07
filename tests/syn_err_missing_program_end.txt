@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error (Missing end of program)
+// EXPECTED: 1 syntax error (Missing end of program)
 main_program
 integer a;
 begin

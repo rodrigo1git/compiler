@@ -1,4 +1,4 @@
-// EXPECTED: 2 errores sintacticos on lines 3 and 6 (1 primarand error + 1 cascading error). Parsing successful.
+// EXPECTED: 2 errores sintacticos on lines 3 and 6 (1 primary error + 1 cascading error).
 main_program
 integer function (integer x)
 begin

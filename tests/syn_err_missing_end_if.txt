@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error on line 7: despues de 'end' se esperaba 'else' o 'end_if'
+// EXPECTED: 1 syntax error on line 7: despues de 'end' se esperaba 'else' o 'end_if'
 main_program
 integer a;
 begin

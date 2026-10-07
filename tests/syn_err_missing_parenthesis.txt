@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error (Missing parenthesis in ret)
+// EXPECTED: 1 syntax error (Missing parenthesis in ret)
 main_program
 integer function test(integer x)
 begin

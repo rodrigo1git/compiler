@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error (Missing right operand)
+// EXPECTED: 1 syntax error (Missing right operand)
 main_program
 integer a;
 begin

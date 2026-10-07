@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error on line 6: falta parametro despues de ','
+// EXPECTED: 1 syntax error on line 6: falta parametro despues de ','
 main_program
 integer a;
 integer function test(integer x) begin ret(x); end;

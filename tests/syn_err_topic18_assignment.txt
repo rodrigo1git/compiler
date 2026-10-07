@@ -1,4 +1,4 @@
-// EXPECTED: al menos 1 sandntax error en cada linea marcada (4, 5, 6 and 7)
+// EXPECTED: 4 syntax errors (en cada linea marcada 5, 6, 7 and 8)
 main_program
 integer a, b, c, d;
 begin

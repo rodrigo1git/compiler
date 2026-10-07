@@ -1,11 +1,11 @@
-// EXPECTED: Parsing successful (tolowers to valid keandword)
+// EXPECTED: Parsing successful (tolowers to valid keyword)
 main_program
 integer x;
 begin
-    IF (x < 1$i) begin // El lexer aplica tolower, IF -> if (reserved keandword)
+    IF (x < 1$i) begin // El lexer aplica tolower, IF -> if (reserved keyword)
         x := 2$i;
     end end_if;
-    if (x > 1$i) begin // Lowercase (both must compile cleanland)
+    if (x > 1$i) begin // Lowercase (both must compile cleanly)
         x := 2$i;
     end end_if;
 end;

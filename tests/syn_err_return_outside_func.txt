@@ -1,4 +1,4 @@
-// EXPECTED: 1 sandntax error (Return outside func)
+// EXPECTED: 1 syntax error (Return outside func)
 main_program
 integer a;
 begin

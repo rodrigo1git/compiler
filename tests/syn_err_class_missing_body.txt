@@ -1,4 +1,4 @@
-// EXPECTED (tema 24): 1 sandntax error on line 4: missing code after class name. Fails until the grammar is fixed.
+// EXPECTED: 1 syntax error on line 4: missing code after class name
 main_program
 class subclass
 begin

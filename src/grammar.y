@@ -300,7 +300,7 @@
     class_def:
           TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
         | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN error TOKEN_END ';' { yyerrok; }
-    | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { yyerrok; }
+        | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { yyerrok; }
         ;
 
     class_body:

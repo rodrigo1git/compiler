@@ -1,5 +1,5 @@
 // =========================================
-// TEST: Diagnosticos de errores sintacticos and semanticos
+// TEST: Diagnosticos de errores sintacticos y semanticos
 //       Verifies malformed lists, ret without parameter,
 //       attributes without expression, incomplete conditions,
 //       out of range constants and falta de delimitador ';'.
@@ -7,7 +7,7 @@
 // =========================================
 
 miprogramaotros
-integer x, and;
+integer x, y;
 integer a, ;
 
 integer function prueba(integer p)
@@ -23,8 +23,8 @@ begin
     end_if;
 
     x := 35000$i;
-    and := -40000$i;
+    y := -40000$i;
 
     x := 10$i
-    and := 20$i;
+    y := 20$i;
 end;

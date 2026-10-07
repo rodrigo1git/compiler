@@ -1,4 +1,4 @@
-// EXPECTED: Parsing successful. La cadena ocupa 2 lineas and en la tabla de simbolos queda como: test_string
+// EXPECTED: Parsing successful. La cadena ocupa 2 lineas y en la tabla de simbolos queda como: holamundo
 main_program
 integer x;
 begin

@@ -1,4 +1,4 @@
-// EXPECTED: sandntax error on line 5: class has no members (grammar decision: class_bodand does not allow emptand blocks)
+// EXPECTED: 1 syntax error on line 5: class has no members (grammar decision: class_body does not allow empty blocks)
 main_program
 class subclass c10
 begin
