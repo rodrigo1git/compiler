@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
     // Parse
     init_symbol_table();
 
-    if (yyparse() == 0 && global_errors == 0) {
+    int success = (yyparse() == 0 && global_errors == 0);
+    if (success) {
         printf("Parsing successful.\n");
     } else {
         printf("Compilation failed with %d errors.\n", global_errors);
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]) {
     map_free(symbol_table);
     free_lexeme_buffer();
     fclose(source_file);
-    return 0;
+    return success ? 0 : 1;
 }
 
 void yyerror(const char *s) {
