@@ -20,8 +20,6 @@ int yylex(void) {
     int col;
     static char last_c = '\0';
     static int eof_padded = 0;
-    int token_start_line = current_line;
-
     state = 0;
 
     while (token_id == -1) {
@@ -65,7 +63,6 @@ int yylex(void) {
         last_c = c;
         
         if (state == 0 && c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != EOF) {
-            extern int token_start_line;
             token_start_line = current_line;
         }
         
@@ -111,6 +108,10 @@ int yylex(void) {
     }
 
     printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n", token_id, lexeme_buffer, current_line);
+    yylloc.first_line = token_start_line;
+    yylloc.last_line = current_line;
+    yylloc.first_column = 1;
+    yylloc.last_column = 1;
 
     prev_token = cur_token;
     cur_token = token_id;

@@ -1,8 +1,0 @@
-// EXPECTED: Warning truncated
-main_program
-integer exact_limit_identifier;
-integer invalid_length_too_long;
-begin
-    exact_limit_identifier := 1$i;
-    invalid_length_too_long := 1$i;
-end;

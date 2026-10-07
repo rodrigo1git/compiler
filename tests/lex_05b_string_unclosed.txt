@@ -1,8 +1,0 @@
-// EXPECTED: 2 errors (1 lexical error on line 7 + 1 syntax error on line 9)
-main_program
-integer x;
-begin
-    pout("Esta cadena es valida");
-    x := 5$i;
-    pout("Esta cadena nunca se cierra);
-end;

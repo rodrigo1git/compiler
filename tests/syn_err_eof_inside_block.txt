@@ -1,4 +1,4 @@
-// EXPECTED: 1 error: unexpected end of file
+// EXPECTED: 1 error
 main_program
 integer a;
 begin

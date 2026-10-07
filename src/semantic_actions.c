@@ -227,7 +227,7 @@ int sa_float_const(char c) { (void)c;
         lex_range_reported = 1;
     } else {
         double abs_val = val < 0 ? -val : val;
-        if (abs_val > 0.0 && (abs_val < 1.17549435e-38 || abs_val > 3.40282347e+38)) {
+        if (abs_val > 0.0 && (abs_val <= 1.17549435e-38 || abs_val >= 3.40282347e+38)) {
             fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
             lex_range_reported = 1;
         }
@@ -267,9 +267,21 @@ int sa_multi_char_op(char c) {
 }
 
 int sa_error(char c) {
-
     if (c != EOF) {
-        fprintf(stderr, "Line %d: Lexical error: Invalid character '%c'\n", token_start_line, c);
+        int integer_prefix = lexeme_length > 0;
+        for (int i = 0; i < lexeme_length && integer_prefix; i++) {
+            if (!isdigit((unsigned char)lexeme_buffer[i])) {
+                integer_prefix = 0;
+            }
+        }
+
+        if ((c == 's' || c == 'S') && integer_prefix) {
+            fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part before its exponent\n", token_start_line);
+        } else if (c == ';' && lexeme_length > 0 && lexeme_buffer[lexeme_length - 1] == '.') {
+            fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
+        } else {
+            fprintf(stderr, "Line %d: Lexical error: Invalid character '%c'\n", token_start_line, c);
+        }
         global_errors++;
     }
     return -1;

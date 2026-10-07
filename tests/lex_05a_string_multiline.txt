@@ -1,8 +1,0 @@
-// EXPECTED: Parsing successful. La cadena ocupa 2 lineas y en la tabla de simbolos queda como: holamundo
-main_program
-integer x;
-begin
-    pout("hola
-mundo");
-    x := 5$i;
-end;

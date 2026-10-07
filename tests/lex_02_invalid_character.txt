@@ -1,6 +1,0 @@
-// EXPECTED: 1 lexical error on line 5 due to the character '@'
-main_program
-integer x;
-begin
-    invalid_@variable := 10$i;
-end;

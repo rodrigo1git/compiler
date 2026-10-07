@@ -1,0 +1,10 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing closing parenthesis in IF
+// EXPECTED_DIAG_LINE: 7
+program1
+integer a;
+begin
+    if (a < 2$i
+        a := 1$i;
+    end_if;
+end;

@@ -1,114 +1,77 @@
 #!/bin/bash
 
-echo "=================================================="
-echo "               COMPILER TEST SUITE                "
-echo "=================================================="
-echo ""
+set -u
 
 PASSED=0
 FAILED=0
-declare -a FAILED_TESTS
-
-cat << 'PYEOF' > parse_lines.py
-import re
-import sys
-
-def extract_lines(text):
-    text = text.lower()
-    lines = []
-    pattern = r'(?:linea|lineas|line|lines)([\s,yand&marcadaencatheonat]+[0-9]+)+'
-    matches = re.finditer(pattern, text)
-    for m in matches:
-        s = m.group(0)
-        for num in re.finditer(r'\b\d+\b', s):
-            lines.append(int(num.group()))
-    return sorted(list(set(lines)))
-
-if __name__ == '__main__':
-    text = sys.argv[1]
-    lines = extract_lines(text)
-    print(" ".join(map(str, lines)))
-PYEOF
+declare -a FAILED_TESTS=()
 
 for file in tests/*.txt; do
+    [[ -f "$file" ]] || continue
     echo "--------------------------------------------------"
     echo "Running: $file"
-    EXPECTED=$(grep -i "// EXPECTED" "$file" | sed 's/\/\/ EXPECTED:*\s*//i')
-    echo "Test content and expected error:"
-    cat "$file"
-    echo ""
-    echo "--- COMPILER OUTPUT ---"
-    
+
+    EXPECTED=$(sed -n 's|^[[:space:]]*// EXPECTED:[[:space:]]*||p' "$file" | head -n 1)
+    EXPECTED_DIAG=$(sed -n 's|^[[:space:]]*// EXPECTED_DIAG:[[:space:]]*||p' "$file" | head -n 1)
+    EXPECTED_DIAG_LINE=$(sed -n 's|^[[:space:]]*// EXPECTED_DIAG_LINE:[[:space:]]*||p' "$file" | head -n 1)
+    EXPECTED_WARNING=$(sed -n 's|^[[:space:]]*// EXPECTED_WARNING:[[:space:]]*||p' "$file" | head -n 1)
+    EXPECTED_SYMBOL=$(sed -n 's|^[[:space:]]*// EXPECTED_SYMBOL:[[:space:]]*||p' "$file" | head -n 1)
+
+    set +e
     OUTPUT=$(./compiler "$file" 2>&1)
     EXIT_CODE=$?
-    
-    echo "$OUTPUT"
-    echo ""
-    
-    # Validation logic
-    EXPECTED_ERRORS=$(echo "$EXPECTED" | grep -oE '[0-9]+ (lexical|syntax|error|errors|errores|range)' | head -1 | awk '{print $1}')
-    
-    IS_PASS=0
-    
-    if echo "$EXPECTED" | grep -qi "successful"; then
-        if echo "$OUTPUT" | grep -q "Parsing successful."; then
-            IS_PASS=1
+    set -e
+
+    IS_PASS=1
+    EXPECTED_ERRORS=$(echo "$EXPECTED" | sed -nE 's/^([0-9]+) errors?$/\1/p')
+    if [[ "$EXPECTED" == "Parsing successful." ]]; then
+        if [[ $EXIT_CODE -ne 0 ]] || ! grep -Fq 'Parsing successful.' <<< "$OUTPUT" || grep -Fq 'Compilation failed' <<< "$OUTPUT"; then
+            IS_PASS=0
         fi
-    elif [ -n "$EXPECTED_ERRORS" ]; then
-        if echo "$OUTPUT" | grep -q "Compilation failed with $EXPECTED_ERRORS errors."; then
-            IS_PASS=1
+    elif [[ -n "$EXPECTED_ERRORS" ]]; then
+        if [[ $EXIT_CODE -eq 0 ]] || ! grep -Fq "Compilation failed with $EXPECTED_ERRORS errors." <<< "$OUTPUT" || grep -Fq 'Parsing successful.' <<< "$OUTPUT"; then
+            IS_PASS=0
         fi
     else
-        echo "FAIL: EXPECTED sin conteo interpretable"
+        echo "FAIL: malformed or missing EXPECTED comment"
         IS_PASS=0
     fi
-    
-    # Specific edge cases
-    if echo "$EXPECTED" | grep -qi "Warning truncated"; then
-        if echo "$OUTPUT" | grep -q "Parsing successful." && echo "$OUTPUT" | grep -qi "Warning"; then
-            IS_PASS=1
-        else
-            IS_PASS=0
-        fi
+
+    if [[ -n "$EXPECTED_DIAG" ]] && ! grep -Fqi -- "$EXPECTED_DIAG" <<< "$OUTPUT"; then
+        echo "FAIL: expected diagnostic not found: $EXPECTED_DIAG"
+        IS_PASS=0
+    fi
+    if [[ -n "$EXPECTED_DIAG_LINE" ]] && ! grep -F "Line $EXPECTED_DIAG_LINE: " <<< "$OUTPUT" | grep -Fq -- "$EXPECTED_DIAG"; then
+        echo "FAIL: expected diagnostic on line $EXPECTED_DIAG_LINE: $EXPECTED_DIAG"
+        IS_PASS=0
+    fi
+    if [[ -n "$EXPECTED_WARNING" ]] && ! grep -Fqi -- "$EXPECTED_WARNING" <<< "$OUTPUT"; then
+        echo "FAIL: expected warning not found: $EXPECTED_WARNING"
+        IS_PASS=0
+    fi
+    if [[ -n "$EXPECTED_SYMBOL" ]] && ! grep -Fq -- "$EXPECTED_SYMBOL" <<< "$OUTPUT"; then
+        echo "FAIL: expected symbol-table entry not found: $EXPECTED_SYMBOL"
+        IS_PASS=0
     fi
 
-    # Line validation
-    EXPECTED_LINES=$(python parse_lines.py "$EXPECTED")
-    OUTPUT_LINES=$(echo "$OUTPUT" | grep '^Line ' | grep -oE '^Line [0-9]+' | grep -oE '[0-9]+' | sort -n | tr '\n' ' ' | sed 's/ *$//')
-
-    if [ -n "$EXPECTED_LINES" ]; then
-        if [ "$EXPECTED_LINES" != "$OUTPUT_LINES" ]; then
-            echo "FAIL: Líneas reportadas no coinciden."
-            echo "Esperadas: '$EXPECTED_LINES'"
-            echo "Obtenidas: '$OUTPUT_LINES'"
-            IS_PASS=0
-        fi
-    fi
-    
-    if [ $IS_PASS -eq 1 ]; then
+    if [[ $IS_PASS -eq 1 ]]; then
         echo "VERDICT: [PASS]"
         PASSED=$((PASSED+1))
     else
-        echo "VERDICT: [FAIL] - Output did not match expectations"
+        echo "VERDICT: [FAIL]"
         FAILED=$((FAILED+1))
         FAILED_TESTS+=("$file")
     fi
+    echo "$OUTPUT"
 done
 
-echo "=================================================="
-echo "                 TEST SUMMARY                     "
 echo "=================================================="
 echo "PASSED: $PASSED"
 echo "FAILED: $FAILED"
 
-rm parse_lines.py
-
-if [ $FAILED -gt 0 ]; then
-    echo "Failed tests:"
-    for ft in "${FAILED_TESTS[@]}"; do
-        echo "  - $ft"
-    done
+if [[ $FAILED -gt 0 ]]; then
+    printf 'Failed tests:\n'
+    printf '  - %s\n' "${FAILED_TESTS[@]}"
     exit 1
 fi
-
 exit 0

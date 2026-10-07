@@ -1,7 +1,0 @@
-// EXPECTED: Parsing successful
-main_program
-integer a;
-begin
-    pout(a);
-    pout("hola");
-end;

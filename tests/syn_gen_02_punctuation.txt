@@ -1,7 +1,0 @@
-// EXPECTED: Parsing successful
-main_program
-integer a, b;
-begin
-    a := 1$i;
-    b := 2$i;
-end;

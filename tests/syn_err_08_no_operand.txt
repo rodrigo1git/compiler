@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing operand after '+'
+program1
+integer a;
+begin
+    a := 2$i + ;
+end;

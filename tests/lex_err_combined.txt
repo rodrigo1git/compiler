@@ -1,0 +1,17 @@
+// EXPECTED: 9 errors
+// Combined lexical error tests
+main_program
+singlef f;
+integer x;
+integer invalid@ident;
+begin
+    x := 32768$i;
+    x := 32769$i;
+    x := -32769$i;
+    f := 3.5s+38;
+    f := 1.0s-39;
+    f := 3.40282347s+39;
+    invalid_@variable := 10$i;
+
+    pout("Esta cadena nunca se cierra
+end;

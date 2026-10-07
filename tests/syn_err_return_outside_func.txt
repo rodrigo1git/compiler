@@ -1,4 +1,6 @@
-// EXPECTED: 1 syntax error (Return outside func)
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Forbidden return (Outside function context)
+// EXPECTED_DIAG_LINE: 7
 main_program
 integer a;
 begin

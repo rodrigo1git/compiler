@@ -1,0 +1,8 @@
+// EXPECTED: 5 errors
+// EXPECTED_DIAG: Float constant requires a decimal part
+program1
+singlef f;
+begin
+    f := 15s+3;
+    f := 15.;
+end;

@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing constant after 'from' in FOR loop
+program1
+integer i;
+begin
+    from i := to 10$i by 1$i repeat i := 2$i;
+end;

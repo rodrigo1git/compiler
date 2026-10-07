@@ -1,0 +1,11 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing class code
+program1
+class myclass
+begin
+    integer a;
+end;
+begin
+
+    dummy_stmt := 1$i;
+end;

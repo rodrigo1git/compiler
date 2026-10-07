@@ -1,6 +1,5 @@
 // EXPECTED: 1 error
-main_program
+// EXPECTED_DIAG: Missing begin
+program1
 integer a;
-begin
     a := 1$i;
-// Missing end;

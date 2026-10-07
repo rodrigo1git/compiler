@@ -9,13 +9,23 @@
     extern int token_start_line;
     extern int global_errors;
     extern int prev_token;
+    int in_function_depth = 0;
+    static int recovered_unexpected_token = 0;
     void yyerror(const char *s);
     void add_to_symbol_table(const char* lexeme_buffer, const char* tipo);
+
+    static void report_syntax_error(int line, const char *message) {
+        fprintf(stderr, "Line %d: Syntax error: %s\n", line, message);
+        global_errors++;
+    }
+
+    #define SYNERR(location, message) report_syntax_error((location).first_line, (message))
     %}
     
     /* Token declarations */
     %union {
       char* str_val;
+      int function_scope;
     }
     %token TOKEN_ID TOKEN_CHAIN
     %token <str_val> TOKEN_CONST
@@ -24,6 +34,8 @@
     %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
     %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
     %token TOKEN_COMPTIME TOKEN_EXTENDS
+    %type <function_scope> function_scope
+    %destructor { if ($$) in_function_depth--; } <function_scope>
         /* Relational and assignment operators */
     %token TOKEN_ASSIGN          /* := */
     %token TOKEN_EQUAL           /* == */
@@ -33,6 +45,7 @@
     
     %define parse.error custom
     %define parse.lac full
+    %locations
 
 %start statements
     
@@ -42,11 +55,13 @@
     
     statements:
           program_name decl_list TOKEN_BEGIN statement TOKEN_END ';'
+        | program_name decl_list TOKEN_BEGIN statement TOKEN_END error { SYNERR(@6, "Missing ';' after program end"); yyerrok; }
+        | program_name decl_list TOKEN_BEGIN statement YYEOF { SYNERR(@5, "Missing end"); }
         ;
     
     program_name:
           TOKEN_ID
-        | error { fprintf(stderr, "Line %d: Syntax error: Missing program name\n", current_line); yyerrok; }
+        | error { SYNERR(@$, "Missing program name"); yyerrok; }
         ;
     
     decl_list:
@@ -59,18 +74,26 @@
         ;
     
     var_decl:
-      type id_list ';' { printf("[SYNTAX] Line %d: Variable declaration\n", current_line); }
-    | TOKEN_COMPTIME type id_list ';' { printf("[SYNTAX] Line %d: Comptime variable declaration\n", current_line); }
-    | type error ';' { yyerrok; }
-    | TOKEN_COMPTIME type error ';' { yyerrok; }
-    | TOKEN_COMPTIME error id_list ';' { fprintf(stderr, "Line %d: Syntax error: Missing type in comptime declaration\n", current_line); yyerrok; }
-    | error ';' { yyerrok; }
+      type id_list ';' { printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); }
+    | TOKEN_COMPTIME type id_list ';' { printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); }
+    | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); }
+    | type error ';' {
+          if (recovered_unexpected_token == YYSYMBOL_TOKEN_ASSIGN)
+              SYNERR(@2, "Missing begin");
+          else
+              SYNERR(@2, "Missing identifier in variable declaration");
+          yyerrok;
+      }
+    | TOKEN_COMPTIME type error ';' { SYNERR(@3, "Missing identifier in comptime declaration"); yyerrok; }
+    | TOKEN_COMPTIME error id_list ';' { SYNERR(@2, "Missing type in comptime declaration"); yyerrok; }
+    | error ';' { SYNERR(@1, "Malformed declaration"); yyerrok; }
     ;
     
     id_list:
           TOKEN_ID
         | id_list ',' TOKEN_ID
-        | id_list error TOKEN_ID { fprintf(stderr, "Line %d: Syntax error: Missing ',' in variable declaration\n", current_line); yyerrok; }
+        | id_list ',' error { SYNERR(@3, "Missing identifier after ',' in variable declaration"); yyerrok; }
+        | id_list error TOKEN_ID { SYNERR(@2, "Missing ',' in variable declaration"); yyerrok; }
         ;
     
     statement:
@@ -84,45 +107,67 @@
     
     simple_stmt:
           assign ';'
-        | assign error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | assign error { SYNERR(@2, "Missing ';' after assignment"); yyerrok; }
         | if_stmt
         | for_loop
         | attr_access ';'
-        | attr_access error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | attr_access error { SYNERR(@2, "Missing ';' after attribute assignment"); yyerrok; }
         | pout_stmt ';'
-        | pout_stmt error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | pout_stmt error { SYNERR(@2, "Missing ';' after pout statement"); yyerrok; }
         | ret_stmt ';'
-        | ret_stmt error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
-        | error ';' { yyerrok; }
+        | ret_stmt error { SYNERR(@2, "Missing ';' after ret statement"); yyerrok; }
+        | error ';' {
+              if (recovered_unexpected_token == YYSYMBOL_TOKEN_CONST)
+                  SYNERR(@1, "Missing operator in expression");
+              else if (recovered_unexpected_token == YYSYMBOL_TOKEN_END)
+                  SYNERR(@1, "Missing ';' after statement");
+              else
+                  SYNERR(@1, "Malformed statement");
+              yyerrok;
+          }
         ;
     
     single_stmt:
           assign ';'
-        | assign error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | assign error { SYNERR(@2, "Missing ';' after assignment"); yyerrok; }
         | if_stmt
         | attr_access ';'
-        | attr_access error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | attr_access error { SYNERR(@2, "Missing ';' after attribute assignment"); yyerrok; }
         | pout_stmt ';'
-        | pout_stmt error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
+        | pout_stmt error { SYNERR(@2, "Missing ';' after pout statement"); yyerrok; }
         | ret_stmt ';'
-        | ret_stmt error { fprintf(stderr, "Line %d: Syntax error: Missing ';'\n", current_line); yyerrok; }
-        | error ';' { yyerrok; }
+        | ret_stmt error { SYNERR(@2, "Missing ';' after ret statement"); yyerrok; }
+        | error ';' {
+              if (recovered_unexpected_token == YYSYMBOL_TOKEN_CONST)
+                  SYNERR(@1, "Missing operator in expression");
+              else if (recovered_unexpected_token == YYSYMBOL_TOKEN_END)
+                  SYNERR(@1, "Missing ';' after statement");
+              else
+                  SYNERR(@1, "Malformed statement");
+              yyerrok;
+          }
         ;
 
     type:
+          primitive_type
+        | TOKEN_ID
+        ;
+
+    primitive_type:
           TOKEN_INTEGER
         | TOKEN_SINGLEF
-        | TOKEN_ID
         ;
     
     assign:
-          TOKEN_ID TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Assignment\n", current_line); }
-        | attr_ref TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Attribute Assignment\n", current_line); }
+          TOKEN_ID TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Assignment\n", @$.first_line); }
+        | attr_ref TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
         ;
     
     expr:
           expr '+' term
         | expr '-' term
+        | expr '+' error { SYNERR(@3, "Missing operand after '+'"); yyerrok; }
+        | expr '-' error { SYNERR(@3, "Missing operand after '-'"); yyerrok; }
         | term
         ;
     
@@ -184,7 +229,7 @@
       assign_chain TOKEN_ID                                          
     | assign_chain constant                                   
     | factor_base 
-    | TOKEN_ID TOKEN_ASSIGN error { fprintf(stderr, "Line %d: Syntax error: Use '=' instead of ':=' for assignments in expressions\n", current_line); yyerrok; }
+    | TOKEN_ID TOKEN_ASSIGN error { SYNERR(@2, "Use '=' instead of ':=' for assignments in expressions"); yyerrok; }
     ;
     
     factor_base:
@@ -198,9 +243,9 @@
     
     call:
           TOKEN_ID '(' arg_list ')' '[' const_list ']'
-        | TOKEN_ID '(' arg_list ')' { fprintf(stderr, "Line %d: Syntax error: Missing order for parameter evaluation and assignment\n", current_line); }
-        | TOKEN_ID '(' error ')' '[' const_list ']' { yyerrok; }
-        | TOKEN_ID '(' error ')' { fprintf(stderr, "Line %d: Syntax error: Missing order for parameter evaluation and assignment\n", current_line); yyerrok; }
+        | TOKEN_ID '(' arg_list ')' { SYNERR(@1, "Missing order for parameter evaluation and assignment"); }
+        | TOKEN_ID '(' error ')' '[' const_list ']' { SYNERR(@3, "Malformed function arguments"); yyerrok; }
+        | TOKEN_ID '(' error ')' { SYNERR(@3, "Missing order for parameter evaluation and assignment"); yyerrok; }
         ;
     
     arg_list:
@@ -224,20 +269,21 @@
     
     stmt_block:
           TOKEN_BEGIN compound_stmt TOKEN_END
+        | TOKEN_BEGIN compound_stmt YYEOF { SYNERR(@3, "Missing end"); }
         | single_stmt
         ;
 
     if_stmt:
-          TOKEN_IF '(' cond ')' stmt_block else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
-        | TOKEN_IF '(' cond ')' stmt_block TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", current_line); }
-        | TOKEN_IF cond ')' stmt_block else_stmt TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing opening parenthesis in IF\n", current_line); }
-        | TOKEN_IF cond ')' stmt_block TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing opening parenthesis in IF\n", current_line); }
-        | TOKEN_IF '(' cond stmt_block else_stmt TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing closing parenthesis in IF\n", current_line); }
-        | TOKEN_IF '(' cond stmt_block TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing closing parenthesis in IF\n", current_line); }
-        | TOKEN_IF cond stmt_block else_stmt TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing opening and closing parentheses in IF\n", current_line); }
-        | TOKEN_IF cond stmt_block TOKEN_END_IF ';' { fprintf(stderr, "Line %d: Syntax error: Missing opening and closing parentheses in IF\n", current_line); }
-        | TOKEN_IF '(' cond ')' stmt_block else_stmt error ';' { fprintf(stderr, "Line %d: Syntax error: Missing end_if\n", current_line); yyerrok; }
-        | TOKEN_IF '(' cond ')' stmt_block error ';' { fprintf(stderr, "Line %d: Syntax error: Missing end_if\n", current_line); yyerrok; }
+          TOKEN_IF '(' cond ')' stmt_block else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @$.first_line); }
+        | TOKEN_IF '(' cond ')' stmt_block TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @$.first_line); }
+        | TOKEN_IF cond ')' stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@1, "Missing opening parenthesis in IF"); }
+        | TOKEN_IF cond ')' stmt_block TOKEN_END_IF ';' { SYNERR(@1, "Missing opening parenthesis in IF"); }
+        | TOKEN_IF '(' cond stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@1, "Missing closing parenthesis in IF"); }
+        | TOKEN_IF '(' cond stmt_block TOKEN_END_IF ';' { SYNERR(@1, "Missing closing parenthesis in IF"); }
+        | TOKEN_IF cond stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@1, "Missing opening and closing parentheses in IF"); }
+        | TOKEN_IF cond stmt_block TOKEN_END_IF ';' { SYNERR(@1, "Missing opening and closing parentheses in IF"); }
+        | TOKEN_IF '(' cond ')' stmt_block else_stmt error ';' { SYNERR(@6, "Missing end_if"); yyerrok; }
+        | TOKEN_IF '(' cond ')' stmt_block error ';' { SYNERR(@5, "Missing end_if"); yyerrok; }
         ;
 
     else_stmt:
@@ -245,47 +291,54 @@
         ;
 
     for_loop:
-          TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", current_line); }
-        | error TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing 'from' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM error TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing identifier in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN error TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing constant after 'from' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant error constant TOKEN_BY constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing 'to' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO error TOKEN_BY constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing constant after 'to' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant error constant TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing 'by' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY error TOKEN_REPEAT stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing constant after 'by' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant error stmt_block { fprintf(stderr, "Line %d: Syntax error: Missing 'repeat' in FOR loop\n", current_line); yyerrok; }
-        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT error { fprintf(stderr, "Line %d: Syntax error: Missing body in FOR loop\n", current_line); yyerrok; }
+          TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", @1.first_line); }
+        | TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@1, "Missing 'from' in FOR loop"); }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT ';' { SYNERR(@1, "Missing body in FOR loop"); }
+        | error TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@1, "Missing 'from' in FOR loop"); yyerrok; }
+        | TOKEN_FROM error TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@2, "Missing identifier in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN error TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@4, "Missing constant after 'from' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant error constant TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@5, "Missing 'to' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO error TOKEN_BY constant TOKEN_REPEAT stmt_block { SYNERR(@6, "Missing constant after 'to' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant error constant TOKEN_REPEAT stmt_block { SYNERR(@7, "Missing 'by' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY error TOKEN_REPEAT stmt_block { SYNERR(@8, "Missing constant after 'by' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant error stmt_block { SYNERR(@9, "Missing 'repeat' in FOR loop"); yyerrok; }
+        | TOKEN_FROM TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO constant TOKEN_BY constant TOKEN_REPEAT error { SYNERR(@10, "Missing body in FOR loop"); yyerrok; }
         ;
 
     func_def:
-          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
-        | type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Function definition\n", current_line); }
-        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { yyerrok; }
-        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { yyerrok; }
-        | type TOKEN_FUNCTION error '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { fprintf(stderr, "Line %d: Syntax error: Missing function name\n", current_line); yyerrok; }
-        | type TOKEN_FUNCTION error '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { fprintf(stderr, "Line %d: Syntax error: Missing function name\n", current_line); yyerrok; }
+          type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $9 = 0; in_function_depth--; printf("[SYNTAX] Line %d: Function definition\n", @2.first_line); }
+        | type TOKEN_FUNCTION TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $8 = 0; in_function_depth--; printf("[SYNTAX] Line %d: Function definition\n", @2.first_line); }
+        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $9 = 0; in_function_depth--; SYNERR(@4, "Malformed formal parameter list"); yyerrok; }
+        | type TOKEN_FUNCTION TOKEN_ID '(' error ')' TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $8 = 0; in_function_depth--; SYNERR(@4, "Malformed formal parameter list"); yyerrok; }
+        | type TOKEN_FUNCTION error '(' param_decl_list ')' decl_list TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $9 = 0; in_function_depth--; SYNERR(@3, "Missing function name"); yyerrok; }
+        | type TOKEN_FUNCTION error '(' param_decl_list ')' TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $8 = 0; in_function_depth--; SYNERR(@3, "Missing function name"); yyerrok; }
+        ;
+
+    function_scope:
+          %empty { in_function_depth++; $$ = 1; }
         ;
 
     param_decl_list:
           type TOKEN_ID
         | param_decl_list ',' type TOKEN_ID 
-        | type error { fprintf(stderr, "Line %d: Syntax error: Missing formal parameter name\n", current_line); yyerrok; }
-        | error TOKEN_ID { fprintf(stderr, "Line %d: Syntax error: Missing formal parameter type\n", current_line); yyerrok; }
-        | param_decl_list ',' type error { fprintf(stderr, "Line %d: Syntax error: Missing formal parameter name\n", current_line); yyerrok; }
-        | param_decl_list ',' error TOKEN_ID { fprintf(stderr, "Line %d: Syntax error: Missing formal parameter type\n", current_line); yyerrok; }
+        | primitive_type error { SYNERR(@2, "Missing formal parameter name"); yyerrok; }
+        | error TOKEN_ID { SYNERR(@1, "Missing formal parameter type"); yyerrok; }
+        | param_decl_list ',' primitive_type error { SYNERR(@4, "Missing formal parameter name"); yyerrok; }
+        | param_decl_list ',' error TOKEN_ID { SYNERR(@3, "Missing formal parameter type"); yyerrok; }
         ;
 
     method_def:
-          type TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
-        | type TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { printf("[SYNTAX] Line %d: Method definition\n", current_line); }
-        | type TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { yyerrok; }
-        | type TOKEN_ID '(' error ')' TOKEN_BEGIN compound_stmt TOKEN_END ';' { yyerrok; }
+          type TOKEN_ID '(' param_decl_list ')' decl_list TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $8 = 0; in_function_depth--; printf("[SYNTAX] Line %d: Method definition\n", @2.first_line); }
+        | type TOKEN_ID '(' param_decl_list ')' TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $7 = 0; in_function_depth--; printf("[SYNTAX] Line %d: Method definition\n", @2.first_line); }
+        | type TOKEN_ID '(' error ')' decl_list TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $8 = 0; in_function_depth--; SYNERR(@3, "Malformed formal parameter list"); yyerrok; }
+        | type TOKEN_ID '(' error ')' TOKEN_BEGIN function_scope compound_stmt TOKEN_END ';' { $7 = 0; in_function_depth--; SYNERR(@3, "Malformed formal parameter list"); yyerrok; }
         ;
 
     class_def:
-          TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", current_line); }
-        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN error TOKEN_END ';' { fprintf(stderr, "Line %d: Syntax error: Missing class code\n", current_line); yyerrok; }
-        | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { yyerrok; }
+          TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { printf("[SYNTAX] Line %d: Class declaration (Tema 24)\n", @1.first_line); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_BEGIN class_body TOKEN_END ';' { SYNERR(@1, "Missing class code"); }
+        | TOKEN_CLASS TOKEN_ID TOKEN_ID TOKEN_BEGIN error TOKEN_END ';' { SYNERR(@5, "Malformed class body"); yyerrok; }
+        | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { SYNERR(@3, "Malformed class declaration"); yyerrok; }
         ;
 
     class_body:
@@ -294,8 +347,14 @@
         ;
 
     extends_stmt:
-          TOKEN_EXTENDS id_list ';' { printf("[SYNTAX] Line %d: Extends statement\n", current_line); }
-        | TOKEN_EXTENDS error ';' { fprintf(stderr, "Line %d: Syntax error: Missing class list after extends\n", current_line); yyerrok; }
+          TOKEN_EXTENDS extends_id_list ';' { printf("[SYNTAX] Line %d: Extends statement\n", @$.first_line); }
+        | TOKEN_EXTENDS extends_id_list ',' error ';' { SYNERR(@4, "Missing class name after ',' in extends list"); yyerrok; }
+        | TOKEN_EXTENDS error ';' { SYNERR(@2, "Missing class list after extends"); yyerrok; }
+        ;
+
+    extends_id_list:
+          TOKEN_ID
+        | extends_id_list ',' TOKEN_ID
         ;
     
     class_member:
@@ -311,49 +370,30 @@
 
     attr_access:
           attr_ref '=' expr
-        | attr_ref '=' error { yyerrok; }
+        | attr_ref '=' error { SYNERR(@3, "Missing expression in attribute assignment"); yyerrok; }
         ;
 
 
     pout_stmt:
-          TOKEN_POUT_LOWER '(' expr ')' { printf("[SYNTAX] Line %d: POUT statement\n", current_line); }
-        | TOKEN_POUT_LOWER '(' error ')' { fprintf(stderr, "Line %d: Syntax error: Missing argument in pout\n", current_line); yyerrok; }
+          TOKEN_POUT_LOWER '(' expr ')' { printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+        | TOKEN_POUT_LOWER '(' error ')' { SYNERR(@3, "Missing argument in pout"); yyerrok; }
         ;
 
     ret_stmt:
-          TOKEN_RET '(' expr ')' { printf("[SYNTAX] Line %d: Return statement (RET)\n", current_line); }
+          TOKEN_RET '(' expr ')' {
+              if (in_function_depth <= 0) {
+                  SYNERR(@1, "Forbidden return (Outside function context)");
+              } else {
+                  printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
+              }
+          }
         ;
 
     %%
 
     static int yyreport_syntax_error(const yypcontext_t *ctx) {
-        yysymbol_kind_t unexp = yypcontext_token(ctx);
-        const char *unexp_name = yysymbol_name(unexp);
-
-
-
-        fprintf(stderr, "Line %d: Syntax error: Unexpected %s", current_line, unexp_name);
-        
-        int n = yypcontext_expected_tokens(ctx, NULL, 0);
-        if (n > 0) {
-            yysymbol_kind_t *expected = malloc(n * sizeof(yysymbol_kind_t));
-            if (expected != NULL) {
-                yypcontext_expected_tokens(ctx, expected, n);
-                fprintf(stderr, ", expecting ");
-                int limit = (n > 8) ? 8 : n;
-                for (int i = 0; i < limit; i++) {
-                    if (i > 0) {
-                        fprintf(stderr, " or ");
-                    }
-                    fprintf(stderr, "%s", yysymbol_name(expected[i]));
-                }
-                if (n > 8) {
-                    fprintf(stderr, " ... (and %d more)", n - 8);
-                }
-                free(expected);
-            }
-        }
-        fprintf(stderr, "\n");
-        global_errors++;
+        /* Recovery productions own user-facing diagnostics and accounting. */
+        recovered_unexpected_token = (int)yypcontext_token(ctx);
+        (void)yypcontext_expected_tokens(ctx, NULL, 0);
         return 0;
     }

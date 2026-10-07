@@ -1,4 +1,4 @@
-// EXPECTED: 1 syntax error (Incomplete condition)
+// EXPECTED: 2 errors
 main_program
 integer function test(integer x)
 begin

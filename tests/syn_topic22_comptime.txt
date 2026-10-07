@@ -1,6 +1,0 @@
-// EXPECTED: Parsing successful
-main_program
-comptime integer c_var;
-begin
-    c_var := 10$i;
-end;

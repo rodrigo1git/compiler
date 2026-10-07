@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing opening parenthesis in IF
+program1
+integer a;
+begin
+    if a < 1$i)
+        a := 1$i;
+    end_if;
+end;

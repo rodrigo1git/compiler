@@ -1,4 +1,4 @@
-// EXPECTED: Parsing successful
+// EXPECTED: Parsing successful.
 main_program
 singlef float_no_int;
 singlef float_int;

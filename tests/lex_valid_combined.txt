@@ -1,0 +1,56 @@
+// EXPECTED: Parsing successful.
+// EXPECTED_SYMBOL: Lexeme: holamundo | Type: CHAIN
+// EXPECTED_WARNING: truncated to: 'this_is_a_very_long_id'
+// Combined valid lexical tests
+main_program
+// lex_valid_ranges
+integer a_int;
+singlef b_float;
+
+// lex_06_long_identifier and lex_identifiers
+integer exact_limit_identifier;
+integer invalid_length_too_long;
+integer a_valid_identifier_1;
+integer this_is_a_very_long_identifier_that_exceeds_22_chars;
+integer dummy_stmt;
+INTEGER a_res;
+
+begin
+    // lex_valid_ranges
+    a_int := 32767$i;
+    a_int := -32768$i;
+    b_float := 1.17549436s-38;
+    b_float := 3.40282346s+38;
+
+    // lex_floats
+    b_float := 1.0;
+    b_float := .6;
+    b_float := -1.2;
+    b_float := 3.0s-5;
+    b_float := .2s34;
+    b_float := 2.5s-1;
+    b_float := 15.2;
+    b_float := 0.0;
+    b_float := 1.2s+10;
+
+    // lex_identifiers
+    exact_limit_identifier := 1$i;
+    invalid_length_too_long := 1$i;
+    dummy_stmt := 1$i;
+
+    // lex_reserved_words
+    IF (a_int < 1$i) BEGIN 
+        a_int := 2$i;
+    END END_IF;
+    if (a_int > 1$i) begin 
+        a_int := 2$i;
+    end end_if;
+
+    // lex_strings
+    pout("hola
+mundo");
+
+    // comments
+    // Valid comment
+end;
+// este comentario termina al EOF y le falta salto de linea

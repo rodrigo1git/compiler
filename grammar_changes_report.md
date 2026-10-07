@@ -2,6 +2,8 @@
 
 El presente informe consolida todas las modificaciones realizadas sobre el archivo `grammar.y` para optimizar el análisis sintáctico, cumplir con las normativas estrictas del Trabajo Práctico y mejorar drásticamente la recuperación ante errores.
 
+**Nota sobre el estado actual:** las secciones siguientes conservan decisiones y pruebas de etapas anteriores. Algunas describen enfoques que después cambiaron; el apartado final, “Estado verificado después de la corrección de recuperación”, documenta la implementación vigente y la última validación.
+
 ## 1. Transformation to Left Recursion
 Se corrigieron todas las reglas de listas para usar recursividad a la izquierda (`id_list`, `arg_list`, `const_list`, `param_decl_list`), evitando desbordamientos de la pila de Bison.
 Se refactorizó la regla `factor` creando un acumulador `assign_chain` que permite resolver asignaciones anidadas (`a = b = 3`) sin caer en recursividad a la derecha.
@@ -260,3 +262,14 @@ Para sellar las inconsistencias en el reporte de errores causadas por la recuper
 3. **Normalización Estructural de Pruebas:**
    - Se agregaron bloques ejecutables mínimos (`integer d; begin d := 1$i; end;`) a 5 de los tests de error (`syn_err_incomplete_condition`, `syn_err_missing_parenthesis`, `syn_err_class_no_members`, `syn_err_comptime_no_type`, `syn_err_missing_func_name`) para cumplir con la regla gramatical de que todo programa debe tener un cuerpo principal. Esto eliminó las cascadas de "Unexpected end of file".
    - Se actualizaron explícitamente los headers de `syn_err_assign_invocation`, `syn_err_from_no_id` y `syn_err_missing_func_name` para documentar que incluyen 1 error primario + 1 error secundario en cascada, garantizando transparencia en cómo Bison aplica el "Panic Mode".
+## Estado verificado después de la corrección de recuperación
+
+La versión actual mantiene la gramática sin conflictos shift/reduce ni reduce/reduce. Se habilitó el seguimiento de ubicaciones de Bison y el lexer asigna a cada token su línea de origen; el reporte personalizado usa la ubicación del token inesperado.
+
+Las alternativas de recuperación que reconocen construcciones inválidas —por ejemplo, una condición IF sin paréntesis, una llamada sin orden de evaluación o un retorno fuera de función— incrementan el contador de errores. El parser puede continuar para encontrar otros problemas, y el ejecutable termina con estado distinto de cero si detectó alguno.
+
+El contexto de retorno se activa mediante un símbolo function_scope tipado. Su destructor decrementa el contexto si Bison descarta el marcador durante la recuperación; las reducciones normales lo decrementan en la acción de la función o método.
+
+La matriz léxica conserva el sufijo entero $i. Para SINGLEF, los tests reflejan el intervalo abierto del TP1: los extremos exactos se rechazan, cero se admite y los valores probados dentro y fuera de cada extremo cubren ambos signos. Los identificadores se truncan a 22 caracteres.
+
+El runner verifica el código de salida, el estado final de compilación, los diagnósticos solicitados y, cuando se especifica, su línea, los warnings y las entradas de la tabla de símbolos. Tras una construcción limpia, los 55 casos pasan. Los comentarios de una línea no tienen una forma de cierre inválida definida: empiezan con // y terminan al fin de línea o EOF.

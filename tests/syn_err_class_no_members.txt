@@ -1,7 +1,9 @@
-// EXPECTED: 1 syntax error on line 5: class has no members (grammar decision: class_body does not allow empty blocks)
+// EXPECTED: 1 error
 main_program
 class subclass c10
 begin
+
+    dummy_stmt := 1$i;
 end;
 integer d;
 begin

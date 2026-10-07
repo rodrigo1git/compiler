@@ -1,0 +1,7 @@
+// EXPECTED: 2 errors
+// EXPECTED_DIAG: Use '=' instead of ':='
+program1
+integer a, b;
+begin
+    a := b := 2$i + 1$i;
+end;

@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing type in comptime declaration
+program1
+comptime a;
+begin
+
+    dummy_stmt := 1$i;
+end;

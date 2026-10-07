@@ -1,0 +1,120 @@
+// EXPECTED: Parsing successful.
+// Combined valid syntax tests
+main_program
+
+// topic22
+comptime integer c_var;
+
+// gen_02
+integer a, b;
+integer c, d, e;
+integer i;
+integer x, y, z;
+
+// topic24 & topic32
+class baseclass c10
+begin
+    integer attr_val;
+end;
+
+class mascota c11
+begin
+    integer dueno;
+end;
+
+class subclass c12
+begin
+    integer raza;
+    extends baseclass, mascota; 
+    
+    integer ladrar(integer veces)
+    begin
+        pout(veces);
+        ret(1$i);
+    end;
+end;
+
+class gato c13
+begin
+    integer attr_gato;
+end;
+
+subclass p_obj;
+gato g_obj;
+
+// gen_03
+integer function mi_func(integer px)
+begin
+    ret(px + 1$i);
+end;
+
+// topic19
+integer function f2(integer pa, integer pb, integer pc)
+begin
+    ret(pa);
+end;
+
+integer function calcular(integer pa, integer pb)
+integer local_var;
+begin
+    if (pa < pb)
+        ret(pa);
+    end_if;
+    ret(pb);
+end;
+
+begin
+    // topic22
+    c_var := 10$i;
+
+    // gen_02
+    a := 1$i;
+    b := 2$i;
+
+    // gen_03
+    a := mi_func(5$i)[1$i];
+
+    // gen_04
+    a := 5$i + 3$i * 2$i / 1$i - 4$i;
+
+    // gen_05
+    pout(a);
+    pout("hola");
+
+    // gen_06
+    if (a > b) begin
+        a := b;
+    end else begin
+        b := a;
+    end end_if;
+
+    // topic14
+    from i := 1$i to 10$i by 1$i repeat begin
+        a := a + i;
+    end
+
+    // topic18
+    a := b=2$i;
+    c := f2(a=3.0, 1$i, 2$i)[1$i, 2$i, 3$i];
+    a := b=c+d*e=c/3$i;
+    a := b=2$i+d;
+    a := b+c=4$i;
+    if (a=3$i==3$i)
+        a := 1$i;
+    end_if;
+    if (a=b!=3$i)
+        a := 1$i;
+    end_if;
+    if (a=b+c==3.1)
+        a := 1$i;
+    end_if;
+
+    // topic19
+    d := f2(a=1$i, b+3$i, 5$i)[2$i,3$i,1$i];
+
+    // topic24
+    i := 1$i;
+    p_obj[0$i] = 4$i;
+    p_obj[i] = 4$i;
+    g_obj[0$i] = p_obj[0$i];
+end;

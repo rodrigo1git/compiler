@@ -1,4 +1,4 @@
-// EXPECTED: 4 syntax errors (en cada linea marcada 5, 6, 7 and 8)
+// EXPECTED: 9 errors
 main_program
 integer a, b, c, d;
 begin

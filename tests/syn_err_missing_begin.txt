@@ -1,0 +1,6 @@
+// EXPECTED: 2 errors
+// EXPECTED_DIAG: Missing begin
+program1
+integer a;
+a := 1$i;
+end;

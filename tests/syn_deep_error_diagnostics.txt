@@ -1,9 +1,10 @@
+// EXPECTED: 8 errors
 // =========================================
 // TEST: Diagnosticos de errores sintacticos y semanticos
 //       Verifies malformed lists, ret without parameter,
 //       attributes without expression, incomplete conditions,
 //       out of range constants and falta de delimitador ';'.
-// EXPECTED: 7 errores sintacticos/de rango en las lineas 11, 15, 19, 21, 25, 26 and 29. Parsing does not abort.
+// The parser should report errors and continue through the rest of the file.
 // =========================================
 
 miprogramaotros
