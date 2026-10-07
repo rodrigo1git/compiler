@@ -39,10 +39,13 @@ int yylex(void) {
         if (c == EOF) {
             if (state == ST_CHAIN) {
                 fprintf(stderr, "Line %d: Lexical error: Unclosed string literal\n", token_start_line);
+                global_errors++;
             } else if (state == E) {
                 fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
+                global_errors++;
             } else if (state != 0) {
                 fprintf(stderr, "Line %d: Lexical error: Unexpected end of file within token\n", token_start_line);
+                global_errors++;
             }
             prev_token = cur_token;
             cur_token = 0;
