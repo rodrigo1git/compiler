@@ -183,7 +183,7 @@ int sa_identifier(char c) { (void)c;
         lexeme_buffer_lower[22] = '\0';
         lexeme_length = 22;
         lexeme_buffer[lexeme_length] = '\0';
-        fprintf(stderr, "Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", current_line, original_lexeme, lexeme_buffer_lower);
+        printf("Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", current_line, original_lexeme, lexeme_buffer_lower);
     }
     add_to_symbol_table(lexeme_buffer, "ID");
     free(original_lexeme);

@@ -20,7 +20,6 @@ int yylex(void) {
     int col;
     static char last_c = '\0';
     static int eof_padded = 0;
-    static int ghost_newline = 0;
     int token_start_line = current_line;
 
     state = 0;
@@ -35,7 +34,6 @@ int yylex(void) {
         if (c == EOF && !eof_padded) {
             c = '\n';
             eof_padded = 1;
-            ghost_newline = 1;
         }
 
         if (c == EOF) {
@@ -45,7 +43,7 @@ int yylex(void) {
             } else if (state == E) {
                 fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
                 global_errors++;
-            } else if (state != 0) { // defensivo: nunca alcanzado hoy
+            } else if (state != 0) {
                 fprintf(stderr, "Line %d: Lexical error: Unexpected end of file within token\n", token_start_line);
                 global_errors++;
             }
@@ -56,7 +54,7 @@ int yylex(void) {
 
         int incremented = 0;
         if (c == '\n') {
-            if (last_c != '\r' && !ghost_newline) {
+            if (last_c != '\r') {
                 current_line++;
                 incremented = 1;
             }
