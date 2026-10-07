@@ -168,7 +168,7 @@ int sa_identifier(char c) { (void)c;
 
     for (int i = 0; i < lexeme_length; i++) {
         if (isupper((unsigned char)lexeme_buffer[i])) {
-            printf("Line %d: Lexical error: Identifier contains uppercase letters.\n", token_start_line);
+            fprintf(stderr, "Line %d: Lexical error: Identifier contains uppercase letters.\n", token_start_line);
             global_errors++;
             // Allow as a valid ID to prevent breaking the grammar
             add_to_symbol_table(lexeme_buffer_lower, "ID");
