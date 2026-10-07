@@ -20,3 +20,5 @@ test_exitoso.txt
 test_otros_errores.txt
 tp1_text.txt
 tp2_text.txt
+scratch/
+.~lock.*
