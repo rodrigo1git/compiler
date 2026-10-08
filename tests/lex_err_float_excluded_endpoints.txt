@@ -1,0 +1,11 @@
+// EXPECTED: 4 errors
+// EXPECTED_DIAG: Float constant '1.17549435s-38' out of range
+// EXPECTED_DIAG: Float constant '3.40282347s+38' out of range
+program1
+singlef f;
+begin
+    f := 1.17549435s-38;
+    f := -1.17549435s-38;
+    f := 3.40282347s+38;
+    f := -3.40282347s+38;
+end;

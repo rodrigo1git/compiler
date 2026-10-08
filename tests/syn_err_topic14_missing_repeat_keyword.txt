@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing 'repeat' in FOR loop
+program1
+integer i;
+begin
+    from i := 1$i to 10$i by 1$i i := 2$i;;
+end;

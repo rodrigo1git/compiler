@@ -2,8 +2,13 @@
 
 set -e
 
+if [ "$#" -gt 1 ]; then
+    echo "Usage: $0 [input_file]" >&2
+    exit 2
+fi
+
 echo "Cleaning old build files..."
-rm -f compiler compiler y.tab.c y.tab.h y.output
+rm -f compiler y.tab.c y.tab.h y.output
 
 echo "Generating parser..."
 bison -d -o y.tab.c src/grammar.y
@@ -20,10 +25,8 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
 
 echo "Build successful."
 
-if [ -n "$1" ]; then
+if [ "$#" -eq 1 ]; then
     echo "--------------------------------------------------------"
     echo "Running compiler with: $1"
     ./compiler "$1"
-else
-    echo "Usage: ./build.sh <input_file>"
 fi

@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing expression in toi conversion
+// Topic 34: toi requires a parenthesized expression.
+program1
+integer converted;
+begin
+    converted := toi();
+end;

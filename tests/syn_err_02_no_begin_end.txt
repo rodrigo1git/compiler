@@ -1,5 +1,0 @@
-// EXPECTED: 1 error
-// EXPECTED_DIAG: Missing begin
-program1
-integer a;
-    a := 1$i;

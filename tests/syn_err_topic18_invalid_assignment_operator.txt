@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Use '=' instead of ':='
+// EXPECTED_SYNTAX: Assignment
+program1
+integer a, b;
+begin
+    a := b := 2$i + 1$i;
+    a := 3$i;
+end;

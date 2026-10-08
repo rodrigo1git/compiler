@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing ';' after statement
+loop_terminator
+integer i;
+begin
+    from i := 1$i to 2$i by 1$i repeat begin
+        i := 1$i;
+    end
+end;

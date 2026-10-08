@@ -1,4 +1,5 @@
 // EXPECTED: 1 error
+// EXPECTED_DIAG: Missing end
 main_program
 integer a;
 begin

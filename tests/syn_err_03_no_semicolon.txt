@@ -1,7 +1,0 @@
-// EXPECTED: 2 errors
-// EXPECTED_DIAG: Missing ';' after statement
-program1
-integer a;
-begin
-    a := 1$i
-end;

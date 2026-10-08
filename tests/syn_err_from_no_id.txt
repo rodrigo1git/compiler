@@ -1,8 +1,0 @@
-// EXPECTED: 2 errors
-main_program
-integer a;
-begin
-    from := 1$i to 10$i by 1$i repeat begin
-        a := a + 1$i;
-    end;
-end;

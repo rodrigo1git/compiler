@@ -3,7 +3,7 @@
 #include "../y.tab.h"
 
 extern int yylex(void);
-extern int prev_token;
-extern int cur_token;
+extern int current_line;
+extern void lexer_reset_input(void);
 
 #endif /* LEXER_H */

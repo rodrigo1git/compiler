@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing ';' after assignment
+program1
+integer a;
+begin
+    a := 1$i
+end;

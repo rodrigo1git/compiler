@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Invalid operator '=>'
+bad_comparator
+integer a;
+begin
+    if (a => 1$i)
+        a := 1$i;
+    end_if;
+end;

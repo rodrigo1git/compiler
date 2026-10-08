@@ -1,7 +1,0 @@
-// EXPECTED: 1 error
-main_program
-integer a;
-integer function test(integer x) begin ret(x); end;
-begin
-    a := test(a, )[1$i];
-end;

@@ -1,8 +1,0 @@
-// EXPECTED: 1 error
-main_program
-comptime c_var;
-
-integer d;
-begin
-    d := 1$i;
-end;

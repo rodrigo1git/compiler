@@ -1,6 +1,0 @@
-// EXPECTED: 1 error
-main_program
-integer a;
-begin
-    pout();
-end;

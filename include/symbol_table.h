@@ -20,9 +20,8 @@ extern void init_symbol_table(void);
 
 hash_map_t* map_create(int capacity);
 extern bool map_contains(hash_map_t* map, const char* key, const char* value);
-extern void map_put(hash_map_t* map, const char* key, const char* value);
+extern map_node_t *map_put(hash_map_t* map, const char* key, const char* value);
 extern void map_free(hash_map_t* map);
 extern void map_print(hash_map_t* map);
 
 #endif /* SYMBOL_TABLE_H */
-

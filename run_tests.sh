@@ -1,77 +1,109 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -u
+set -uo pipefail
 
-PASSED=0
-FAILED=0
-declare -a FAILED_TESTS=()
-
-for file in tests/*.txt; do
-    [[ -f "$file" ]] || continue
-    echo "--------------------------------------------------"
-    echo "Running: $file"
-
-    EXPECTED=$(sed -n 's|^[[:space:]]*// EXPECTED:[[:space:]]*||p' "$file" | head -n 1)
-    EXPECTED_DIAG=$(sed -n 's|^[[:space:]]*// EXPECTED_DIAG:[[:space:]]*||p' "$file" | head -n 1)
-    EXPECTED_DIAG_LINE=$(sed -n 's|^[[:space:]]*// EXPECTED_DIAG_LINE:[[:space:]]*||p' "$file" | head -n 1)
-    EXPECTED_WARNING=$(sed -n 's|^[[:space:]]*// EXPECTED_WARNING:[[:space:]]*||p' "$file" | head -n 1)
-    EXPECTED_SYMBOL=$(sed -n 's|^[[:space:]]*// EXPECTED_SYMBOL:[[:space:]]*||p' "$file" | head -n 1)
-
-    set +e
-    OUTPUT=$(./compiler "$file" 2>&1)
-    EXIT_CODE=$?
-    set -e
-
-    IS_PASS=1
-    EXPECTED_ERRORS=$(echo "$EXPECTED" | sed -nE 's/^([0-9]+) errors?$/\1/p')
-    if [[ "$EXPECTED" == "Parsing successful." ]]; then
-        if [[ $EXIT_CODE -ne 0 ]] || ! grep -Fq 'Parsing successful.' <<< "$OUTPUT" || grep -Fq 'Compilation failed' <<< "$OUTPUT"; then
-            IS_PASS=0
-        fi
-    elif [[ -n "$EXPECTED_ERRORS" ]]; then
-        if [[ $EXIT_CODE -eq 0 ]] || ! grep -Fq "Compilation failed with $EXPECTED_ERRORS errors." <<< "$OUTPUT" || grep -Fq 'Parsing successful.' <<< "$OUTPUT"; then
-            IS_PASS=0
-        fi
-    else
-        echo "FAIL: malformed or missing EXPECTED comment"
-        IS_PASS=0
-    fi
-
-    if [[ -n "$EXPECTED_DIAG" ]] && ! grep -Fqi -- "$EXPECTED_DIAG" <<< "$OUTPUT"; then
-        echo "FAIL: expected diagnostic not found: $EXPECTED_DIAG"
-        IS_PASS=0
-    fi
-    if [[ -n "$EXPECTED_DIAG_LINE" ]] && ! grep -F "Line $EXPECTED_DIAG_LINE: " <<< "$OUTPUT" | grep -Fq -- "$EXPECTED_DIAG"; then
-        echo "FAIL: expected diagnostic on line $EXPECTED_DIAG_LINE: $EXPECTED_DIAG"
-        IS_PASS=0
-    fi
-    if [[ -n "$EXPECTED_WARNING" ]] && ! grep -Fqi -- "$EXPECTED_WARNING" <<< "$OUTPUT"; then
-        echo "FAIL: expected warning not found: $EXPECTED_WARNING"
-        IS_PASS=0
-    fi
-    if [[ -n "$EXPECTED_SYMBOL" ]] && ! grep -Fq -- "$EXPECTED_SYMBOL" <<< "$OUTPUT"; then
-        echo "FAIL: expected symbol-table entry not found: $EXPECTED_SYMBOL"
-        IS_PASS=0
-    fi
-
-    if [[ $IS_PASS -eq 1 ]]; then
-        echo "VERDICT: [PASS]"
-        PASSED=$((PASSED+1))
-    else
-        echo "VERDICT: [FAIL]"
-        FAILED=$((FAILED+1))
-        FAILED_TESTS+=("$file")
-    fi
-    echo "$OUTPUT"
-done
-
-echo "=================================================="
-echo "PASSED: $PASSED"
-echo "FAILED: $FAILED"
-
-if [[ $FAILED -gt 0 ]]; then
-    printf 'Failed tests:\n'
-    printf '  - %s\n' "${FAILED_TESTS[@]}"
+if ! ./build.sh; then
+    echo "FAIL: compiler build failed"
     exit 1
 fi
-exit 0
+
+passed=0
+failed=0
+declare -a failed_tests=()
+shopt -s nullglob
+test_files=(tests/*.txt)
+
+if ((${#test_files[@]} == 0)); then
+    echo "FAIL: no tests found in tests/"
+    exit 1
+fi
+
+for file in "${test_files[@]}"; do
+    expected=""
+    declare -a expected_diags=() expected_warnings=() expected_symbols=() expected_line_diags=() expected_syntax=()
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        case "$line" in
+            "// EXPECTED: "*) [[ -z "$expected" ]] && expected=${line#"// EXPECTED: "} ;;
+            "// EXPECTED_DIAG: "*) expected_diags+=("${line#"// EXPECTED_DIAG: "}") ;;
+            "// EXPECTED_WARNING: "*) expected_warnings+=("${line#"// EXPECTED_WARNING: "}") ;;
+            "// EXPECTED_SYMBOL: "*) expected_symbols+=("${line#"// EXPECTED_SYMBOL: "}") ;;
+            "// EXPECTED_DIAG_LINE: "*) expected_line_diags+=("${line#"// EXPECTED_DIAG_LINE: "}") ;;
+            "// EXPECTED_SYNTAX: "*) expected_syntax+=("${line#"// EXPECTED_SYNTAX: "}") ;;
+        esac
+    done < "$file"
+
+    output=$(timeout 10 ./compiler "$file" 2>&1)
+    exit_code=$?
+    is_pass=1
+    actual_errors=$(grep -Ec '^Line [0-9]+: (Lexical|Syntax) error:' <<< "$output" || true)
+    expected_errors=$(sed -nE 's/^([0-9]+) errors?$/\1/p' <<< "$expected")
+
+    if [[ "$expected" == "Parsing successful." ]]; then
+        if ((exit_code != 0)) || ! grep -Fq 'Parsing successful.' <<< "$output" || grep -Fq 'Compilation failed' <<< "$output" || ((actual_errors != 0)); then
+            is_pass=0
+        fi
+    elif [[ -n "$expected_errors" ]]; then
+        if ((exit_code == 0)) || ! grep -Fq "Compilation failed with $expected_errors errors." <<< "$output" || grep -Fq 'Parsing successful.' <<< "$output" || ((actual_errors != expected_errors)); then
+            is_pass=0
+        fi
+    else
+        echo "FAIL: $file has a missing or invalid EXPECTED assertion"
+        is_pass=0
+    fi
+
+    for diagnostic in "${expected_diags[@]}"; do
+        if ! grep -Fqi -- "$diagnostic" <<< "$output"; then
+            echo "FAIL: $file missing diagnostic: $diagnostic"
+            is_pass=0
+        fi
+    done
+    for warning in "${expected_warnings[@]}"; do
+        if ! grep -Fqi -- "$warning" <<< "$output"; then
+            echo "FAIL: $file missing warning: $warning"
+            is_pass=0
+        fi
+    done
+    for symbol in "${expected_symbols[@]}"; do
+        if ! grep -Fq -- "$symbol" <<< "$output"; then
+            echo "FAIL: $file missing symbol-table entry: $symbol"
+            is_pass=0
+        fi
+    done
+    for syntax_event in "${expected_syntax[@]}"; do
+        if ! grep -Fq -- "$syntax_event" <<< "$output"; then
+            echo "FAIL: $file missing parsed syntax event: $syntax_event"
+            is_pass=0
+        fi
+    done
+    for line_diagnostic in "${expected_line_diags[@]}"; do
+        if [[ "$line_diagnostic" == *:* ]]; then
+            line_number=${line_diagnostic%%:*}
+            diagnostic=${line_diagnostic#*: }
+        else
+            line_number=$line_diagnostic
+            diagnostic=""
+        fi
+        if ! grep -F "Line $line_number: " <<< "$output" | grep -Fq -- "$diagnostic"; then
+            echo "FAIL: $file missing diagnostic on line $line_number: $diagnostic"
+            is_pass=0
+        fi
+    done
+
+    if ((is_pass)); then
+        echo "PASS: $file"
+        ((passed += 1))
+    else
+        echo "FAIL: $file (exit $exit_code, expected '$expected', saw $actual_errors diagnostic lines)"
+        printf '%s\n' "$output"
+        failed_tests+=("$file")
+        ((failed += 1))
+    fi
+done
+
+printf 'PASSED: %d\nFAILED: %d\n' "$passed" "$failed"
+if ((failed)); then
+    printf 'Failed tests:\n'
+    printf '  - %s\n' "${failed_tests[@]}"
+    exit 1
+fi

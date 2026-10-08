@@ -1,0 +1,13 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing class code
+// EXPECTED_SYNTAX: Variable declaration
+// EXPECTED_SYNTAX: Assignment
+main_program
+class subclass
+begin
+    integer attr_val;
+end;
+integer d;
+begin
+    d := 1$i;
+end;

@@ -1,4 +1,5 @@
 // EXPECTED: 1 error
+// EXPECTED_DIAG: Missing 'begin' in class declaration
 main_program
 class subclass c10
 end;

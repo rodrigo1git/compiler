@@ -7,9 +7,8 @@
 FILE *source_file = NULL;
 int global_errors = 0;
 int token_start_line = 1;
-int lex_range_reported = 0;
+int lexical_error_line = 0;
 extern int yyparse();
-extern int current_line;
 
 int main(int argc, char *argv[]) {
     // Validate args
@@ -24,6 +23,8 @@ int main(int argc, char *argv[]) {
         printf("Error opening file: %s\n", argv[1]);
         return 1;
     }
+
+    lexer_reset_input();
 
     // Parse
     init_symbol_table();

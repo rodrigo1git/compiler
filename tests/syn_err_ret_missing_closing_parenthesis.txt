@@ -1,0 +1,12 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing closing parenthesis in ret statement
+main_program
+integer function test(integer x)
+begin
+    ret(5$i;
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;

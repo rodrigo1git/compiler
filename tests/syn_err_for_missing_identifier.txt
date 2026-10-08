@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing identifier in FOR loop
+main_program
+integer a;
+begin
+    from := 1$i to 10$i by 1$i repeat begin
+        a := a + 1$i;
+    end;
+end;

@@ -1,0 +1,8 @@
+// EXPECTED: Parsing successful.
+// A line comment consumes the rest of this line; '/' remains the division operator.
+program1
+integer quotient;
+begin
+    quotient := 8$i / 2$i;
+    // A complete Topic 15 comment ends at the newline.
+end;

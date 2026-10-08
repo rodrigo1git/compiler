@@ -33,16 +33,28 @@ bool map_contains(hash_map_t* map, const char* key, const char* value) {
     return false;
 }
 
-void map_put(hash_map_t* map, const char* key, const char* value) {
-    if (map_contains(map, key, value)) return;
-
+map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
     unsigned long index = hash_func(key) % map->capacity;
+    for (map_node_t *current = map->buckets[index]; current != NULL; current = current->next) {
+        if (strcmp(current->key, key) == 0 && strcmp(current->value, value) == 0) {
+            return current;
+        }
+    }
+
     map_node_t* new_node = (map_node_t*)malloc(sizeof(map_node_t));
+    if (new_node == NULL) return NULL;
     new_node->key = strdup(key);
     new_node->value = strdup(value);
+    if (new_node->key == NULL || new_node->value == NULL) {
+        free(new_node->key);
+        free(new_node->value);
+        free(new_node);
+        return NULL;
+    }
     
     new_node->next = map->buckets[index];
     map->buckets[index] = new_node;
+    return new_node;
 }
 
 void map_free(hash_map_t* map) {

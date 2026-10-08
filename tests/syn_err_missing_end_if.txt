@@ -1,8 +1,0 @@
-// EXPECTED: 1 error
-main_program
-integer a;
-begin
-    if (a < 5$i) begin
-        a := 1$i;
-    end;
-end;

@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: String literal cannot be used as an arithmetic operand
+string_expression
+integer a;
+begin
+    a := "hello" + 1$i;
+end;

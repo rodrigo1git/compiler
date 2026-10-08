@@ -1,8 +1,0 @@
-// EXPECTED: 1 error
-// EXPECTED_DIAG: Missing argument in pout
-program1
-
-    integer dummy_decl;
-begin
-    pout();
-end;

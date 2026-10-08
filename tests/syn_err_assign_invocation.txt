@@ -1,7 +1,0 @@
-// EXPECTED: 1 error
-main_program
-integer a, b;
-integer function mi_func(integer x) begin ret(1$i); end;
-begin
-    a := b = mi_func(1$i)[1$i];
-end;

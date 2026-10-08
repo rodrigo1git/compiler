@@ -52,50 +52,28 @@ void free_lexeme_buffer(void) {
 }
 
 extern FILE *source_file;
-extern int current_line;
 extern YYSTYPE yylval;
 
 typedef int (*sem_act_t)(char);
 
-sem_act_t sem_act_mat[15][17] = {
+sem_act_t sem_act_mat[N_STATES][N_COLS] = {
     //              L               i                      s                      D                 _                        .                 $                 +-                /                 op*()             =                 <>                !:                "                 nl                ws                other
     {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_token_consume, sa_init,          sa_token_consume, sa_init,          sa_init,          sa_init,          sa_init_chain,           sa_ignore,        sa_ignore,        sa_error        }, // 0
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier   }, // 1
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_ignore,        sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 2
     {  sa_ignore,      sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore       }, // 3
     {  sa_error,       sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_multi_char_op, sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 4
-    {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_append,        sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 5
-    {  sa_error,       sa_int_const,     sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 6
-    {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 7
+    {  sa_integer_literal_error, sa_integer_literal_error, sa_error, sa_append, sa_integer_literal_error, sa_append, sa_append, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error }, // 5
+    {  sa_integer_literal_error, sa_int_const, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error }, // 6
+    {  sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_append, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error }, // 7
     {  sa_float_const, sa_float_const,   sa_append,        sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 8
-    {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 9
-    {  sa_error,       sa_error,         sa_error,         sa_append,        sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 10
+    {  sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_append, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_append, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error }, // 9
+    {  sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_append, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_chain,         sa_append,        sa_append,        sa_append       }, // 12
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }  // 14
 };
-const char* sem_act_names[15][17] = {
-    // L                   i                   s                   D                   _                   .                   $                   +-                  /                   op*()               =                   <>                  !:                  "                   nl                  ws                  other
-    {"sa_init",          "sa_init",          "sa_init",          "sa_init",          "sa_error",         "sa_init",          "sa_error",         "sa_token_consume", "sa_init",          "sa_token_consume", "sa_init",          "sa_init",          "sa_init",          "sa_init_chain",    "sa_ignore",        "sa_ignore",        "sa_error"        }, // 0
-    {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier",    "sa_identifier"   }, // 1
-    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_ignore",        "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered" }, // 2
-    {"sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore",        "sa_ignore"       }, // 3
-    {"sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_multi_char_op", "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 4
-    {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_append",        "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 5
-    {"sa_error",         "sa_int_const",     "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 6
-    {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 7
-    {"sa_float_const",   "sa_float_const",   "sa_append",        "sa_append",        "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const"  }, // 8
-    {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 9
-    {"sa_error",         "sa_error",         "sa_error",         "sa_append",        "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error",         "sa_error"        }, // 10
-    {"sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_append",        "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const",   "sa_float_const"  }, // 11
-    {"sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_append",        "sa_chain",         "sa_append",        "sa_append",        "sa_append"       }, // 12
-    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_multi_char_op", "sa_multi_char_op", "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered"}, // 13
-    {"sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_multi_char_op", "sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered","sa_token_buffered"}  // 14
-};
-
-
-
 int check_reserved_words(const char* word) {
     if (strcmp(word, "if") == 0) return TOKEN_IF;
     if (strcmp(word, "else") == 0) return TOKEN_ELSE;
@@ -132,8 +110,8 @@ int sa_append(char c) {
     return -1;
 }
 
-void add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
-    map_put(symbol_table, lexeme_buffer, tipo);
+map_node_t *add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
+    return map_put(symbol_table, lexeme_buffer, tipo);
 }
 
 int sa_token_consume(char c) {
@@ -144,7 +122,10 @@ int sa_token_consume(char c) {
 
 int sa_token_buffered(char c) {
     (void)c;
-    return (lexeme_buffer != NULL) ? (unsigned char)lexeme_buffer[0] : (unsigned char)c;
+    if (lexeme_buffer == NULL || lexeme_length == 0) {
+        return -1;
+    }
+    return (unsigned char)lexeme_buffer[0];
 }
 
 int sa_ignore(char c) { (void)c;
@@ -168,11 +149,9 @@ int sa_identifier(char c) { (void)c;
 
     for (int i = 0; i < lexeme_length; i++) {
         if (isupper((unsigned char)lexeme_buffer[i])) {
-            fprintf(stderr, "Line %d: Lexical error: Identifier contains uppercase letters.\n", token_start_line);
+            fprintf(stderr, "Line %d: Lexical error: Identifier '%s' contains uppercase letters.\n", token_start_line, original_lexeme);
             global_errors++;
-            // Allow as a valid ID to prevent breaking the grammar
-            add_to_symbol_table(lexeme_buffer_lower, "ID");
-            yylval.str_val = strdup(lexeme_buffer_lower);
+            yylval.symbol_ref = add_to_symbol_table(lexeme_buffer_lower, "ID");
             free(original_lexeme);
             free(lexeme_buffer_lower);
             return TOKEN_ID; 
@@ -183,12 +162,11 @@ int sa_identifier(char c) { (void)c;
         lexeme_buffer_lower[22] = '\0';
         lexeme_length = 22;
         lexeme_buffer[lexeme_length] = '\0';
-        printf("Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", current_line, original_lexeme, lexeme_buffer_lower);
+        printf("Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", token_start_line, original_lexeme, lexeme_buffer_lower);
     }
-    add_to_symbol_table(lexeme_buffer, "ID");
+    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "ID");
     free(original_lexeme);
     free(lexeme_buffer_lower);
-    yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_ID;
 }
 
@@ -196,17 +174,14 @@ int sa_int_const(char c) {
     append_to_lexeme(c);
     long val = atol(lexeme_buffer);
 
-    lex_range_reported = 0;
+    int out_of_range = 0;
     if (val > 32768) {
         fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", token_start_line, lexeme_buffer);
         global_errors++;
-        lex_range_reported = 1;
+        out_of_range = 1;
     }
 
-    if (!lex_range_reported) {
-        add_to_symbol_table(lexeme_buffer, "INTEGER");
-    }
-    yylval.str_val = strdup(lexeme_buffer);
+    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, out_of_range ? "INVALID_INTEGER" : "INTEGER");
     return TOKEN_CONST;
 }
 
@@ -221,25 +196,24 @@ int sa_float_const(char c) { (void)c;
     double val = strtod(temp_buf, &endptr);
     free(temp_buf);
     
-    lex_range_reported = 0;
+    int out_of_range = 0;
     if (errno == ERANGE) {
         fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-        lex_range_reported = 1;
+        out_of_range = 1;
     } else {
         double abs_val = val < 0 ? -val : val;
         if (abs_val > 0.0 && (abs_val <= 1.17549435e-38 || abs_val >= 3.40282347e+38)) {
             fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-            lex_range_reported = 1;
+            out_of_range = 1;
         }
     }
     
-    if (lex_range_reported) {
+    if (out_of_range) {
         global_errors++;
+        yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "INVALID_SINGLEF");
     } else {
-        add_to_symbol_table(lexeme_buffer, "SINGLEF");
+        yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "SINGLEF");
     }
-    
-    yylval.str_val = strdup(lexeme_buffer);
     return TOKEN_CONST;
 }
 
@@ -249,8 +223,7 @@ int sa_init_chain(char c) { (void)c;
 }
 
 int sa_chain(char c) { (void)c;
-    add_to_symbol_table(lexeme_buffer, "CHAIN");
-    yylval.str_val = strdup(lexeme_buffer);
+    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "CHAIN");
     return TOKEN_CHAIN;
 }
 
@@ -258,16 +231,74 @@ int sa_multi_char_op(char c) {
     append_to_lexeme(c);
     if (strcmp(lexeme_buffer, ":=") == 0) return TOKEN_ASSIGN;
     if (strcmp(lexeme_buffer, ">=") == 0) return TOKEN_GREATER_EQUAL;
-    if (strcmp(lexeme_buffer, "=>") == 0) return TOKEN_GREATER_EQUAL;
+    if (strcmp(lexeme_buffer, "=>") == 0) {
+        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
+        global_errors++;
+        return TOKEN_GREATER_EQUAL;
+    }
     if (strcmp(lexeme_buffer, "<=") == 0) return TOKEN_LESS_EQUAL;
-    if (strcmp(lexeme_buffer, "=<") == 0) return TOKEN_LESS_EQUAL;
+    if (strcmp(lexeme_buffer, "=<") == 0) {
+        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
+        global_errors++;
+        return TOKEN_LESS_EQUAL;
+    }
     if (strcmp(lexeme_buffer, "==") == 0) return TOKEN_EQUAL;
     if (strcmp(lexeme_buffer, "!=") == 0) return TOKEN_NOT_EQUAL;
+    fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
+    global_errors++;
     return -1;
+}
+
+int sa_dot_or_float_error(char c) {
+    (void)c;
+    if (lexeme_length == 1 && lexeme_buffer[0] == '.') {
+        return '.';
+    }
+
+    lexical_error_line = token_start_line;
+    fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
+    global_errors++;
+    return -1;
+}
+
+int sa_integer_literal_error(char c) { (void)c;
+    lexical_error_line = token_start_line;
+    if (strchr(lexeme_buffer, '$') != NULL) {
+        fprintf(stderr, "Line %d: Lexical error: Malformed integer constant '%s'; expected suffix '$i'\n",
+                token_start_line, lexeme_buffer);
+    } else {
+        fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' is missing required suffix '$i'\n",
+                token_start_line, lexeme_buffer);
+    }
+    global_errors++;
+    return -1;
+}
+
+int sa_float_exponent_error(char c) { (void)c;
+    lexical_error_line = token_start_line;
+    fprintf(stderr, "Line %d: Lexical error: Malformed SINGLEF constant '%s'; exponent marker 's' must be followed by digits\n",
+            token_start_line, lexeme_buffer);
+    global_errors++;
+    return -1;
+}
+
+static const char *display_character(int c) {
+    static char value[2];
+    switch (c) {
+        case '\n': return "\\n";
+        case '\r': return "\\r";
+        case '\t': return "\\t";
+        case ' ': return "space";
+        default:
+            value[0] = (char)c;
+            value[1] = '\0';
+            return value;
+    }
 }
 
 int sa_error(char c) {
     if (c != EOF) {
+        lexical_error_line = token_start_line;
         int integer_prefix = lexeme_length > 0;
         for (int i = 0; i < lexeme_length && integer_prefix; i++) {
             if (!isdigit((unsigned char)lexeme_buffer[i])) {
@@ -280,7 +311,7 @@ int sa_error(char c) {
         } else if (c == ';' && lexeme_length > 0 && lexeme_buffer[lexeme_length - 1] == '.') {
             fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
         } else {
-            fprintf(stderr, "Line %d: Lexical error: Invalid character '%c'\n", token_start_line, c);
+            fprintf(stderr, "Line %d: Lexical error: Invalid character '%s'\n", token_start_line, display_character((unsigned char)c));
         }
         global_errors++;
     }

@@ -1,0 +1,8 @@
+// EXPECTED: Parsing successful.
+nested_loops
+integer i, j;
+begin
+    from i := 1$i to 2$i by 1$i repeat begin
+        from j := 1$i to 2$i by 1$i repeat j := 1$i;;
+    end;
+end;

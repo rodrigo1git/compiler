@@ -1,6 +1,7 @@
 // EXPECTED: Parsing successful.
 // EXPECTED_SYMBOL: Lexeme: holamundo | Type: CHAIN
 // EXPECTED_WARNING: truncated to: 'this_is_a_very_long_id'
+// EXPECTED_DIAG_LINE: 15: Warning: Identifier 'this_is_a_very_long_identifier_that_exceeds_22_chars'
 // Combined valid lexical tests
 main_program
 // lex_valid_ranges

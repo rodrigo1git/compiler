@@ -1,0 +1,11 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing expression in ret statement
+// TP2 requires ret(expression); an empty return is invalid.
+program1
+integer function f(integer value)
+begin
+    ret();
+end;
+begin
+    pout("done");
+end;

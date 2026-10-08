@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Malformed statement (unexpected ';'; expected identifier, constant or 'toi'
+prog
+integer a;
+begin
+if ;
+end;
