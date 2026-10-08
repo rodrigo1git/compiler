@@ -1,9 +1,9 @@
 // EXPECTED: 7 errors
 // =========================================
-// TEST: Diagnosticos de errores sintacticos y semanticos
+// TEST: Diagnostics for syntax and semantic errors
 //       Verifies malformed lists, ret without parameter,
 //       attributes without expression, incomplete conditions,
-//       out of range constants and falta de delimitador ';'.
+//       out of range constants and missing ';' delimiter.
 // The parser should report errors and continue through the rest of the file.
 // =========================================
 

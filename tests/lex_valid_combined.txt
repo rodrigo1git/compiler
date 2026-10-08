@@ -54,4 +54,4 @@ mundo");
     // comments
     // Valid comment
 end;
-// este comentario termina al EOF y le falta salto de linea
+// this comment ends at EOF and is missing a newline
