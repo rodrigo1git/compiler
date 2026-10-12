@@ -1,0 +1,11 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing class name after ',' in extends list
+program1
+class child c10
+begin
+    extends base,;
+    integer x;
+end;
+begin
+    x := 1$i;
+end;

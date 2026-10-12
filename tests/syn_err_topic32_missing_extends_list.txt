@@ -1,0 +1,11 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing class list after extends
+program1
+class myclass c10
+begin
+    extends ;
+end;
+begin
+
+    dummy_stmt := 1$i;
+end;

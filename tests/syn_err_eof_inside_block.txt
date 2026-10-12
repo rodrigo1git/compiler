@@ -1,0 +1,8 @@
+// EXPECTED: 3 errors
+// EXPECTED_DIAG: Missing end
+// EXPECTED_DIAG: Missing end_if
+main_program
+integer a;
+begin
+    if (a < 5$i) begin
+        a := 1$i;

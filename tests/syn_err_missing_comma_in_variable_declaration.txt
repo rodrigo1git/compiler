@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing ',' in variable declaration
+program1
+integer a b;
+begin
+
+    dummy_stmt := 1$i;
+end;

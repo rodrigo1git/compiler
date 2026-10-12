@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: exponent marker 's' must be followed by digits
+float_exponent_missing_digits
+singlef value;
+begin
+    value := 1.2s;
+end;

@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing argument in pout
+main_program
+integer a;
+begin
+    pout();
+end;

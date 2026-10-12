@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing end_if
+program1
+integer a;
+begin
+    if (a < 2$i)
+        a := 1$i;
+end;

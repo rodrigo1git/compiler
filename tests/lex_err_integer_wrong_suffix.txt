@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: expected suffix '$i'
+integer_suffix_wrong
+integer value;
+begin
+    value := 123$u;
+end;

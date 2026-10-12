@@ -1,0 +1,6 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing end of function
+function_eof
+integer function incomplete(integer x)
+begin
+    x := 1$i;

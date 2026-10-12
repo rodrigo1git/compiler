@@ -14,9 +14,8 @@ src_backup/
 include_backup/
 
 *.txt
-
-*.md
+!tests/*.txt
 
 *.output
 
-test_empty.y 
+test_empty.y

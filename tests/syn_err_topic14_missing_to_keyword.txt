@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing 'to' in FOR loop
+program1
+integer a;
+begin
+    from a := 1$i 10$i by 1$i repeat a := 1$i;;
+end;

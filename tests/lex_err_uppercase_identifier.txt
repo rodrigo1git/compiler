@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Identifier 'InvalidName' contains uppercase letters
+program1
+integer InvalidName;
+integer valid_id;
+begin
+    valid_id := 1$i;
+end;

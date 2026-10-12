@@ -1,0 +1,14 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing function name
+// EXPECTED_SYNTAX: Variable declaration
+// EXPECTED_SYNTAX: Assignment
+main_program
+integer function (integer x)
+begin
+    ret(1$i);
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;

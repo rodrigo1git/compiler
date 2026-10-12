@@ -1,0 +1,12 @@
+// EXPECTED: Parsing successful.
+// EXPECTED_SYMBOL: Lexeme: same_name | Type: ID
+// EXPECTED_SYMBOL: Lexeme: same_name | Type: CHAIN
+// EXPECTED_SYMBOL: Type: CHAIN
+// A 300-character literal verifies that strings are not capped at 256 bytes.
+long_string_test
+integer same_name;
+begin
+    same_name := 1$i;
+    pout("same_name");
+    pout("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+end;

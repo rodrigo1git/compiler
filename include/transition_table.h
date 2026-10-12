@@ -7,6 +7,7 @@
 #define F_CONS 99    /* Final state (consumes char) */
 #define F_RET  100   /* Final state (returns/ungets char) */
 #define E   (-1)  /* Error state */
+#define ST_CHAIN 12  /* String literal state */
 
 /* Column indices matching get_col */
 #define COL_L      0   /* letters except 'i' and 's' */

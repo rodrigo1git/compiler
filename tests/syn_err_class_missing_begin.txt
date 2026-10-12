@@ -1,0 +1,9 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing 'begin' in class declaration
+main_program
+class subclass c10
+end;
+integer d;
+begin
+    d := 1$i;
+end;

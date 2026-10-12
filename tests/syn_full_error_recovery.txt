@@ -1,0 +1,13 @@
+// EXPECTED: 3 errors
+// EXPECTED_DIAG: Missing operator in expression
+// EXPECTED_DIAG: Forbidden return (Outside function context)
+// EXPECTED_DIAG: Missing argument in pout
+// EXPECTED_SYNTAX: Assignment
+recovery_program
+integer x;
+begin
+    x := 1$i 2$i;
+    x := 3$i;
+    ret(1$i);
+    pout();
+end;

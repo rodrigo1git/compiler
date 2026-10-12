@@ -5,8 +5,10 @@
 #include "../y.tab.h"
 
 FILE *source_file = NULL;
+int global_errors = 0;
+int token_start_line = 1;
+int lexical_error_line = 0;
 extern int yyparse();
-extern int current_line;
 
 int main(int argc, char *argv[]) {
     // Validate args
@@ -22,18 +24,23 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    lexer_reset_input();
+
     // Parse
     init_symbol_table();
 
-    if (yyparse() == 0) {
+    int success = (yyparse() == 0 && global_errors == 0);
+    if (success) {
         printf("Parsing successful.\n");
+    } else {
+        printf("Compilation failed with %d errors.\n", global_errors);
     }
 
     print_symbol_table();
     map_free(symbol_table);
     free_lexeme_buffer();
     fclose(source_file);
-    return 0;
+    return success ? 0 : 1;
 }
 
 void yyerror(const char *s) {

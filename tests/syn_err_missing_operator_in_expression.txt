@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing operator in expression
+program1
+integer a;
+begin
+    a := 2$i 3$i;
+end;

@@ -1,0 +1,14 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing right operand in condition
+main_program
+integer function test(integer x)
+begin
+    if (x < ) begin
+        pout(x);
+    end end_if;
+end;
+
+integer d;
+begin
+    d := 1$i;
+end;

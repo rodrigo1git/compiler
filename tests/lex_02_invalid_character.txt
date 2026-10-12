@@ -1,6 +1,0 @@
-// =========================================
-// TEST: Invalid character in id
-// EXPECTED: Lexical error (character @)
-// =========================================
-
-invalid_@variable = 10$i

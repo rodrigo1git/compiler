@@ -1,8 +1,0 @@
-// =========================================
-// TEST: Reserved words (Case sensitivity)
-// EXPECTED: Successful recognition
-// =========================================
-
-IF (a > b)
-If (a > b)
-fRoM (a <= 10$i)

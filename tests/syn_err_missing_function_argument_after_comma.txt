@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing argument after ',' in function call
+main_program
+integer a;
+integer function test(integer x) begin ret(x); end;
+begin
+    a := test(a, )[1$i];
+end;

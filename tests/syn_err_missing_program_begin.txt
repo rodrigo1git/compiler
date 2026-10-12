@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing begin
+// EXPECTED_SYNTAX: Assignment
+program1
+integer a;
+a := 1$i;
+end;
