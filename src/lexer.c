@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdio.h>
+#include "../include/diagnostics.h"
 
 #include "../include/lexer.h"
 #include "../include/semantic_actions.h"
@@ -19,6 +20,8 @@ static int read_input_char(bool *is_synthetic) {
     int c = fgetc(source_file);
     *is_synthetic = false;
 
+    /* A single artificial delimiter finalizes lookahead-based tokens at EOF.
+       It is never counted as a real line or pushed back into the file. */
     if (c == EOF && !input_state.eof_delimiter_sent) {
         input_state.eof_delimiter_sent = true;
         *is_synthetic = true;
@@ -48,7 +51,8 @@ static int update_line_number(int c, bool is_synthetic) {
 }
 
 static bool is_recovery_delimiter(int c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ';';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' ||
+           c == ';' || c == ')' || c == ']' || c == ',';
 }
 
 static bool is_valid_token_boundary(int c) {
@@ -96,7 +100,6 @@ void lexer_reset_input(void) {
     input_state.eof_delimiter_sent = false;
     current_line = 1;
     token_start_line = 1;
-    lexical_error_line = 0;
     reset_lexeme_buffer();
 }
 
@@ -112,19 +115,20 @@ int yylex(void) {
         int c = read_input_char(&is_synthetic);
 
         if (c == EOF) {
-            if (state == ST_CHAIN) {
-                fprintf(stderr, "Line %d: Lexical error: Unclosed string literal\n", token_start_line);
-                global_errors++;
-            } else if (state == E) {
-                fprintf(stderr, "Line %d: Lexical error: Unrecognized symbol or invalid sequence.\n", current_line);
-                global_errors++;
-            } else if (state != 0) {
-                fprintf(stderr, "Line %d: Lexical error: Unexpected end of file within token\n", token_start_line);
-                global_errors++;
-            }
-
             set_token_location();
-            return 0;
+            if (state == ST_CHAIN) {
+                report_lexical_error(token_start_line, "Unclosed string literal");
+                begin_lexical_recovery();
+                yylval.symbol_ref = NULL;
+                return YYerror;
+            }
+            if (state != 0) {
+                report_lexical_error(token_start_line, "Unexpected end of file within token");
+                begin_lexical_recovery();
+                yylval.symbol_ref = NULL;
+                return YYerror;
+            }
+            return YYEOF;
         }
 
         int line_advanced = update_line_number(c, is_synthetic);
@@ -139,13 +143,16 @@ int yylex(void) {
         int token_id = action(c);
         int next_state = transition_table[state][col];
 
-        if (next_state == E && token_id == -1 && is_valid_token_boundary(c)) {
-            if (!is_synthetic) {
-                push_back_char(c, line_advanced);
+        if (token_id == YYerror) {
+            begin_lexical_recovery();
+            if (next_state == F_RET || (next_state == E && is_valid_token_boundary(c))) {
+                if (!is_synthetic) push_back_char(c, line_advanced);
+            } else if (next_state == E) {
+                recover_from_lexical_error(c, is_synthetic, line_advanced);
             }
-            state = 0;
-            reset_lexeme_buffer();
-            continue;
+            set_token_location();
+            yylval.symbol_ref = NULL;
+            return YYerror;
         }
 
         if (next_state == F_RET) {
@@ -167,9 +174,6 @@ int yylex(void) {
         }
 
         log_token(token_id);
-        if (lexical_error_line != 0 && token_start_line != lexical_error_line) {
-            lexical_error_line = 0;
-        }
         set_token_location();
         return token_id;
     }

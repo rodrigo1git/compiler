@@ -16,7 +16,7 @@ int transition_table[N_STATES][N_COLS] = {
     {  E,      E,      E,      11,     E,      E,      E,      E,        E,      E,        E,        E,        E,        E,      E,      E,      E }, // 10: exponent sign (+/-)
     {  F_RET,  F_RET,  F_RET,  11,     F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_RET,    F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 11: exponent digits
     {  12,     12,     12,     12,     12,     12,     12,     12,       12,     12,       12,       12,       12,       F_CONS, 12,     12,     12 }, // 12: chain literal
-    {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_CONS,   F_CONS,   F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 13: = and ==
+    {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_CONS,   F_RET,   F_RET,    F_RET,  F_RET,  F_RET,  F_RET }, // 13: = and ==
     {  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,  F_RET,    F_RET,  F_RET,    F_CONS,   F_RET,    F_RET,    F_RET,  F_RET,  F_RET,  F_RET }  // 14: relational ops
 };
 

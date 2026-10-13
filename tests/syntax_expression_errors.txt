@@ -1,0 +1,137 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err expression missing operand after plus.
+integer a;
+
+// Case: syn err missing left operand plus.
+integer a, b, obj;
+
+// Case: syn err missing left operand minus.
+integer a, b, obj;
+
+// Case: syn err missing left operand multiply.
+integer a, b, obj;
+
+// Case: syn err missing left operand divide.
+integer a, b, obj;
+
+// Case: syn err missing right operand multiply.
+integer a, b, obj;
+
+// Case: syn err missing right operand divide.
+integer a, b, obj;
+
+// Case: syn err missing constant after sign.
+integer a, b, obj;
+
+// Case: syn err missing operator in expression.
+integer a;
+
+// Case: syn err string arithmetic.
+integer a;
+
+// Case: syn err missing semicolon after assignment.
+integer a;
+
+// Case: syn err topic18 invalid assignment operator.
+integer a, b;
+
+// Case: syn err assignment rejects invocation rhs.
+integer a, b;
+integer function mi_func(integer x) begin ret(1$i); end;
+
+begin
+
+// Case: syn err expression missing operand after plus.
+    a := 5$i + ;
+recovery_marker := 12047$i;
+
+// Case: syn err missing left operand plus.
+a := + 2$i;
+b := 3$i;
+recovery_marker := 12052$i;
+
+// Case: syn err missing left operand minus.
+a := - b;
+b := 3$i;
+recovery_marker := 12057$i;
+
+// Case: syn err missing left operand multiply.
+a := * 2$i;
+b := 3$i;
+recovery_marker := 12062$i;
+
+// Case: syn err missing left operand divide.
+a := / 2$i;
+b := 3$i;
+recovery_marker := 12067$i;
+
+// Case: syn err missing right operand multiply.
+a := 2$i * ;
+b := 3$i;
+recovery_marker := 12072$i;
+
+// Case: syn err missing right operand divide.
+a := 2$i / ;
+b := 3$i;
+recovery_marker := 12077$i;
+
+// Case: syn err missing constant after sign.
+a := - ;
+b := 3$i;
+recovery_marker := 12082$i;
+
+// Case: syn err missing operator in expression.
+    a := 2$i 3$i;
+recovery_marker := 12086$i;
+
+// Case: syn err string arithmetic.
+    a := "hello" + 1$i;
+recovery_marker := 12090$i;
+
+// Case: syn err missing semicolon after assignment.
+    a := 1$i
+recovery_marker := 12094$i;
+
+// Case: syn err topic18 invalid assignment operator.
+    a := b := 2$i + 1$i;
+    a := 3$i;
+recovery_marker := 12099$i;
+
+// Case: syn err assignment rejects invocation rhs.
+    a := b = mi_func(1$i)[1$i];
+recovery_marker := 12103$i;
+
+// Case: missing right subtraction.
+a := 1$i - ;
+recovery_marker := 12107$i;
+
+// Case: unary minus call.
+a := -fun(1$i)[1$i];
+recovery_marker := 12111$i;
+
+// Case: unary minus attribute.
+a := -obj[1$i];
+recovery_marker := 12115$i;
+
+// Case: unary minus conversion.
+a := -toi(1.2);
+recovery_marker := 12119$i;
+
+// Case: arithmetic grouping.
+a := (1$i + 2$i);
+recovery_marker := 12123$i;
+
+// Case: missing expression on the right side of a variable assignment.
+a := ;
+recovery_marker := 16015$i;
+
+// Case: missing expression on the right side of an attribute assignment with ':='.
+obj[0$i] := ;
+recovery_marker := 16016$i;
+
+// Case: missing expression on the right side of an attribute assignment with '='.
+obj[a] = ;
+recovery_marker := 16017$i;
+end;

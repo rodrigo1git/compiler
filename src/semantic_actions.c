@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <float.h>
 #include <errno.h>
+#include "../include/diagnostics.h"
 #include "../include/semantic_actions.h"
 #include "../include/symbol_table.h"
 #include "../y.tab.h"
@@ -16,6 +16,10 @@ static void ensure_lexeme_capacity(size_t needed) {
     if (lexeme_buffer == NULL) {
         lexeme_capacity = (needed > 128) ? needed + 64 : 128;
         lexeme_buffer = (char *)malloc(lexeme_capacity);
+        if (lexeme_buffer == NULL) {
+            fprintf(stderr, "Fatal error: Cannot allocate lexeme buffer\n");
+            exit(1);
+        }
         lexeme_buffer[0] = '\0';
     } else if (needed >= lexeme_capacity) {
         while (needed >= lexeme_capacity) {
@@ -62,8 +66,8 @@ sem_act_t sem_act_mat[N_STATES][N_COLS] = {
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier,    sa_identifier   }, // 1
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_ignore,        sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 2
     {  sa_ignore,      sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore,        sa_ignore       }, // 3
-    {  sa_error,       sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_multi_char_op, sa_error,         sa_error,         sa_error,         sa_error,         sa_error,         sa_error        }, // 4
-    {  sa_integer_literal_error, sa_integer_literal_error, sa_error, sa_append, sa_integer_literal_error, sa_append, sa_append, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error }, // 5
+    {  sa_operator_error,       sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_multi_char_op, sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error,         sa_operator_error        }, // 4
+    {  sa_integer_literal_error, sa_integer_literal_error, sa_float_decimal_error, sa_append, sa_integer_literal_error, sa_append, sa_append, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error }, // 5
     {  sa_integer_literal_error, sa_int_const, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error, sa_integer_literal_error }, // 6
     {  sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_append, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error, sa_dot_or_float_error }, // 7
     {  sa_float_const, sa_float_const,   sa_append,        sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 8
@@ -71,7 +75,7 @@ sem_act_t sem_act_mat[N_STATES][N_COLS] = {
     {  sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_append, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_chain,         sa_append,        sa_append,        sa_append       }, // 12
-    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
+    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }  // 14
 };
 int check_reserved_words(const char* word) {
@@ -110,8 +114,8 @@ int sa_append(char c) {
     return -1;
 }
 
-map_node_t *add_to_symbol_table(const char* lexeme_buffer, const char* tipo) {
-    return map_put(symbol_table, lexeme_buffer, tipo);
+map_node_t *add_to_symbol_table(const char* lexeme_buffer, const char* category) {
+    return map_put(symbol_table, lexeme_buffer, category);
 }
 
 int sa_token_consume(char c) {
@@ -132,88 +136,79 @@ int sa_ignore(char c) { (void)c;
     return -1;
 }
 
-int sa_identifier(char c) { (void)c;
-    char *original_lexeme = strdup(lexeme_buffer ? lexeme_buffer : "");
-    char *lexeme_buffer_lower = (char *)malloc(lexeme_length + 1);
+int sa_identifier(char c) {
+    (void)c;
+    char *lower = strdup(lexeme_buffer);
+    if (lower == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate identifier text\n");
+        exit(1);
+    }
     for (int i = 0; i < lexeme_length; i++) {
-        lexeme_buffer_lower[i] = tolower((unsigned char)lexeme_buffer[i]);
+        lower[i] = tolower((unsigned char)lexeme_buffer[i]);
     }
-    lexeme_buffer_lower[lexeme_length] = '\0';
-    
-    int token = check_reserved_words(lexeme_buffer_lower);
-    if (token != -1) {
-        free(original_lexeme);
-        free(lexeme_buffer_lower);
-        return token;
-    }
+    int token = check_reserved_words(lower);
+    free(lower);
+    if (token != -1) return token;
 
     for (int i = 0; i < lexeme_length; i++) {
         if (isupper((unsigned char)lexeme_buffer[i])) {
-            fprintf(stderr, "Line %d: Lexical error: Identifier '%s' contains uppercase letters.\n", token_start_line, original_lexeme);
-            global_errors++;
-            yylval.symbol_ref = add_to_symbol_table(lexeme_buffer_lower, "ID");
-            free(original_lexeme);
-            free(lexeme_buffer_lower);
-            return TOKEN_ID; 
+            report_lexical_error(token_start_line,
+                                 "Identifier '%s' contains uppercase letters", lexeme_buffer);
+            return YYerror;
         }
     }
-    
     if (lexeme_length > 22) {
-        lexeme_buffer_lower[22] = '\0';
+        printf("Line %d: Warning: Identifier '%s' was truncated to: '%.*s'.\n",
+               token_start_line, lexeme_buffer, 22, lexeme_buffer);
         lexeme_length = 22;
-        lexeme_buffer[lexeme_length] = '\0';
-        printf("Line %d: Warning: Identifier '%s' was truncated to: '%s'.\n", token_start_line, original_lexeme, lexeme_buffer_lower);
+        lexeme_buffer[22] = '\0';
     }
     yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "ID");
-    free(original_lexeme);
-    free(lexeme_buffer_lower);
     return TOKEN_ID;
 }
 
 int sa_int_const(char c) {
     append_to_lexeme(c);
-    long val = atol(lexeme_buffer);
-
-    int out_of_range = 0;
-    if (val > 32768) {
-        fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", token_start_line, lexeme_buffer);
-        global_errors++;
-        out_of_range = 1;
+    errno = 0;
+    char *end;
+    long value = strtol(lexeme_buffer, &end, 10);
+    if (errno == ERANGE || value > 32768) {
+        report_lexical_error(token_start_line,
+                             "Integer constant '%s' out of range", lexeme_buffer);
+        return YYerror;
     }
-
-    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, out_of_range ? "INVALID_INTEGER" : "INTEGER");
+    if (strcmp(end, "$i") != 0) {
+        return sa_integer_literal_error(c);
+    }
+    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "INTEGER");
+    /* TP2 resolves the sign in constant; positive 32768 is not a final symbol. */
+    yylval.symbol_ref->provisional = value == 32768;
     return TOKEN_CONST;
 }
 
-int sa_float_const(char c) { (void)c;
-    char *temp_buf = strdup(lexeme_buffer);
-    for (int i = 0; temp_buf[i] != '\0'; i++) {
-        if (temp_buf[i] == 's') temp_buf[i] = 'e';
+int sa_float_const(char c) {
+    (void)c;
+    char *numeric_text = strdup(lexeme_buffer);
+    if (numeric_text == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate floating constant text\n");
+        exit(1);
     }
-    
+    for (int i = 0; numeric_text[i]; i++) {
+        if (numeric_text[i] == 's') numeric_text[i] = 'e';
+    }
     errno = 0;
-    char *endptr;
-    double val = strtod(temp_buf, &endptr);
-    free(temp_buf);
-    
-    int out_of_range = 0;
-    if (errno == ERANGE) {
-        fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-        out_of_range = 1;
-    } else {
-        double abs_val = val < 0 ? -val : val;
-        if (abs_val > 0.0 && (abs_val <= 1.17549435e-38 || abs_val >= 3.40282347e+38)) {
-            fprintf(stderr, "Line %d: Lexical error: Float constant '%s' out of range\n", token_start_line, lexeme_buffer);
-            out_of_range = 1;
-        }
+    char *end;
+    double value = strtod(numeric_text, &end);
+    double magnitude = value < 0 ? -value : value;
+    bool invalid = errno == ERANGE || *end != '\0' ||
+        (magnitude > 0 && (magnitude <= 1.17549435e-38 || magnitude >= 3.40282347e+38));
+    free(numeric_text);
+    if (invalid) {
+        report_lexical_error(token_start_line,
+                             "Float constant '%s' out of range", lexeme_buffer);
+        return YYerror;
     }
-    
-    if (out_of_range) {
-        global_errors++;
-        yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "INVALID_SINGLEF");
-    } else {
-        yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "SINGLEF");
-    }
+    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "SINGLEF");
     return TOKEN_CONST;
 }
 
@@ -231,55 +226,45 @@ int sa_multi_char_op(char c) {
     append_to_lexeme(c);
     if (strcmp(lexeme_buffer, ":=") == 0) return TOKEN_ASSIGN;
     if (strcmp(lexeme_buffer, ">=") == 0) return TOKEN_GREATER_EQUAL;
-    if (strcmp(lexeme_buffer, "=>") == 0) {
-        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
-        global_errors++;
-        return TOKEN_GREATER_EQUAL;
-    }
     if (strcmp(lexeme_buffer, "<=") == 0) return TOKEN_LESS_EQUAL;
-    if (strcmp(lexeme_buffer, "=<") == 0) {
-        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
-        global_errors++;
-        return TOKEN_LESS_EQUAL;
-    }
     if (strcmp(lexeme_buffer, "==") == 0) return TOKEN_EQUAL;
     if (strcmp(lexeme_buffer, "!=") == 0) return TOKEN_NOT_EQUAL;
-    fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
-    global_errors++;
-    return -1;
+    report_lexical_error(token_start_line, "Invalid operator '%s'", lexeme_buffer);
+    return YYerror;
 }
 
 int sa_dot_or_float_error(char c) {
     (void)c;
-    if (lexeme_length == 1 && lexeme_buffer[0] == '.') {
-        return '.';
-    }
-
-    lexical_error_line = token_start_line;
-    fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
-    global_errors++;
-    return -1;
+    if (lexeme_length == 1 && lexeme_buffer[0] == '.') return '.';
+    report_lexical_error(token_start_line, "Float constant requires a decimal part");
+    return YYerror;
 }
 
-int sa_integer_literal_error(char c) { (void)c;
-    lexical_error_line = token_start_line;
+int sa_float_decimal_error(char c) {
+    (void)c;
+    report_lexical_error(token_start_line,
+                         "Float constant requires a decimal part before its exponent");
+    return YYerror;
+}
+
+int sa_integer_literal_error(char c) {
+    (void)c;
     if (strchr(lexeme_buffer, '$') != NULL) {
-        fprintf(stderr, "Line %d: Lexical error: Malformed integer constant '%s'; expected suffix '$i'\n",
-                token_start_line, lexeme_buffer);
+        report_lexical_error(token_start_line,
+            "Malformed integer constant '%s'; expected suffix '$i'", lexeme_buffer);
     } else {
-        fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' is missing required suffix '$i'\n",
-                token_start_line, lexeme_buffer);
+        report_lexical_error(token_start_line,
+            "Integer constant '%s' is missing required suffix '$i'", lexeme_buffer);
     }
-    global_errors++;
-    return -1;
+    return YYerror;
 }
 
-int sa_float_exponent_error(char c) { (void)c;
-    lexical_error_line = token_start_line;
-    fprintf(stderr, "Line %d: Lexical error: Malformed SINGLEF constant '%s'; exponent marker 's' must be followed by digits\n",
-            token_start_line, lexeme_buffer);
-    global_errors++;
-    return -1;
+int sa_float_exponent_error(char c) {
+    (void)c;
+    report_lexical_error(token_start_line,
+        "Malformed SINGLEF constant '%s'; exponent marker 's' must be followed by digits",
+        lexeme_buffer);
+    return YYerror;
 }
 
 static const char *display_character(int c) {
@@ -297,25 +282,16 @@ static const char *display_character(int c) {
 }
 
 int sa_error(char c) {
-    if (c != EOF) {
-        lexical_error_line = token_start_line;
-        int integer_prefix = lexeme_length > 0;
-        for (int i = 0; i < lexeme_length && integer_prefix; i++) {
-            if (!isdigit((unsigned char)lexeme_buffer[i])) {
-                integer_prefix = 0;
-            }
-        }
+    report_lexical_error(token_start_line, "Invalid character '%s'",
+                         display_character((unsigned char)c));
+    return YYerror;
+}
 
-        if ((c == 's' || c == 'S') && integer_prefix) {
-            fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part before its exponent\n", token_start_line);
-        } else if (c == ';' && lexeme_length > 0 && lexeme_buffer[lexeme_length - 1] == '.') {
-            fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
-        } else {
-            fprintf(stderr, "Line %d: Lexical error: Invalid character '%s'\n", token_start_line, display_character((unsigned char)c));
-        }
-        global_errors++;
-    }
-    return -1;
+int sa_operator_error(char c) {
+    (void)c;
+    report_lexical_error(token_start_line,
+                         "Incomplete operator '%s'; expected '='", lexeme_buffer);
+    return YYerror;
 }
 void print_symbol_table() {
     if (symbol_table != NULL) {

@@ -33,11 +33,12 @@ echo "Cleaning old build files..."
 rm -f compiler y.tab.c y.tab.h y.output
 
 echo "Generating parser..."
-"$BISON" -d -o y.tab.c src/grammar.y
+"$BISON" -Wall -Werror=conflicts-sr -Werror=conflicts-rr -d -o y.tab.c src/grammar.y
 
 echo "Compiling C source files..."
 gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/main.c \
+    src/diagnostics.c \
     src/lexer.c \
     src/semantic_actions.c \
     src/transition_table.c \

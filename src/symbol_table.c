@@ -17,8 +17,17 @@ static unsigned long hash_func(const char* str) {
 
 hash_map_t* map_create(int capacity) {
     hash_map_t* map = (hash_map_t*)malloc(sizeof(hash_map_t));
+    if (map == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate symbol table\n");
+        exit(1);
+    }
     map->capacity = capacity;
     map->buckets = (map_node_t**)calloc(capacity, sizeof(map_node_t*));
+    if (map->buckets == NULL) {
+        free(map);
+        fprintf(stderr, "Fatal error: Cannot allocate symbol table buckets\n");
+        exit(1);
+    }
     return map;
 }
 
@@ -42,16 +51,21 @@ map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
     }
 
     map_node_t* new_node = (map_node_t*)malloc(sizeof(map_node_t));
-    if (new_node == NULL) return NULL;
+    if (new_node == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate symbol\n");
+        exit(1);
+    }
     new_node->key = strdup(key);
     new_node->value = strdup(value);
     if (new_node->key == NULL || new_node->value == NULL) {
         free(new_node->key);
         free(new_node->value);
         free(new_node);
-        return NULL;
+        fprintf(stderr, "Fatal error: Cannot allocate symbol text\n");
+        exit(1);
     }
     
+    new_node->provisional = false;
     new_node->next = map->buckets[index];
     map->buckets[index] = new_node;
     return new_node;
@@ -77,7 +91,9 @@ void map_print(hash_map_t* map) {
     for (int i = 0; i < map->capacity; i++) {
         map_node_t* current = map->buckets[i];
         while (current != NULL) {
-            printf("Lexeme: %s | Type: %s\n", current->key, current->value);
+            if (!current->provisional) {
+                printf("Lexeme: %s | Type: %s\n", current->key, current->value);
+            }
             current = current->next;
         }
     }
@@ -87,5 +103,23 @@ void map_print(hash_map_t* map) {
 void init_symbol_table(void) {
     if (symbol_table == NULL) {
         symbol_table = map_create(256); 
+    }
+}
+
+/* Call only after yyparse returns: parser values borrow these nodes. */
+void map_purge_provisional(hash_map_t *map) {
+    for (int i = 0; i < map->capacity; i++) {
+        map_node_t **link = &map->buckets[i];
+        while (*link != NULL) {
+            map_node_t *node = *link;
+            if (node->provisional) {
+                *link = node->next;
+                free(node->key);
+                free(node->value);
+                free(node);
+            } else {
+                link = &node->next;
+            }
+        }
     }
 }

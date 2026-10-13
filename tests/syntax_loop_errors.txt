@@ -1,0 +1,113 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err for missing identifier.
+integer a;
+
+// Case: syn err for missing body.
+integer a;
+
+// Case: syn err topic14 missing from keyword.
+integer i;
+
+// Case: syn err topic14 missing from constant.
+integer i;
+
+// Case: syn err topic14 missing to keyword.
+integer a;
+
+// Case: syn err topic14 missing to constant.
+integer i;
+
+// Case: syn err topic14 missing by constant.
+integer i;
+
+// Case: syn err topic14 missing repeat keyword.
+integer i;
+
+// Case: syn err topic14 missing terminator.
+integer i;
+
+// Case: syn err single statement loop missing terminator.
+integer a, b, obj;
+
+// Case: syn err loop header and body.
+integer a;
+
+begin
+
+// Case: syn err for missing identifier.
+    from := 1$i to 10$i by 1$i repeat begin
+        a := a + 1$i;
+    end;
+recovery_marker := 12042$i;
+
+// Case: syn err for missing body.
+    from a := 1$i to 10$i by 1$i repeat ;
+recovery_marker := 12046$i;
+
+// Case: syn err topic14 missing from keyword.
+    i := 1$i to 10$i by 1$i repeat i := 2$i;;
+recovery_marker := 12050$i;
+
+// Case: syn err topic14 missing from constant.
+    from i := to 10$i by 1$i repeat i := 2$i;;
+recovery_marker := 12054$i;
+
+// Case: syn err topic14 missing to keyword.
+    from a := 1$i 10$i by 1$i repeat a := 1$i;;
+recovery_marker := 12058$i;
+
+// Case: syn err topic14 missing to constant.
+    from i := 1$i to by 1$i repeat i := 2$i;;
+recovery_marker := 12062$i;
+
+// Case: syn err topic14 missing by constant.
+    from i := 1$i to 10$i by repeat i := 2$i;;
+recovery_marker := 12066$i;
+
+// Case: syn err topic14 missing repeat keyword.
+    from i := 1$i to 10$i by 1$i i := 2$i;;
+recovery_marker := 12070$i;
+
+// Case: syn err topic14 missing terminator.
+    from i := 1$i to 2$i by 1$i repeat begin
+        i := 1$i;
+    end
+recovery_marker := 12076$i;
+
+// Case: syn err single statement loop missing terminator.
+from a := 1$i to 2$i by 1$i repeat b := b + 1$i;
+recovery_marker := 12080$i;
+
+// Case: syn err loop header and body.
+    from a := 1$i to 2$i by repeat begin
+        pout();
+        a := 3$i;
+    end;
+recovery_marker := 12087$i;
+
+// Case: missing by keyword.
+from a := 1$i to 2$i 1$i repeat a := 2$i;;
+recovery_marker := 12091$i;
+
+// Case: missing initial and final constants.
+from a := to by 1$i repeat a := 2$i;;
+pout();
+recovery_marker := 15001$i;
+
+// Case: missing final and step constants.
+from a := 1$i to by repeat a := 2$i;;
+pout();
+recovery_marker := 15002$i;
+
+// Case: missing to keyword and step constant.
+from a := 1$i 2$i by repeat a := 2$i;;
+pout();
+recovery_marker := 15003$i;
+
+// Case: missing control identifier and step constant.
+from := 1$i to 2$i by repeat a := 2$i;;
+pout();
+recovery_marker := 15004$i;
+end;

@@ -1,0 +1,4 @@
+programa
+integer a, b, obj;
+begin
+a := 12

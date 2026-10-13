@@ -13,8 +13,6 @@ void free_lexeme_buffer(void);
 extern FILE *source_file;
 extern YYSTYPE yylval;
 extern int token_start_line;
-extern int lexical_error_line;
-extern int global_errors;
 typedef int (*sem_act_t)(char);
 
 extern sem_act_t sem_act_mat[N_STATES][N_COLS];
@@ -33,10 +31,12 @@ int sa_multi_char_op(char c);
 int sa_dot_or_float_error(char c);
 int sa_integer_literal_error(char c);
 int sa_float_exponent_error(char c);
+int sa_float_decimal_error(char c);
 int sa_error(char c);
+int sa_operator_error(char c);
 
 int check_reserved_words(const char* word);
-map_node_t *add_to_symbol_table(const char* lex, const char* type);
+map_node_t *add_to_symbol_table(const char* lex, const char* category);
 extern void print_symbol_table();
 
 #endif /* SEMANTIC_ACTIONS_H */

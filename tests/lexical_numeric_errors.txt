@@ -1,0 +1,82 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: lex err float excluded endpoints.
+singlef f;
+
+// Case: lex err float values outside range.
+singlef f;
+
+// Case: lex err float missing decimal part.
+singlef f;
+
+// Case: lex err float missing exponent digits.
+singlef value;
+
+// Case: lex err float missing exponent digits after sign.
+singlef value;
+
+// Case: lex err integer missing suffix.
+integer value;
+
+// Case: lex err integer wrong suffix.
+integer value;
+
+// Case: lex err invalid symbols not registered.
+integer a, b, obj;
+
+// Case: lex err large integer overflow.
+integer a, b, obj;
+
+begin
+
+// Case: lex err float excluded endpoints.
+    f := 1.17549435s-38;
+    f := -1.17549435s-38;
+    f := 3.40282347s+38;
+    f := -3.40282347s+38;
+recovery_marker := 12037$i;
+
+// Case: lex err float values outside range.
+    f := 1.17549434s-38;
+    f := -1.17549434s-38;
+    f := 3.40282348s+38;
+    f := -3.40282348s+38;
+recovery_marker := 12044$i;
+
+// Case: lex err float missing decimal part.
+    f := 15s+3;
+    f := 15.;
+recovery_marker := 12049$i;
+
+// Case: lex err float missing exponent digits.
+    value := 1.2s;
+recovery_marker := 12053$i;
+
+// Case: lex err float missing exponent digits after sign.
+    value := 1.2s+;
+recovery_marker := 12057$i;
+
+// Case: lex err integer missing suffix.
+    value := 123;
+recovery_marker := 12061$i;
+
+// Case: lex err integer wrong suffix.
+    value := 123$u;
+recovery_marker := 12065$i;
+
+// Case: lex err invalid symbols not registered.
+InvalidName := 1$i;
+a := 35000$i;
+a := -40000$i;
+a := 32768$i;
+a := 032768$i;
+a := 1.0s+100;
+b := 2$i;
+recovery_marker := 12075$i;
+
+// Case: lex err large integer overflow.
+a := 999999999999999999999999999999999999999999999999$i;
+b := 3$i;
+recovery_marker := 12080$i;
+end;

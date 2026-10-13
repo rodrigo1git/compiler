@@ -1,0 +1,28 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: lex err uppercase identifier.
+integer InvalidName;
+integer valid_id;
+
+// Case: uppercase before truncation.
+integer this_identifier_is_long_And_invalid;
+
+begin
+
+// Case: lex err uppercase identifier.
+    valid_id := 1$i;
+recovery_marker := 12014$i;
+
+// Case: colon requires equal.
+a : 1$i;
+recovery_marker := 12018$i;
+
+// Case: bang requires equal.
+if (a ! 1$i) a := 2$i; end_if;
+recovery_marker := 12022$i;
+
+// Case: invalid character.
+a := @;
+recovery_marker := 12026$i;
+end;

@@ -1,0 +1,118 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err pout missing argument.
+integer a;
+
+// Case: syn err return no expr.
+integer function f(integer value)
+begin
+    ret();
+end;
+
+// Case: syn err return outside function.
+integer a;
+
+// Case: syn err ret missing closing parenthesis.
+integer function test(integer x)
+begin
+    ret(5$i;
+end;
+
+integer d;
+
+// Case: syn err topic34 toi missing expr.
+integer converted;
+
+// Case: syn err missing operand in conversion.
+integer a, b, obj;
+
+// Case: syn err missing operand in return.
+integer a;
+integer function fun(integer p)
+begin
+ret(2$i * );
+ret(3$i);
+end;
+
+// Case: ret parentheses.
+integer function badret(integer p) begin ret 1$i; end;
+
+// Case: ret opening parenthesis.
+integer function badret(integer p) begin ret 1$i); end;
+
+// Case: missing pout closing parenthesis inside a function.
+integer function delimiter_recovery(integer p)
+begin
+    pout(1$i;
+    recovery_marker := 16010$i;
+    ret(p);
+end;
+
+begin
+
+// Case: syn err pout missing argument.
+    pout();
+recovery_marker := 12047$i;
+
+// Case: syn err return no expr.
+    pout("done");
+recovery_marker := 12051$i;
+
+// Case: syn err return outside function.
+    ret(5$i);
+recovery_marker := 12055$i;
+
+// Case: syn err ret missing closing parenthesis.
+    d := 1$i;
+recovery_marker := 12059$i;
+
+// Case: syn err topic34 toi missing expr.
+    converted := toi();
+recovery_marker := 12063$i;
+
+// Case: syn err missing operand in conversion.
+a := toi(2$i / );
+b := 3$i;
+recovery_marker := 12068$i;
+
+// Case: syn err missing operand in return.
+a := 1$i;
+recovery_marker := 12072$i;
+
+// Case: pout parentheses.
+pout 1$i;
+recovery_marker := 12076$i;
+
+// Case: ret parentheses.
+a := 1$i;
+recovery_marker := 12080$i;
+
+// Case: pout opening parenthesis.
+pout 1$i);
+recovery_marker := 12084$i;
+
+// Case: ret opening parenthesis.
+a := 1$i;
+recovery_marker := 12088$i;
+
+// Case: missing pout closing parenthesis after an expression.
+pout(1$i;
+recovery_marker := 16011$i;
+pout("after incomplete pout expression");
+
+// Case: missing pout closing parenthesis after a chain literal.
+pout("hello";
+recovery_marker := 16012$i;
+pout("after incomplete pout literal");
+
+// Case: missing pout argument and closing parenthesis.
+pout(;
+recovery_marker := 16013$i;
+pout("after empty incomplete pout");
+
+// Case: nested call with missing closing parentheses in pout.
+pout(fun(1$i;
+recovery_marker := 16014$i;
+pout("after incomplete nested pout call");
+end;

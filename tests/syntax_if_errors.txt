@@ -1,0 +1,56 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err if missing opening parenthesis.
+integer a;
+
+// Case: syn err if missing closing parenthesis.
+integer a;
+
+// Case: syn err if missing both parentheses.
+integer a;
+
+// Case: syn err if single statement missing end if.
+integer a;
+
+// Case: syn err if block missing end if.
+integer a;
+
+// Case: syn err generic context.
+integer a;
+
+begin
+
+// Case: syn err if missing opening parenthesis.
+    if a < 1$i)
+        a := 1$i;
+    end_if;
+recovery_marker := 12027$i;
+
+// Case: syn err if missing closing parenthesis.
+    if (a < 2$i
+        a := 1$i;
+    end_if;
+recovery_marker := 12033$i;
+
+// Case: syn err if missing both parentheses.
+    if a < 1$i
+        a := 1$i;
+    end_if;
+recovery_marker := 12039$i;
+
+// Case: syn err if single statement missing end if.
+    if (a < 2$i)
+        a := 1$i;
+recovery_marker := 12044$i;
+
+// Case: syn err if block missing end if.
+    if (a < 5$i) begin
+        a := 1$i;
+    end
+recovery_marker := 12050$i;
+
+// Case: syn err generic context.
+if ;
+recovery_marker := 12054$i;
+end;

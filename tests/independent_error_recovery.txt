@@ -1,0 +1,73 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: err independent errors on same line.
+integer a, b, obj;
+
+// Case: syn full error recovery.
+integer x;
+
+// Case: ret then invalid conversion.
+integer function badret(integer p)
+begin
+ret(1$i;
+p := toi();
+ret(3$i);
+end;
+
+// Case: scope restored after function.
+integer function goodret(integer p) begin ret(p); end;
+
+begin
+
+// Case: err independent errors on same line.
+a := 1$i @; pout(); b := 3$i;
+recovery_marker := 12024$i;
+
+// Case: syn full error recovery.
+    x := 1$i 2$i;
+    x := 3$i;
+    ret(1$i);
+    pout();
+recovery_marker := 12031$i;
+
+// Case: condition and forbidden return.
+if (< 1$i) ret(1$i); end_if;
+recovery_marker := 12035$i;
+
+// Case: reversed comparator and return.
+if (a => 1$i) ret(1$i); end_if;
+recovery_marker := 12039$i;
+
+// Case: two conversion arguments.
+a := fun(toi(),toi())[1$i,2$i];
+recovery_marker := 12043$i;
+
+// Case: prefix and conversion.
+a := + toi();
+recovery_marker := 12047$i;
+
+// Case: unary minus and conversion.
+a := -toi();
+recovery_marker := 12051$i;
+
+// Case: ret then invalid conversion.
+a := 1$i;
+recovery_marker := 12055$i;
+
+// Case: if header and body.
+if a < 1$i ret(1$i); end_if;
+recovery_marker := 12059$i;
+
+// Case: empty return outside function.
+ret();
+recovery_marker := 12063$i;
+
+// Case: malformed return outside function.
+ret 1$i;
+recovery_marker := 12067$i;
+
+// Case: scope restored after function.
+ret(1$i);
+recovery_marker := 12071$i;
+end;

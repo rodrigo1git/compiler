@@ -1,0 +1,63 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err missing function name.
+integer function (integer x)
+begin
+    ret(1$i);
+end;
+
+integer d;
+
+// Case: syn err missing formal parameter type.
+integer function f1(, a)
+begin
+
+    dummy_stmt := 1$i;
+end;
+
+// Case: syn err missing formal parameter name.
+integer function f1(integer)
+begin
+
+    dummy_stmt := 1$i;
+end;
+
+// Case: syn err function header and body.
+integer function (integer p)
+begin
+    ret();
+    ret(3$i);
+end;
+integer a;
+
+// Case: method formal parameter.
+class broken c10
+begin
+integer method(integer) begin ret(1$i); end;
+end;
+
+begin
+
+// Case: syn err missing function name.
+    d := 1$i;
+recovery_marker := 12043$i;
+
+// Case: syn err missing formal parameter type.
+
+    dummy_stmt := 1$i;
+recovery_marker := 12048$i;
+
+// Case: syn err missing formal parameter name.
+
+    dummy_stmt := 1$i;
+recovery_marker := 12053$i;
+
+// Case: syn err function header and body.
+    a := 1$i;
+recovery_marker := 12057$i;
+
+// Case: method formal parameter.
+a := 1$i;
+recovery_marker := 12061$i;
+end;

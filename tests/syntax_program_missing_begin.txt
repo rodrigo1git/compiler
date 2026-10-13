@@ -1,0 +1,4 @@
+program1
+integer a;
+a := 1$i;
+end;

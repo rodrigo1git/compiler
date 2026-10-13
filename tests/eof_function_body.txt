@@ -1,0 +1,4 @@
+function_eof
+integer function incomplete(integer x)
+begin
+    x := 1$i;

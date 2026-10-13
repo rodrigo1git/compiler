@@ -6,6 +6,7 @@
 typedef struct map_node {
     char* key;
     char* value;
+    bool provisional;
     struct map_node* next;
 } map_node_t;
 
@@ -23,5 +24,6 @@ extern bool map_contains(hash_map_t* map, const char* key, const char* value);
 extern map_node_t *map_put(hash_map_t* map, const char* key, const char* value);
 extern void map_free(hash_map_t* map);
 extern void map_print(hash_map_t* map);
+void map_purge_provisional(hash_map_t *map);
 
 #endif /* SYMBOL_TABLE_H */

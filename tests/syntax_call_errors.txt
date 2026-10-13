@@ -1,0 +1,100 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err missing function argument after comma.
+integer a;
+integer function test(integer x) begin ret(x); end;
+
+// Case: syn err topic19 missing parameter evaluation order.
+integer a;
+integer function f1(integer x)
+begin
+    ret(x);
+end;
+
+// Case: syn err missing operand in argument.
+integer a, b, obj;
+
+begin
+
+// Case: syn err missing function argument after comma.
+    a := test(a, )[1$i];
+recovery_marker := 12021$i;
+
+// Case: syn err topic19 missing parameter evaluation order.
+    a := f1(2$i);
+recovery_marker := 12025$i;
+
+// Case: syn err missing operand in argument.
+a := fun(2$i * , 1$i)[1$i, 2$i];
+b := 3$i;
+recovery_marker := 12030$i;
+
+// Case: method missing order.
+a := obj.method(1$i);
+recovery_marker := 12034$i;
+
+// Case: method missing argument.
+a := obj.method(1$i,)[1$i];
+recovery_marker := 12038$i;
+
+// Case: missing function arguments and evaluation order.
+a := fun();
+pout();
+recovery_marker := 15005$i;
+
+// Case: missing method arguments and evaluation order.
+a := obj.method();
+pout();
+recovery_marker := 15006$i;
+
+// Case: missing method argument after comma and evaluation order.
+a := obj.method(1$i,);
+pout();
+recovery_marker := 15007$i;
+
+// Case: missing function call closing parenthesis.
+a := fun(1$i;
+recovery_marker := 16001$i;
+pout("after function call");
+
+// Case: missing method call closing parenthesis.
+a := obj.method(1$i;
+recovery_marker := 16002$i;
+pout("after method call");
+
+// Case: missing function evaluation order closing bracket.
+a := fun(1$i)[1$i;
+recovery_marker := 16003$i;
+pout("after function evaluation order");
+
+// Case: missing method evaluation order closing bracket.
+a := obj.method(1$i)[1$i;
+recovery_marker := 16004$i;
+pout("after method evaluation order");
+
+// Case: missing arguments and closing parenthesis.
+a := fun(;
+recovery_marker := 16005$i;
+pout("after incomplete arguments");
+
+// Case: missing evaluation order and closing bracket.
+a := fun(1$i)[;
+recovery_marker := 16006$i;
+pout("after incomplete evaluation order");
+
+// Case: nested calls with missing closing parentheses.
+a := fun(obj.method(1$i;
+recovery_marker := 16007$i;
+pout("after nested calls");
+
+// Case: missing call closing parenthesis inside a condition.
+if (fun(1$i;
+recovery_marker := 16008$i;
+pout("after incomplete call condition");
+
+// Case: missing evaluation order closing bracket inside a condition.
+if (fun(1$i)[1$i;
+recovery_marker := 16009$i;
+pout("after incomplete evaluation order condition");
+end;

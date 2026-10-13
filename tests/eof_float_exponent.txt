@@ -1,0 +1,5 @@
+// Case: incomplete token at end of file.
+review_program
+integer a;
+begin
+a := 1.2s

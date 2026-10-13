@@ -1,0 +1,7 @@
+programa
+integer a, b, obj;
+begin
+pout("first
+second");
+a := 1$i;
+end;

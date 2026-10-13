@@ -1,0 +1,5 @@
+main_program
+integer a;
+begin
+    a := 1$i;
+// Missing end;

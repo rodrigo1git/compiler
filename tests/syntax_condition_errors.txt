@@ -1,0 +1,92 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err condition missing right operand.
+integer function test(integer x)
+begin
+    if (x < ) begin
+        pout(x);
+    end end_if;
+end;
+
+integer d;
+
+// Case: syn err missing left condition operand.
+integer a, b, obj;
+
+// Case: syn err missing operand in condition.
+integer a, b, obj;
+
+// Case: syn err reversed comparator.
+integer a;
+
+// Case: syn err reversed less comparator.
+integer a, b, obj;
+
+begin
+
+// Case: syn err condition missing right operand.
+    d := 1$i;
+recovery_marker := 12029$i;
+
+// Case: syn err missing left condition operand.
+if (< 1$i) a := 1$i; end_if;
+b := 3$i;
+recovery_marker := 12034$i;
+
+// Case: syn err missing operand in condition.
+if (a / > 2$i) a := 1$i; end_if;
+b := 3$i;
+recovery_marker := 12039$i;
+
+// Case: syn err reversed comparator.
+    if (a => 1$i)
+        a := 1$i;
+    end_if;
+recovery_marker := 12045$i;
+
+// Case: syn err reversed less comparator.
+if (a =< 1$i) a := 1$i; end_if;
+b := 3$i;
+recovery_marker := 12050$i;
+
+// Case: missing left >.
+if (> 1$i) a := 1$i; end_if;
+recovery_marker := 12054$i;
+
+// Case: missing right >.
+if (a >) a := 1$i; end_if;
+recovery_marker := 12058$i;
+
+// Case: missing left <=.
+if (<= 1$i) a := 1$i; end_if;
+recovery_marker := 12062$i;
+
+// Case: missing right <=.
+if (a <=) a := 1$i; end_if;
+recovery_marker := 12066$i;
+
+// Case: missing left >=.
+if (>= 1$i) a := 1$i; end_if;
+recovery_marker := 12070$i;
+
+// Case: missing right >=.
+if (a >=) a := 1$i; end_if;
+recovery_marker := 12074$i;
+
+// Case: missing left ==.
+if (== 1$i) a := 1$i; end_if;
+recovery_marker := 12078$i;
+
+// Case: missing right ==.
+if (a ==) a := 1$i; end_if;
+recovery_marker := 12082$i;
+
+// Case: missing left !=.
+if (!= 1$i) a := 1$i; end_if;
+recovery_marker := 12086$i;
+
+// Case: missing right !=.
+if (a !=) a := 1$i; end_if;
+recovery_marker := 12090$i;
+end;

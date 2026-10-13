@@ -1,0 +1,29 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+begin
+
+// Case: numeric closing parenthesis.
+a := fun(12s10)[1$i];
+recovery_marker := 12007$i;
+
+// Case: numeric closing parenthesis space.
+a := fun(12s10 )[1$i];
+recovery_marker := 12011$i;
+
+// Case: numeric argument comma.
+a := fun(12s10,2$i)[1$i,2$i];
+recovery_marker := 12015$i;
+
+// Case: numeric order bracket.
+a := fun(1$i)[12s10];
+recovery_marker := 12019$i;
+
+// Case: integer argument comma.
+a := fun(123$u,2$i)[1$i,2$i];
+recovery_marker := 12023$i;
+
+// Case: exponent argument closer.
+a := fun(1.2s+)[1$i];
+recovery_marker := 12027$i;
+end;

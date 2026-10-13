@@ -1,0 +1,65 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: err mixed lexical syntax recovery.
+integer x, y;
+integer a, ;
+
+integer function test_function(integer p)
+begin
+    ret();
+end;
+
+
+begin
+
+// Case: err mixed lexical syntax recovery.
+    obj[1$i] = ;
+
+    if (x >= )
+        x := 1$i;
+    end_if;
+
+    x := 35000$i;
+    y := -40000$i;
+
+    x := 10$i
+    y := 20$i;
+recovery_marker := 12027$i;
+
+// Case: loop header and positive limit.
+from := 32768$i to 2$i by 1$i repeat a := 3$i;;
+recovery_marker := 12031$i;
+
+// Case: conversion and bad number.
+a := fun(toi(),12s10)[1$i,2$i];
+recovery_marker := 12035$i;
+
+// Case: lexical then independent syntax.
+a := @; pout();
+recovery_marker := 12039$i;
+
+// Case: incomplete loop assignment operator.
+from a : 1$i to 2$i by 1$i repeat a := 1$i;;
+pout();
+recovery_marker := 15008$i;
+
+// Case: invalid method argument and missing evaluation order.
+a := obj.method(35000$i);
+pout();
+recovery_marker := 15009$i;
+
+// Case: invalid argument and missing method call closing parenthesis.
+a := obj.method(35000$i;
+pout();
+recovery_marker := 16018$i;
+
+// Case: invalid pout argument and missing closing parenthesis.
+pout(35000$i;
+pout();
+recovery_marker := 16019$i;
+
+// Case: rejected numeric token followed by an independent empty assignment.
+a := 35000$i; obj[0$i] = ;
+recovery_marker := 16020$i;
+end;

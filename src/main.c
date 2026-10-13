@@ -2,12 +2,11 @@
 #include "../include/lexer.h"
 #include "../include/semantic_actions.h" 
 #include "../include/symbol_table.h"
+#include "../include/diagnostics.h"
 #include "../y.tab.h"
 
 FILE *source_file = NULL;
-int global_errors = 0;
 int token_start_line = 1;
-int lexical_error_line = 0;
 extern int yyparse();
 
 int main(int argc, char *argv[]) {
@@ -29,7 +28,10 @@ int main(int argc, char *argv[]) {
     // Parse
     init_symbol_table();
 
-    int success = (yyparse() == 0 && global_errors == 0);
+    int parse_result = yyparse();
+    finish_error_recovery();
+    map_purge_provisional(symbol_table);
+    int success = (parse_result == 0 && global_errors == 0);
     if (success) {
         printf("Parsing successful.\n");
     } else {
@@ -44,5 +46,7 @@ int main(int argc, char *argv[]) {
 }
 
 void yyerror(const char *s) {
+    finish_error_recovery();
+    global_errors++;
     fprintf(stderr, "Line %d: %s\n", current_line, s);
 }

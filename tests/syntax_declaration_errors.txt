@@ -1,0 +1,29 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn err missing comma in variable declaration.
+integer a b;
+
+// Case: syn err comptime missing type.
+comptime c_var;
+
+integer d;
+
+// Case: missing id after comma.
+integer badlist,;
+
+begin
+
+// Case: syn err missing comma in variable declaration.
+
+    dummy_stmt := 1$i;
+recovery_marker := 12019$i;
+
+// Case: syn err comptime missing type.
+    d := 1$i;
+recovery_marker := 12023$i;
+
+// Case: missing id after comma.
+a := 1$i;
+recovery_marker := 12027$i;
+end;

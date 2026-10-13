@@ -1,0 +1,30 @@
+test_program
+integer a, b, obj, i, recovery_marker;
+
+// Case: syn valid nested loops.
+integer i, j;
+
+// Case: syn valid single statement loop terminators.
+integer a, b, obj;
+
+// Case: nested function scope.
+integer function outer(integer p)
+integer function inner(integer q) begin ret(q); end;
+begin ret(inner(p)[1$i]); end;
+
+begin
+
+// Case: syn valid nested loops.
+    from i := 1$i to 2$i by 1$i repeat begin
+        from j := 1$i to 2$i by 1$i repeat j := 1$i;;
+    end;
+recovery_marker := 12020$i;
+
+// Case: syn valid single statement loop terminators.
+from a := 1$i to 2$i by 1$i repeat b := b + 1$i;;
+recovery_marker := 12024$i;
+
+// Case: nested function scope.
+a := outer(1$i)[1$i];
+recovery_marker := 12028$i;
+end;

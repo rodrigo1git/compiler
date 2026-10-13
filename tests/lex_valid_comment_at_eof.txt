@@ -1,7 +1,0 @@
-// EXPECTED: Parsing successful.
-program1
-integer x;
-begin
-    x := 1$i;
-end;
-// valid line comment at EOF

@@ -1,8 +1,0 @@
-// EXPECTED: 1 error
-// EXPECTED_DIAG: Forbidden return (Outside function context)
-// EXPECTED_DIAG_LINE: 7
-main_program
-integer a;
-begin
-    ret(5$i);
-end;

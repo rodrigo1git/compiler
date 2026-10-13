@@ -1,7 +1,0 @@
-// EXPECTED: 1 error
-// EXPECTED_DIAG: Missing program name
-integer a;
-begin
-
-    dummy_stmt := 1$i;
-end;

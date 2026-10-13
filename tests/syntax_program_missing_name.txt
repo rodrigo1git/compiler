@@ -1,0 +1,5 @@
+integer a;
+begin
+
+    dummy_stmt := 1$i;
+end;
