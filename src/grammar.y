@@ -196,12 +196,21 @@
         | expr '-' term
         | expr '+' error { SYNERR(@3, "Missing operand after '+'"); yyerrok; }
         | expr '-' error { SYNERR(@3, "Missing operand after '-'"); yyerrok; }
+        | '+' term { SYNERR(@1, "Missing left operand before '+'"); }
+        | '+' error { SYNERR(@1, "Missing left operand before '+'"); yyerrok; }
+        | '-' error { SYNERR(@1, "Missing operand after unary '-'"); yyerrok; }
         | term
         ;
     
     term:
           term '*' factor
         | term '/' factor
+        | term '*' error { SYNERR(@3, "Missing operand after '*'"); yyerrok; }
+        | term '/' error { SYNERR(@3, "Missing operand after '/'"); yyerrok; }
+        | '*' factor { SYNERR(@1, "Missing left operand before '*'"); }
+        | '/' factor { SYNERR(@1, "Missing left operand before '/'"); }
+        | '*' error { SYNERR(@1, "Missing left operand before '*'"); yyerrok; }
+        | '/' error { SYNERR(@1, "Missing left operand before '/'"); yyerrok; }
         | factor
         ;
 
@@ -212,6 +221,7 @@
               if (val > 32767) {
                   fprintf(stderr, "Line %d: Lexical error: Positive integer constant '%s' out of range\n", @1.first_line, $1->key);
                   global_errors++;
+                  map_remove(symbol_table, $1->key, $1->value);
               }
           }
       }
@@ -232,6 +242,9 @@
                   sprintf(neg_str, "-%s", $2->key);
                   add_to_symbol_table(neg_str, "INTEGER");
                   free(neg_str);
+                  if (val == -32768) {
+                      map_remove(symbol_table, $2->key, $2->value);
+                  }
               }
           }
       }
@@ -311,6 +324,8 @@
     if_stmt:
           TOKEN_IF '(' cond ')' stmt_block else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @$.first_line); }
         | TOKEN_IF '(' cond ')' stmt_block TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @$.first_line); }
+        | TOKEN_IF '(' error ')' stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@3, "Malformed comparison in IF condition"); yyerrok; }
+        | TOKEN_IF '(' error ')' stmt_block TOKEN_END_IF ';' { SYNERR(@3, "Malformed comparison in IF condition"); yyerrok; }
         | TOKEN_IF cond ')' stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@1, "Missing opening parenthesis in IF"); }
         | TOKEN_IF cond ')' stmt_block TOKEN_END_IF ';' { SYNERR(@1, "Missing opening parenthesis in IF"); }
         | TOKEN_IF '(' cond stmt_block else_stmt TOKEN_END_IF ';' { SYNERR(@1, "Missing closing parenthesis in IF"); }

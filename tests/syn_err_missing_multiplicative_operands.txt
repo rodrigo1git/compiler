@@ -1,0 +1,13 @@
+// EXPECTED: 4 errors
+// EXPECTED_DIAG: Missing operand after '*'
+// EXPECTED_DIAG: Missing operand after '/'
+// EXPECTED_DIAG: Missing left operand before '*'
+// EXPECTED_DIAG: Missing left operand before '/'
+operand_errors
+integer value;
+begin
+    value := 4$i * ;
+    value := 8$i / ;
+    value := * 2$i;
+    value := / 2$i;
+end;

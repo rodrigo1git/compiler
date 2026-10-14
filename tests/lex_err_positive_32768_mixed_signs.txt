@@ -1,0 +1,11 @@
+// EXPECTED: 2 errors
+// EXPECTED_DIAG: Positive integer constant '32768$i' out of range
+// EXPECTED_SYMBOL: Lexeme: -32768$i | Type: INTEGER
+// The symbol table must not retain 32768$i as a positive INTEGER.
+mixed_sign_boundary
+integer value;
+begin
+    value := 32768$i;
+    value := -32768$i;
+    value := 32768$i;
+end;

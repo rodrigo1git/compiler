@@ -1,0 +1,13 @@
+// EXPECTED: 2 errors
+// EXPECTED_DIAG: Malformed comparison in IF condition
+// The malformed operators must be tokenized separately and rejected by the parser.
+bad_comparator
+integer a;
+begin
+    if (a => 1$i)
+        a := 1$i;
+    end_if;
+    if (a =< 2$i)
+        a := 2$i;
+    end_if;
+end;

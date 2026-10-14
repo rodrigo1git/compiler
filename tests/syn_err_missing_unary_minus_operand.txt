@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing operand after unary '-'
+unary_minus_error
+integer value;
+begin
+    value := - ;
+end;

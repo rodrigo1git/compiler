@@ -1,0 +1,8 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Positive integer constant '32768$i' out of range
+// The symbol table must not contain 32768$i.
+positive_boundary
+integer value;
+begin
+    value := 32768$i;
+end;

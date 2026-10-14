@@ -71,7 +71,7 @@ sem_act_t sem_act_mat[N_STATES][N_COLS] = {
     {  sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_append, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error, sa_float_exponent_error }, // 10
     {  sa_float_const, sa_float_const,   sa_float_const,   sa_append,        sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const,   sa_float_const  }, // 11
     {  sa_append,      sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_append,        sa_chain,         sa_append,        sa_append,        sa_append       }, // 12
-    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
+    {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }, // 13
     {  sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_multi_char_op, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered, sa_token_buffered }  // 14
 };
 int check_reserved_words(const char* word) {
@@ -151,7 +151,8 @@ int sa_identifier(char c) { (void)c;
         if (isupper((unsigned char)lexeme_buffer[i])) {
             fprintf(stderr, "Line %d: Lexical error: Identifier '%s' contains uppercase letters.\n", token_start_line, original_lexeme);
             global_errors++;
-            yylval.symbol_ref = add_to_symbol_table(lexeme_buffer_lower, "ID");
+            lexical_error_line = token_start_line;
+            yylval.symbol_ref = map_create_detached(symbol_table, lexeme_buffer_lower, "ID");
             free(original_lexeme);
             free(lexeme_buffer_lower);
             return TOKEN_ID; 
@@ -178,10 +179,13 @@ int sa_int_const(char c) {
     if (val > 32768) {
         fprintf(stderr, "Line %d: Lexical error: Integer constant '%s' out of range\n", token_start_line, lexeme_buffer);
         global_errors++;
+        lexical_error_line = token_start_line;
         out_of_range = 1;
     }
 
-    yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, out_of_range ? "INVALID_INTEGER" : "INTEGER");
+    yylval.symbol_ref = out_of_range
+        ? map_create_detached(symbol_table, lexeme_buffer, "INVALID_INTEGER")
+        : add_to_symbol_table(lexeme_buffer, "INTEGER");
     return TOKEN_CONST;
 }
 
@@ -210,7 +214,8 @@ int sa_float_const(char c) { (void)c;
     
     if (out_of_range) {
         global_errors++;
-        yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "INVALID_SINGLEF");
+        lexical_error_line = token_start_line;
+        yylval.symbol_ref = map_create_detached(symbol_table, lexeme_buffer, "INVALID_SINGLEF");
     } else {
         yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "SINGLEF");
     }
@@ -231,17 +236,7 @@ int sa_multi_char_op(char c) {
     append_to_lexeme(c);
     if (strcmp(lexeme_buffer, ":=") == 0) return TOKEN_ASSIGN;
     if (strcmp(lexeme_buffer, ">=") == 0) return TOKEN_GREATER_EQUAL;
-    if (strcmp(lexeme_buffer, "=>") == 0) {
-        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
-        global_errors++;
-        return TOKEN_GREATER_EQUAL;
-    }
     if (strcmp(lexeme_buffer, "<=") == 0) return TOKEN_LESS_EQUAL;
-    if (strcmp(lexeme_buffer, "=<") == 0) {
-        fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
-        global_errors++;
-        return TOKEN_LESS_EQUAL;
-    }
     if (strcmp(lexeme_buffer, "==") == 0) return TOKEN_EQUAL;
     if (strcmp(lexeme_buffer, "!=") == 0) return TOKEN_NOT_EQUAL;
     fprintf(stderr, "Line %d: Lexical error: Invalid operator '%s'\n", token_start_line, lexeme_buffer);
@@ -308,8 +303,6 @@ int sa_error(char c) {
 
         if ((c == 's' || c == 'S') && integer_prefix) {
             fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part before its exponent\n", token_start_line);
-        } else if (c == ';' && lexeme_length > 0 && lexeme_buffer[lexeme_length - 1] == '.') {
-            fprintf(stderr, "Line %d: Lexical error: Float constant requires a decimal part\n", token_start_line);
         } else {
             fprintf(stderr, "Line %d: Lexical error: Invalid character '%s'\n", token_start_line, display_character((unsigned char)c));
         }

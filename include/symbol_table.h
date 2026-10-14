@@ -11,6 +11,7 @@ typedef struct map_node {
 
 typedef struct {
     map_node_t** buckets;
+    map_node_t* retired_nodes;
     int capacity;
 } hash_map_t;
 
@@ -21,6 +22,8 @@ extern void init_symbol_table(void);
 hash_map_t* map_create(int capacity);
 extern bool map_contains(hash_map_t* map, const char* key, const char* value);
 extern map_node_t *map_put(hash_map_t* map, const char* key, const char* value);
+extern map_node_t *map_create_detached(hash_map_t* map, const char* key, const char* value);
+extern bool map_remove(hash_map_t* map, const char* key, const char* value);
 extern void map_free(hash_map_t* map);
 extern void map_print(hash_map_t* map);
 

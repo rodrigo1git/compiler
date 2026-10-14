@@ -1,0 +1,7 @@
+// EXPECTED: 1 error
+// EXPECTED_DIAG: Missing left operand before '+'
+first_operand_error
+integer value;
+begin
+    value := + 2$i;
+end;
