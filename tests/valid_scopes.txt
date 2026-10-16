@@ -1,0 +1,97 @@
+scope_program
+integer shared, result, index;
+
+// Nested functions see their own declarations and their enclosing scopes.
+integer function outer(integer p)
+integer shared, local;
+integer function inner(integer q)
+integer local;
+begin
+    local := shared + p + q;
+    ret(local);
+end;
+integer function sibling(integer q)
+begin
+    ret(shared + p + q);
+end;
+begin
+    shared := p;
+    local := inner(shared)[1$i];
+    ret(sibling(local)[1$i]);
+end;
+
+// The same function and parameter names belong to independent sibling scopes.
+integer function other(integer p)
+integer shared;
+integer function inner(integer q)
+begin
+    ret(shared + p + q);
+end;
+begin
+    shared := p;
+    ret(inner(shared)[1$i]);
+end;
+
+// Class members and method parameters belong to the class and method scopes.
+class box boxcode
+begin
+    integer value;
+    integer read(integer p)
+    integer local;
+    begin
+        local := value + p;
+        ret(local);
+    end;
+end;
+class secondbox secondcode
+begin
+    integer value;
+    integer read(integer p)
+    begin
+        ret(value + p);
+    end;
+end;
+box object;
+secondbox second;
+
+// A local class shadows the global class without changing existing objects.
+integer function maker(integer shared)
+class box localcode
+begin
+    integer value;
+end;
+box item;
+begin
+    item[0$i] := shared;
+    ret(shared);
+end;
+
+// A function is visible in its own body.
+integer function recursive(integer p)
+begin
+    if (p > 0$i)
+        ret(recursive(p)[1$i]);
+    end_if;
+    ret(p);
+end;
+
+begin
+    shared := 1$i;
+    result := outer(shared)[1$i];
+    result := other(shared)[1$i];
+    result := maker(shared)[1$i];
+    result := recursive(shared)[1$i];
+    index := 0$i;
+    object[index] := result;
+    second[0$i] := object[index];
+    result := object.read(shared)[1$i];
+    result := second.read(shared)[1$i];
+    if (result > 0$i) begin
+        shared := result;
+    end else begin
+        shared := 0$i;
+    end end_if;
+    from index := 0$i to 2$i by 1$i repeat begin
+        result := shared + index;
+    end;
+end;

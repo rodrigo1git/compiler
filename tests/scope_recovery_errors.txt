@@ -1,0 +1,71 @@
+scope_program
+integer result;
+
+// An unnamed function gets an isolated recovery scope.
+integer function (integer hidden)
+integer temporary;
+begin
+    temporary := hidden;
+    ret(temporary);
+end;
+integer after_header;
+
+// A malformed parameter list must not leak the parameters already read.
+integer function damaged(integer partial, integer)
+begin
+    ret(partial);
+end;
+integer after_parameters;
+
+// Restoring a nested function restores its enclosing function, not main.
+integer function outer(integer p)
+integer function inner(integer q)
+begin
+    q := ;
+    ret(q);
+end;
+integer local;
+begin
+    local := inner(p)[1$i];
+    ret(local);
+end;
+integer after_body;
+
+// A malformed class body must restore main before the next declaration.
+class broken code
+begin
+    @
+end;
+integer after_class;
+
+// An abandoned header must close before the next global declaration.
+integer function abandoned(integer hidden_parameter;
+integer after_abandoned;
+
+// An abandoned method must restore its class before the next attribute.
+class damagedclass damagedcode
+begin
+    integer method(integer hidden_method;
+    integer after_method;
+    integer good(integer p)
+    begin
+        ret(after_method + p);
+    end;
+end;
+
+begin
+    after_header := 1$i;
+    after_parameters := 2$i;
+    after_body := outer(3$i)[1$i];
+    after_class := 4$i;
+    after_abandoned := 5$i;
+    result := hidden;
+    result := temporary;
+    result := partial;
+    result := q;
+    result := local;
+    result := hidden_parameter;
+    result := hidden_method;
+    result := 5$i;
+    ret(1$i);
+end;

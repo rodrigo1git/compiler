@@ -3,6 +3,7 @@
 
 extern int global_errors;
 void report_lexical_error(int line, const char *format, ...);
+void report_semantic_error(int line, const char *format, ...);
 void begin_lexical_recovery(void);
 void begin_syntax_error(int line, const char *unexpected, const char *context);
 void report_syntax_error(int line, const char *message);

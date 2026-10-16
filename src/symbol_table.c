@@ -22,6 +22,7 @@ hash_map_t* map_create(int capacity) {
         exit(1);
     }
     map->capacity = capacity;
+    map->scoped_identifiers = false;
     map->buckets = (map_node_t**)calloc(capacity, sizeof(map_node_t*));
     if (map->buckets == NULL) {
         free(map);
@@ -31,15 +32,19 @@ hash_map_t* map_create(int capacity) {
     return map;
 }
 
-bool map_contains(hash_map_t* map, const char* key, const char* value) {
+map_node_t *map_get(hash_map_t* map, const char* key, const char* value) {
     unsigned long index = hash_func(key) % map->capacity;
     map_node_t* current = map->buckets[index];
     
     while (current != NULL) {
-        if (strcmp(current->key, key) == 0 && strcmp(current->value, value) == 0) return true;
+        if (strcmp(current->key, key) == 0 && strcmp(current->value, value) == 0) return current;
         current = current->next;
     }
-    return false;
+    return NULL;
+}
+
+bool map_contains(hash_map_t* map, const char* key, const char* value) {
+    return map_get(map, key, value) != NULL;
 }
 
 map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
@@ -50,7 +55,7 @@ map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
         }
     }
 
-    map_node_t* new_node = (map_node_t*)malloc(sizeof(map_node_t));
+    map_node_t* new_node = (map_node_t*)calloc(1, sizeof(map_node_t));
     if (new_node == NULL) {
         fprintf(stderr, "Fatal error: Cannot allocate symbol\n");
         exit(1);
@@ -79,6 +84,7 @@ void map_free(hash_map_t* map) {
             current = current->next;
             free(temp->key);
             free(temp->value);
+            free(temp->declared_type);
             free(temp);
         }
     }
@@ -91,8 +97,21 @@ void map_print(hash_map_t* map) {
     for (int i = 0; i < map->capacity; i++) {
         map_node_t* current = map->buckets[i];
         while (current != NULL) {
-            if (!current->provisional) {
-                printf("Lexeme: %s | Type: %s\n", current->key, current->value);
+            if (!current->provisional &&
+                !(map->scoped_identifiers && strcmp(current->value, "ID") == 0 &&
+                  current->usage == SYMBOL_LEXEME)) {
+                static const char *usage_names[] = {
+                    "LEXEME", "PROGRAM", "VARIABLE", "PARAMETER", "FUNCTION",
+                    "CLASS", "ATTRIBUTE", "METHOD"
+                };
+                printf("Lexeme: %s | Type: %s", current->key, current->value);
+                if (current->usage != SYMBOL_LEXEME) {
+                    printf(" | Use: %s", usage_names[current->usage]);
+                    if (current->declared_type != NULL)
+                        printf(" | Declared type: %s", current->declared_type);
+                    printf(" | Line: %d", current->declaration_line);
+                }
+                putchar('\n');
             }
             current = current->next;
         }
@@ -116,6 +135,7 @@ void map_purge_provisional(hash_map_t *map) {
                 *link = node->next;
                 free(node->key);
                 free(node->value);
+                free(node->declared_type);
                 free(node);
             } else {
                 link = &node->next;

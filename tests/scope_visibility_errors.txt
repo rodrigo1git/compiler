@@ -1,0 +1,70 @@
+scope_program
+integer result, variable;
+
+// A later declaration is not visible inside an earlier function body.
+integer function early(integer p)
+begin
+    ret(later(p)[1$i]);
+end;
+integer function later(integer p)
+begin
+    ret(p);
+end;
+
+integer function outer(integer parameter)
+integer local;
+integer function inner(integer q)
+begin
+    ret(parameter + q);
+end;
+begin
+    local := parameter;
+    ret(inner(local)[1$i]);
+end;
+
+// Sibling functions cannot see each other's locals or parameters.
+integer function sibling(integer p)
+begin
+    local := p;
+    ret(parameter);
+end;
+
+class box boxcode
+begin
+    integer field;
+    integer read(integer method_parameter)
+    integer method_local;
+    begin
+        method_local := field + method_parameter;
+        ret(method_local);
+    end;
+end;
+box object;
+
+// A type name must resolve to a visible class.
+missing unknown_object;
+
+begin
+    result := later(1$i)[1$i];
+    result := outer(result)[1$i];
+    result := inner(result)[1$i];
+    local := result;
+    result := parameter;
+    result := field;
+    result := method_parameter;
+    result := method_local;
+    result := read(result)[1$i];
+    absent := 1$i;
+
+    // The nearest declaration is checked; lookup does not skip a wrong use.
+    result := variable(result)[1$i];
+    later := 1$i;
+    result := later;
+    result := box;
+
+    // Object and positional-index names also obey lexical scope.
+    absent_object[0$i] := result;
+    object[absent_index] := result;
+    result := absent_object.read(result)[1$i];
+    result := 2$i;
+end;

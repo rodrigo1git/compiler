@@ -1,0 +1,35 @@
+scope_program
+integer result;
+integer function choose(integer value)
+begin
+    ret(value);
+end;
+class kind kindcode
+begin
+    integer value;
+end;
+
+// Local variables may shadow a global function and class.
+integer function shadow(integer p)
+integer choose, kind;
+begin
+    choose := p;
+    kind := choose;
+    ret(kind);
+end;
+
+// A local function may shadow a global variable.
+integer function container(integer p)
+integer function result(integer q)
+begin
+    ret(q + p);
+end;
+begin
+    ret(result(p)[1$i]);
+end;
+
+begin
+    result := choose(1$i)[1$i];
+    result := shadow(result)[1$i];
+    result := container(result)[1$i];
+end;

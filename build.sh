@@ -43,6 +43,7 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/semantic_actions.c \
     src/transition_table.c \
     src/symbol_table.c \
+    src/scope.c \
     y.tab.c \
     -o compiler
 

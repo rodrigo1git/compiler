@@ -3,6 +3,7 @@
 #include "../include/semantic_actions.h" 
 #include "../include/symbol_table.h"
 #include "../include/diagnostics.h"
+#include "../include/scope.h"
 #include "../y.tab.h"
 
 FILE *source_file = NULL;
@@ -10,6 +11,9 @@ int token_start_line = 1;
 extern int yyparse();
 
 int main(int argc, char *argv[]) {
+    // Keep traces and diagnostics on separate lines when their streams are merged.
+    setvbuf(stdout, NULL, _IOLBF, 0);
+
     // Validate args
     if (argc < 2) {
         printf("Error: Missing input file.\n");
@@ -27,6 +31,7 @@ int main(int argc, char *argv[]) {
 
     // Parse
     init_symbol_table();
+    scope_init();
 
     int parse_result = yyparse();
     finish_error_recovery();
@@ -39,6 +44,7 @@ int main(int argc, char *argv[]) {
     }
 
     print_symbol_table();
+    scope_destroy();
     map_free(symbol_table);
     free_lexeme_buffer();
     fclose(source_file);

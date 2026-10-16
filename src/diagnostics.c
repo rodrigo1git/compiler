@@ -14,6 +14,16 @@ static struct {
 
 int global_errors = 0;
 
+void report_semantic_error(int line, const char *format, ...) {
+    va_list args;
+    fprintf(stderr, "Line %d: Semantic error: ", line);
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fputc('\n', stderr);
+    global_errors++;
+}
+
 static void flush_syntax_error(void) {
     if (recovery.pending) {
         fprintf(stderr, "Line %d: Syntax error: %s\n", recovery.line,

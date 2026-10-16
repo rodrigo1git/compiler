@@ -1,0 +1,64 @@
+scope_program
+integer a, result, variable;
+
+// Repeating a variable in the same scope is an error.
+integer a;
+
+// A function cannot reuse a variable name from the same scope.
+integer function variable(integer p)
+integer isolated;
+begin
+    isolated := p;
+    ret(isolated);
+end;
+
+// Parameters and local variables share a scope.
+integer function repeated(integer p, integer p)
+integer p;
+begin
+    ret(p);
+end;
+
+// Duplicate functions must not merge their parameters or local declarations.
+integer function repeated(integer q)
+integer isolated;
+begin
+    isolated := q;
+    ret(isolated);
+end;
+
+// Classes share the declaration namespace with variables and functions.
+class a acode
+begin
+    integer isolated;
+end;
+
+class box boxcode
+begin
+    integer value;
+    integer value;
+    integer value(integer p)
+    begin
+        ret(p);
+    end;
+    integer read(integer p)
+    begin
+        ret(p);
+    end;
+    integer read(integer q)
+    begin
+        ret(q);
+    end;
+end;
+
+// A rejected duplicate class must not modify the original class scope.
+class box othercode
+begin
+    integer isolated;
+end;
+
+begin
+    a := 1$i;
+    variable := a;
+    result := repeated(a, variable)[1$i, 2$i];
+end;
