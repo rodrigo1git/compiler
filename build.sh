@@ -44,6 +44,8 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/transition_table.c \
     src/symbol_table.c \
     src/scope.c \
+    src/rpn.c \
+    src/codegen.c \
     y.tab.c \
     -o compiler
 

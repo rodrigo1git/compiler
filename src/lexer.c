@@ -91,7 +91,7 @@ static void set_token_location(void) {
 }
 
 static void log_token(int token_id) {
-    printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n",
+    trace_printf("[LEX] Token: %d | Lexeme: \"%s\" | Line: %d\n",
            token_id, lexeme_buffer, token_start_line);
 }
 

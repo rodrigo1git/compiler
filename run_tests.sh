@@ -2,6 +2,14 @@
 set -uo pipefail
 cd -- "$(dirname -- "$0")"
 
+compiler_command=(./compiler)
+if [ "$#" -eq 1 ] && [ "$1" = --rpn ]; then
+    compiler_command+=(--rpn)
+elif [ "$#" -ne 0 ]; then
+    printf 'Usage: %s [--rpn]\n' "$0" >&2
+    exit 2
+fi
+
 if ! ./build.sh; then
     printf 'Build failed; tests were not run.\n' >&2
     exit 1
@@ -21,6 +29,6 @@ for file in "${test_files[@]}"; do
     cat -- "$file"
     printf '\n%s\n' '--------------------------------------------------------'
     printf 'Compiler output:\n'
-    ./compiler "$file" 2>&1
+    "${compiler_command[@]}" "$file" 2>&1
     printf 'Compiler exit status: %d\n' "$?"
 done

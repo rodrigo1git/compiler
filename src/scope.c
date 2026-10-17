@@ -57,7 +57,7 @@ static scope_t *push_scope(const char *name, symbol_usage_t kind) {
     frame->next_allocated = allocated_scopes;
     allocated_scopes = frame;
     current_scope = frame;
-    printf("[SCOPE] Enter %s\n", frame->path);
+    trace_printf("[SCOPE] Enter %s\n", frame->path);
     return frame;
 }
 
@@ -133,7 +133,7 @@ void scope_end(scope_t *scope) {
         scope_t *closed = current_scope;
         current_scope = closed->parent;
         closed->active = false;
-        printf("[SCOPE] Leave %s -> %s\n", closed->path,
+        trace_printf("[SCOPE] Leave %s -> %s\n", closed->path,
                current_scope != NULL ? current_scope->path : "<none>");
         if (closed == scope) break;
     }
@@ -165,7 +165,7 @@ map_node_t *scope_resolve(map_node_t *name, scope_reference_t reference, int lin
                                   name->key, symbol->key, expected);
             return NULL;
         }
-        printf("[SCOPE] Line %d: %s -> %s\n", line, name->key, symbol->key);
+        trace_printf("[SCOPE] Line %d: %s -> %s\n", line, name->key, symbol->key);
         return symbol;
     }
     report_semantic_error(line, "Identifier '%s' is not declared or not visible in scope '%s'",

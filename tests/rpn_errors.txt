@@ -1,0 +1,17 @@
+rpn_program
+integer a, b;
+begin
+    a := 1$i;
+
+    // A missing operand must prevent partial RPN output.
+    a := 2$i * ;
+    b := 3$i;
+
+    // Reject an invalid constant before adding it to the symbol table.
+    b := 32768$i;
+    a := 4$i;
+
+    // Name resolution errors must also suppress RPN output.
+    missing := 5$i;
+    b := 6$i;
+end;

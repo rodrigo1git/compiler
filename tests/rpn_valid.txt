@@ -1,0 +1,33 @@
+rpn_program
+integer a, b, c, d, e, arithmetic_result, difference, quotient, negative, minimum;
+integer assignment_result, chain, side_effect, self_result;
+singlef float_result;
+begin
+    a := 4$i;
+    b := 3$i;
+
+    // Check precedence, left associativity and signed constants.
+    arithmetic_result := a + b * 2$i;
+    difference := 20$i - 5$i - 3$i;
+    quotient := 24$i / 4$i / 2$i;
+    negative := -2$i * 3$i + 4$i;
+    minimum := -32768$i;
+    float_result := -1.5 + 2.0 * 3.0;
+
+    a := 3$i;
+    b := 5$i;
+    c := 8$i;
+    d := 2$i;
+    e := 7$i;
+
+    // Embedded assignments preserve their values for the enclosing expression.
+    assignment_result := b=c + d * e=c / 2$i;
+
+    // Cover chains with both constant and identifier right-hand sides.
+    chain := a=b=5$i;
+
+    // Read the left operand before applying the assignment on its right.
+    side_effect := a + a=2$i;
+    self_result := a=a + 1$i;
+    chain := a=b=c;
+end;

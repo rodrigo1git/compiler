@@ -4,6 +4,7 @@
   #include <string.h>
   #include "include/symbol_table.h"
   #include "include/scope.h"
+  #include "include/codegen.h"
 
   extern int yylex();
   extern int current_line;
@@ -32,6 +33,7 @@
   %code requires {
     #include "include/symbol_table.h"
     #include "include/scope.h"
+    #include "include/codegen.h"
   }
 
   /* Token declarations */
@@ -40,6 +42,9 @@
     scope_t *scope;
     scope_type_t declaration_type;
     scope_names_t *names;
+    rpn_t *code;
+    size_t jump_target;
+    codegen_loop_t loop;
   }
   %token <symbol_ref> TOKEN_ID TOKEN_CHAIN TOKEN_CONST
   %token TOKEN_INTEGER TOKEN_SINGLEF
@@ -50,8 +55,14 @@
   %type <scope> function_prefix function_header method_prefix method_header class_header class_missing_code
   %type <declaration_type> type primitive_type
   %type <names> id_list
+  %type <code> expr term factor factor_base nonconstant_factor assign_chain cond
+  %type <jump_target> if_header if_else_header
+  %type <symbol_ref> constant
+  %type <symbol_ref> for_identifier for_initial for_final for_step
+  %type <loop> for_header
   %destructor { scope_end($$); } <scope>
   %destructor { scope_names_free($$); } <names>
+  %destructor { codegen_free($$); } <code>
       /* Relational and assignment operators */
   %token TOKEN_ASSIGN          /* := */
   %token TOKEN_EQUAL           /* == */
@@ -92,8 +103,8 @@ decl_list:
     ;
 
 var_decl:
-  type id_list ';' { scope_declare_names($2, $1); printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
-| TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2); printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
+  type id_list ';' { scope_declare_names($2, $1); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
+| TOKEN_COMPTIME type id_list ';' { codegen_unsupported(@1.first_line, "comptime declarations"); scope_declare_names($3, $2); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
 | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); finish_statement(); }
 | type error ';' {
       if (syntax_error_unexpected() != NULL && strcmp(syntax_error_unexpected(), "TOKEN_ASSIGN") == 0)
@@ -134,9 +145,9 @@ simple_stmt:
     | pout_stmt error { RECERR(@2, "Missing ';' after pout statement"); RECOVER(); }
     | ret_stmt ';' { finish_statement(); }
     | ret_stmt error { RECERR(@2, "Missing ';' after ret statement"); RECOVER(); }
-    | TOKEN_POUT_LOWER expr ';' { SYNERR(@1, "Missing opening and closing parentheses in pout statement"); finish_statement(); }
-    | ret_keyword expr ';' { SYNERR(@1, "Missing opening and closing parentheses in ret statement"); finish_statement(); }
-    | ret_keyword '(' expr ';' { SYNERR(@4, "Missing closing parenthesis in ret statement"); finish_statement(); }
+    | TOKEN_POUT_LOWER expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in pout statement"); finish_statement(); }
+    | ret_keyword expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in ret statement"); finish_statement(); }
+    | ret_keyword '(' expr ';' { codegen_free($3); SYNERR(@4, "Missing closing parenthesis in ret statement"); finish_statement(); }
     | TOKEN_ID TOKEN_ASSIGN ';' { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
     | attr_ref TOKEN_ASSIGN ';' { SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
     | attr_ref '=' ';' { SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
@@ -158,33 +169,35 @@ primitive_type:
     ;
 
 assign:
-      TOKEN_ID TOKEN_ASSIGN expr { scope_resolve($1, SCOPE_VALUE, @1.first_line); printf("[SYNTAX] Line %d: Assignment\n", @$.first_line); }
-    | attr_ref TOKEN_ASSIGN expr { printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
-    | attr_ref '=' expr { printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
+      TOKEN_ID TOKEN_ASSIGN expr { codegen_assignment(scope_resolve($1, SCOPE_VALUE, @1.first_line), $3, @1.first_line); trace_printf("[SYNTAX] Line %d: Assignment\n", @$.first_line); }
+    | attr_ref TOKEN_ASSIGN expr { codegen_free($3); trace_printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
+    | attr_ref '=' expr { codegen_free($3); trace_printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
     ;
 
 expr:
-      expr '+' term
-    | expr '-' term
-    | expr '+' error { RECERR(@3, "Missing operand after '+'"); RECOVER(); }
-    | expr '-' error { RECERR(@3, "Missing operand after '-'"); RECOVER(); }
-    | '+' term { SYNERR(@1, "Missing left operand before '+'"); }
+      expr '+' term { $$ = codegen_binary($1, $3, RPN_ADD, @2.first_line); }
+    | expr '-' term { $$ = codegen_binary($1, $3, RPN_SUBTRACT, @2.first_line); }
+    | expr '+' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '+'"); RECOVER(); }
+    | expr '-' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '-'"); RECOVER(); }
+    | '+' term { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '+'"); }
     | term
     ;
 
 term:
-      term '*' factor
-    | term '/' factor
-    | term '*' error { RECERR(@3, "Missing operand after '*'"); RECOVER(); }
-    | term '/' error { RECERR(@3, "Missing operand after '/'"); RECOVER(); }
-    | '*' factor { SYNERR(@1, "Missing left operand before '*'"); }
-    | '/' factor { SYNERR(@1, "Missing left operand before '/'"); }
+      term '*' factor { $$ = codegen_binary($1, $3, RPN_MULTIPLY, @2.first_line); }
+    | term '/' factor { $$ = codegen_binary($1, $3, RPN_DIVIDE, @2.first_line); }
+    | term '*' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '*'"); RECOVER(); }
+    | term '/' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '/'"); RECOVER(); }
+    | '*' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '*'"); }
+    | '/' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '/'"); }
     | factor
     ;
 
 constant:
       TOKEN_CONST {
+          $$ = $1;
           if ($1->provisional) {
+              $$ = NULL;
               report_lexical_error(@1.first_line,
                   "Positive integer constant '%s' out of range", $1->key);
           }
@@ -196,49 +209,51 @@ constant:
               YYNOMEM;
           }
           sprintf(negative, "-%s", $2->key);
-          add_to_symbol_table(negative, $2->value);
+          $$ = add_to_symbol_table(negative, $2->value);
           free(negative);
       }
-    | '-' nonconstant_factor { SYNERR(@1, "Unary '-' is only allowed before a numeric constant"); }
-    | '-' error { RECERR(@2, "Missing constant after '-'"); RECOVER(); }
+    | '-' nonconstant_factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Unary '-' is only allowed before a numeric constant"); }
+    | '-' error { $$ = NULL; RECERR(@2, "Missing constant after '-'"); RECOVER(); }
     ;
 
 assign_chain:
-  TOKEN_ID '=' { scope_resolve($1, SCOPE_VALUE, @1.first_line); }
-| assign_chain TOKEN_ID '=' { scope_resolve($2, SCOPE_VALUE, @2.first_line); }
+  TOKEN_ID '=' { $$ = codegen_target(NULL, scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
+| assign_chain TOKEN_ID '=' { $$ = codegen_target($1, scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line); }
 ;
 
 factor:
-  assign_chain TOKEN_ID { scope_resolve($2, SCOPE_VALUE, @2.first_line); }
-| assign_chain constant
+  assign_chain TOKEN_ID { $$ = codegen_assignment_expression($1, codegen_value(scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line)); }
+| assign_chain constant { $$ = codegen_assignment_expression($1, codegen_value($2, @2.first_line)); }
 | assign_chain TOKEN_ID '(' arg_list ')' evaluation_order {
       scope_resolve($2, SCOPE_CALLABLE, @2.first_line);
+      codegen_free($1); $$ = NULL;
       SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
   }
 | assign_chain TOKEN_ID '.' TOKEN_ID '(' arg_list ')' evaluation_order {
       scope_resolve($2, SCOPE_VALUE, @2.first_line);
+      codegen_free($1); $$ = NULL;
       SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
   }
 | factor_base
-| TOKEN_ID TOKEN_ASSIGN factor_base { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@2, "Use '=' instead of ':=' for assignments in expressions"); }
-| TOKEN_ID TOKEN_ASSIGN error { scope_resolve($1, SCOPE_VALUE, @1.first_line); RECERR(@2, "Use '=' instead of ':=' for assignments in expressions"); RECOVER(); }
+| TOKEN_ID TOKEN_ASSIGN factor_base { scope_resolve($1, SCOPE_VALUE, @1.first_line); codegen_free($3); $$ = NULL; SYNERR(@2, "Use '=' instead of ':=' for assignments in expressions"); }
+| TOKEN_ID TOKEN_ASSIGN error { scope_resolve($1, SCOPE_VALUE, @1.first_line); $$ = NULL; RECERR(@2, "Use '=' instead of ':=' for assignments in expressions"); RECOVER(); }
 ;
 
 factor_base:
-  constant
+  constant { $$ = codegen_value($1, @1.first_line); }
 | nonconstant_factor
 ;
 
 nonconstant_factor:
-  call
-| TOKEN_ID { scope_resolve($1, SCOPE_VALUE, @1.first_line); }
-  | TOKEN_TOI '(' expr ')'
-| TOKEN_TOI '(' ')' { SYNERR(@3, "Missing expression in toi conversion"); }
-| attr_ref
+  call { $$ = NULL; }
+| TOKEN_ID { $$ = codegen_value(scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
+| TOKEN_TOI '(' expr ')' { codegen_free($3); $$ = NULL; codegen_unsupported(@1.first_line, "toi conversions"); }
+| TOKEN_TOI '(' ')' { $$ = NULL; SYNERR(@3, "Missing expression in toi conversion"); }
+| attr_ref { $$ = NULL; }
 ;
 
 call:
-      call_arguments evaluation_order
+      call_arguments evaluation_order { codegen_unsupported(@1.first_line, "calls"); }
     | call_arguments { SYNERR(@1, "Missing order for parameter evaluation and assignment"); }
     ;
 
@@ -255,8 +270,8 @@ call_arguments:
     ;
 
 arg_list:
-      expr
-    | arg_list ',' expr
+      expr { codegen_free($1); }
+    | arg_list ',' expr { codegen_free($3); }
     ;
 
 evaluation_order:
@@ -271,26 +286,26 @@ const_list:
     ;
 
 cond:
-      assign_chain '>' expr { SYNERR(@2, "Invalid comparator sequence '=' followed by '>'"); }
-    | assign_chain '<' expr { SYNERR(@2, "Invalid comparator sequence '=' followed by '<'"); }
-    | '<' expr { SYNERR(@1, "Missing left operand in condition"); }
-    | '>' expr { SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_GREATER_EQUAL expr { SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_LESS_EQUAL expr { SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_EQUAL expr { SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_NOT_EQUAL expr { SYNERR(@1, "Missing left operand in condition"); }
-    | expr '<' expr
-    | expr '>' expr
-    | expr TOKEN_GREATER_EQUAL expr
-    | expr TOKEN_LESS_EQUAL expr
-    | expr TOKEN_EQUAL expr
-    | expr TOKEN_NOT_EQUAL expr
-    | expr '<' error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr '>' error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_GREATER_EQUAL error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_LESS_EQUAL error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_EQUAL error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_NOT_EQUAL error { RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+      assign_chain '>' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '>'"); }
+    | assign_chain '<' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '<'"); }
+    | '<' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | '>' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_GREATER_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_LESS_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_NOT_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | expr '<' expr { $$ = codegen_binary($1, $3, RPN_LESS, @2.first_line); }
+    | expr '>' expr { $$ = codegen_binary($1, $3, RPN_GREATER, @2.first_line); }
+    | expr TOKEN_GREATER_EQUAL expr { $$ = codegen_binary($1, $3, RPN_GREATER_EQUAL, @2.first_line); }
+    | expr TOKEN_LESS_EQUAL expr { $$ = codegen_binary($1, $3, RPN_LESS_EQUAL, @2.first_line); }
+    | expr TOKEN_EQUAL expr { $$ = codegen_binary($1, $3, RPN_EQUAL, @2.first_line); }
+    | expr TOKEN_NOT_EQUAL expr { $$ = codegen_binary($1, $3, RPN_NOT_EQUAL, @2.first_line); }
+    | expr '<' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr '>' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_GREATER_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_LESS_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_NOT_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
     ;
 
 stmt_block:
@@ -300,70 +315,71 @@ stmt_block:
     ;
 
 if_stmt:
-      if_header stmt_block else_stmt TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @1.first_line); }
-    | if_header stmt_block TOKEN_END_IF ';' { printf("[SYNTAX] Line %d: IF statement\n", @1.first_line); }
-    | if_header stmt_block error { RECERR(@3, "Missing end_if"); RECOVER(); }
-    | if_header stmt_block else_stmt error { RECERR(@4, "Missing end_if"); RECOVER(); }
+      if_else_header stmt_block TOKEN_END_IF ';' { codegen_if_end($1); trace_printf("[SYNTAX] Line %d: IF statement\n", @1.first_line); }
+    | if_header stmt_block TOKEN_END_IF ';' { codegen_if_end($1); trace_printf("[SYNTAX] Line %d: IF statement\n", @1.first_line); }
+    | if_header stmt_block error { codegen_if_end($1); RECERR(@3, "Missing end_if"); RECOVER(); }
+    | if_else_header stmt_block error { codegen_if_end($1); RECERR(@3, "Missing end_if"); RECOVER(); }
     ;
 
 if_header:
-      TOKEN_IF '(' cond ')'
-    | TOKEN_IF cond ')' { SYNERR(@1, "Missing opening parenthesis in IF"); }
-    | TOKEN_IF '(' cond { SYNERR(@1, "Missing closing parenthesis in IF"); }
-    | TOKEN_IF cond { SYNERR(@1, "Missing opening and closing parentheses in IF"); }
-    | TOKEN_IF '(' error ')' { RECERR(@3, "Malformed IF condition"); RECOVER(); }
-    | TOKEN_IF '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in IF condition"); }
+      TOKEN_IF '(' cond ')' { $$ = codegen_if_begin($3, @1.first_line); }
+    | TOKEN_IF cond ')' { codegen_free($2); $$ = 0; SYNERR(@1, "Missing opening parenthesis in IF"); }
+    | TOKEN_IF '(' cond { codegen_free($3); $$ = 0; SYNERR(@1, "Missing closing parenthesis in IF"); }
+    | TOKEN_IF cond { codegen_free($2); $$ = 0; SYNERR(@1, "Missing opening and closing parentheses in IF"); }
+    | TOKEN_IF '(' error ')' { $$ = 0; RECERR(@3, "Malformed IF condition"); RECOVER(); }
+    | TOKEN_IF '(' error ';' { $$ = 0; RECOVER_STATEMENT(@4, "Missing closing parenthesis in IF condition"); }
     ;
 
-else_stmt:
-      TOKEN_ELSE stmt_block
+if_else_header:
+      if_header stmt_block TOKEN_ELSE { $$ = codegen_if_else($1, @3.first_line); }
     ;
 
 for_loop:
-      for_header stmt_block ';' { printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", @1.first_line); }
-    | for_header ';' { SYNERR(@1, "Missing body in FOR loop"); finish_statement(); }
-    | for_header stmt_block error { RECERR(@3, "Missing ';' after FOR loop"); RECOVER(); }
+      for_header stmt_block ';' { codegen_for_end($1); trace_printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", @1.first_line); }
+    | for_header ';' { codegen_for_end($1); SYNERR(@1, "Missing body in FOR loop"); finish_statement(); }
+    | for_header stmt_block error { codegen_for_end($1); RECERR(@3, "Missing ';' after FOR loop"); RECOVER(); }
     ;
 
 for_header:
-      TOKEN_FROM for_identifier for_assignment for_initial for_to for_final for_by for_step for_repeat
-    | TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO for_final for_by for_step for_repeat { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@1, "Missing 'from' in FOR loop"); }
+      TOKEN_FROM for_identifier for_assignment for_initial for_to for_final for_by for_step for_repeat { $$ = codegen_for_begin($2, $4, $6, $8, @1.first_line); }
+    | TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO for_final for_by for_step for_repeat { $$ = (codegen_loop_t){0}; scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@1, "Missing 'from' in FOR loop"); }
     ;
 
-/* Recover each component before parsing the next component or the body. */
+/* Recover each component before parsing the next component or the body.
+   At end of input, stop instead of retrying a component that cannot be supplied. */
 for_identifier:
-      TOKEN_ID { scope_resolve($1, SCOPE_VALUE, @1.first_line); }
-    | error { RECERR(@1, "Missing identifier in FOR loop"); RECOVER(); }
+      TOKEN_ID { $$ = scope_resolve($1, SCOPE_VALUE, @1.first_line); }
+    | error { $$ = NULL; RECERR(@1, "Missing identifier in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_assignment:
       TOKEN_ASSIGN
-    | error { RECERR(@1, "Missing ':=' in FOR loop"); RECOVER(); }
+    | error { RECERR(@1, "Missing ':=' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_initial:
       constant
-    | error { RECERR(@1, "Missing constant after 'from' in FOR loop"); RECOVER(); }
+    | error { $$ = NULL; RECERR(@1, "Missing constant after 'from' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_to:
       TOKEN_TO
-    | error { RECERR(@1, "Missing 'to' in FOR loop"); RECOVER(); }
+    | error { RECERR(@1, "Missing 'to' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_final:
       constant
-    | error { RECERR(@1, "Missing constant after 'to' in FOR loop"); RECOVER(); }
+    | error { $$ = NULL; RECERR(@1, "Missing constant after 'to' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_by:
       TOKEN_BY
-    | error { RECERR(@1, "Missing 'by' in FOR loop"); RECOVER(); }
+    | error { RECERR(@1, "Missing 'by' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_step:
       constant
-    | error { RECERR(@1, "Missing constant after 'by' in FOR loop"); RECOVER(); }
+    | error { $$ = NULL; RECERR(@1, "Missing constant after 'by' in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
     ;
 
 for_repeat:
@@ -372,8 +388,8 @@ for_repeat:
     ;
 
 func_def:
-      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
-    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
     | function_prefix error ';' { scope_end($1); RECERR(@2, "Malformed function header"); RECOVER(); }
     | function_header decl_list TOKEN_BEGIN compound_stmt YYEOF { scope_end($1); SYNERR(@4, "Missing end of function"); YYABORT; }
     | function_header TOKEN_BEGIN compound_stmt YYEOF { scope_end($1); SYNERR(@3, "Missing end of function"); YYABORT; }
@@ -381,7 +397,7 @@ func_def:
 
 /* Open the scope before parameters and local declarations are recognized. */
 function_prefix:
-      type TOKEN_FUNCTION TOKEN_ID '(' { $$ = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); }
+      type TOKEN_FUNCTION TOKEN_ID '(' { codegen_unsupported(@2.first_line, "function definitions"); $$ = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); }
     | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$ = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); }
     ;
 
@@ -400,13 +416,13 @@ param_decl_list:
     ;
 
 method_def:
-      method_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
-    | method_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
+      method_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
+    | method_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
     | method_prefix error ';' { scope_end($1); RECERR(@2, "Malformed method header"); RECOVER(); }
     ;
 
 method_prefix:
-      type TOKEN_ID '(' { $$ = scope_begin($2, SYMBOL_METHOD, $1, @2.first_line); }
+      type TOKEN_ID '(' { codegen_unsupported(@2.first_line, "method definitions"); $$ = scope_begin($2, SYMBOL_METHOD, $1, @2.first_line); }
     ;
 
 method_header:
@@ -415,7 +431,7 @@ method_header:
     ;
 
 class_header:
-      TOKEN_CLASS TOKEN_ID TOKEN_ID { $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); }
+      TOKEN_CLASS TOKEN_ID TOKEN_ID { codegen_unsupported(@1.first_line, "class declarations"); $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); }
     ;
 
 class_missing_code:
@@ -423,7 +439,7 @@ class_missing_code:
     ;
 
 class_def:
-      class_header TOKEN_BEGIN class_body TOKEN_END ';' { scope_end($1); printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
+      class_header TOKEN_BEGIN class_body TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
     | class_missing_code class_body TOKEN_END ';' { scope_end($1); finish_statement(); }
     | class_header error TOKEN_END ';' { scope_end($1); RECERR(@2, "Missing 'begin' in class declaration"); RECOVER(); }
     | class_header TOKEN_BEGIN error TOKEN_END ';' { scope_end($1); RECERR(@3, "Malformed class body"); RECOVER(); }
@@ -436,7 +452,7 @@ class_body:
     ;
 
 extends_stmt:
-      TOKEN_EXTENDS extends_id_list ';' { printf("[SYNTAX] Line %d: Extends statement\n", @$.first_line); }
+      TOKEN_EXTENDS extends_id_list ';' { trace_printf("[SYNTAX] Line %d: Extends statement\n", @$.first_line); }
     | TOKEN_EXTENDS extends_id_list ',' error ';' { RECERR(@4, "Missing class name after ',' in extends list"); RECOVER(); }
     | TOKEN_EXTENDS error ';' { RECERR(@2, "Missing class list after extends"); RECOVER(); }
     ;
@@ -453,14 +469,14 @@ class_member:
     ;
 
 attr_ref:
-      TOKEN_ID '[' constant ']' { scope_resolve($1, SCOPE_VALUE, @1.first_line); }
-    | TOKEN_ID '[' TOKEN_ID ']' { scope_resolve($1, SCOPE_VALUE, @1.first_line); scope_resolve($3, SCOPE_VALUE, @3.first_line); }
+      TOKEN_ID '[' constant ']' { scope_resolve($1, SCOPE_VALUE, @1.first_line); codegen_unsupported(@1.first_line, "attribute references"); }
+    | TOKEN_ID '[' TOKEN_ID ']' { scope_resolve($1, SCOPE_VALUE, @1.first_line); scope_resolve($3, SCOPE_VALUE, @3.first_line); codegen_unsupported(@1.first_line, "attribute references"); }
     ;
 
 pout_stmt:
-      TOKEN_POUT_LOWER '(' expr ')' { printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT_LOWER '(' TOKEN_CHAIN ')' { printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT_LOWER expr ')' { SYNERR(@1, "Missing opening parenthesis in pout statement"); }
+      TOKEN_POUT_LOWER '(' expr ')' { codegen_free($3); codegen_unsupported(@1.first_line, "POUT statements"); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT_LOWER '(' TOKEN_CHAIN ')' { codegen_unsupported(@1.first_line, "POUT statements"); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT_LOWER expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
     | TOKEN_POUT_LOWER '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
     | TOKEN_POUT_LOWER '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }
     ;
@@ -473,13 +489,15 @@ ret_keyword:
     ;
 
 ret_stmt:
-      ret_keyword expr ')' { SYNERR(@1, "Missing opening parenthesis in ret statement"); }
+      ret_keyword expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in ret statement"); }
     | ret_keyword '(' ')' { SYNERR(@3, "Missing expression in ret statement"); }
     | ret_keyword '(' expr ')' {
+          codegen_free($3);
+          codegen_unsupported(@1.first_line, "RET statements");
           if (scope_in_function())
-              printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
+              trace_printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
       }
-    | ret_keyword '(' expr error { RECERR(@4, "Missing closing parenthesis in ret statement"); RECOVER(); }
+    | ret_keyword '(' expr error { codegen_free($3); RECERR(@4, "Missing closing parenthesis in ret statement"); RECOVER(); }
     ;
 
 %%

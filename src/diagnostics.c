@@ -13,6 +13,19 @@ static struct {
 } recovery;
 
 int global_errors = 0;
+static bool trace_enabled = true;
+
+void set_trace_enabled(bool enabled) {
+    trace_enabled = enabled;
+}
+
+void trace_printf(const char *format, ...) {
+    if (!trace_enabled) return;
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
 
 void report_semantic_error(int line, const char *format, ...) {
     va_list args;
