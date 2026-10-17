@@ -6,7 +6,7 @@
 static const char *operator_text(rpn_operator_t operator) {
     static const char *const names[] = {
         "+", "-", "*", "/", ":=", "<", ">", "<=", ">=", "==", "!=", "BF", "BI", "DUP",
-        "TOI", "POUT"
+        "TOI", "POUT", "RET"
     };
     size_t index = (size_t)operator;
     return index < sizeof(names) / sizeof(names[0]) ? names[index] : NULL;

@@ -8,6 +8,7 @@ struct scope {
     char *path;
     symbol_usage_t kind;
     bool active;
+    map_node_t *symbol;
     struct scope *parent;
     struct scope *next_allocated;
 };
@@ -122,6 +123,7 @@ scope_t *scope_begin(map_node_t *name, symbol_usage_t usage, scope_type_t type, 
         scope_name = anonymous;
     }
     scope_t *frame = push_scope(scope_name, usage);
+    frame->symbol = symbol;
     if (symbol != NULL) symbol->body_scope = frame;
     return frame;
 }
@@ -137,6 +139,10 @@ void scope_end(scope_t *scope) {
                current_scope != NULL ? current_scope->path : "<none>");
         if (closed == scope) break;
     }
+}
+
+map_node_t *scope_symbol(const scope_t *scope) {
+    return scope != NULL ? scope->symbol : NULL;
 }
 
 bool scope_in_function(void) {

@@ -22,6 +22,7 @@ void scope_destroy(void);
 void scope_program(map_node_t *name, int line);
 scope_t *scope_begin(map_node_t *name, symbol_usage_t usage, scope_type_t type, int line);
 void scope_end(scope_t *scope);
+map_node_t *scope_symbol(const scope_t *scope);
 bool scope_in_function(void);
 scope_type_t scope_named_type(map_node_t *name, int line);
 scope_names_t *scope_names_create(map_node_t *name, int line);

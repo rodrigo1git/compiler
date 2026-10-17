@@ -30,7 +30,7 @@ Declarations receive qualified names such as `x:main` and `x:main:outer:inner`. 
 
 The lexer interns identifier text without declaring it. The parser creates separate scoped declaration entries, so a later lexical occurrence cannot make an earlier use valid. Raw identifier records remain stable while parsing and are omitted from the final scoped symbol table. Constants and chains keep their lexical categories.
 
-Scope guards restore the active stack when Bison discards an incomplete declaration. Rejected duplicate or unnamed declarations use isolated recovery scopes and cannot alter an existing declaration's parameters or members.
+Scope guards restore the active stack when Bison discards an incomplete declaration. Function guards also restore the enclosing RPN sequence. Rejected duplicate or unnamed declarations use isolated recovery scopes and cannot alter an existing declaration's parameters or members.
 
 Scope checking covers lexical declarations and references, including object receivers and identifier indices. Qualified member selection, inherited member lookup, positional attribute validation, type compatibility and `comptime` evaluation remain separate TP3/TP4 work.
 
@@ -38,7 +38,7 @@ Scope checking covers lexical declarations and references, including object rece
 
 `include/rpn.h` and `src/rpn.c` provide a dynamic sequence of symbol references, operators and jump targets. Steps use one-based addresses. Reserved targets must be completed before printing; freeing a sequence preserves its borrowed symbol-table entries. Separate sequences can represent separate function bodies.
 
-The parser can generate RPN for scalar arithmetic, assignments, selections, FROM loops, POUT and explicit TOI conversions in a separate mode:
+The parser can generate RPN for scalar arithmetic, assignments, selections, FROM loops, POUT, explicit TOI conversions and ordinary function bodies with RET in a separate mode:
 
 ```bash
 ./build.sh
@@ -58,9 +58,13 @@ An explicit `toi(expression)` appends `TOI` after its operand fragment and leave
 
 CHAIN operands display with double quotes and escaped backslashes, quotes and control characters, keeping every step on one numbered line. This distinguishes literals such as `"BF"`, `"3$i"` and `"a:main"` from operators and other operands. Their symbol-table entries and source-language lexical rules are unchanged.
 
+Each ordinary function has an independent sequence, displayed under `--- FUNCTION name:scope ---` after the main sequence. Step addresses and branch destinations are local to each body. Entering a nested declaration selects its own sequence; closing or discarding it restores the enclosing one. The symbol table retains each function's declared return type and its scoped parameter names and types.
+
+An explicit `RET` consumes the expression value and exits the current function. A default epilogue returns `0$i` for INTEGER functions or `0.0` for SINGLEF functions when execution reaches the end of the body. Earlier RET steps exit before that epilogue. Calls and parameter passing will be added in a later stage; these function bodies can currently be inspected independently.
+
 `rpn_valid.txt` covers arithmetic, signed constants, assignment values, chains and side effects. `rpn_errors.txt` covers missing operands, out-of-range constants and undeclared destinations, including the suppression of partial output. Existing lexer and parser tests retain the other invalid-expression cases.
 
-Functions, calls, RET, attributes, classes and `comptime` declarations are rejected explicitly in RPN mode until their generation stages are implemented. They remain available to the existing lexer/parser/scope analysis in default mode. General type compatibility checks and conversion range checks remain deferred to TP4, as required for Reverse Polish Notation (RPN).
+Calls, method definitions, class-valued function returns, attributes, classes and `comptime` declarations are rejected explicitly in RPN mode until their generation stages are implemented. They remain available to the existing lexer/parser/scope analysis in default mode. General type compatibility checks and conversion range checks remain deferred to TP4, as required for Reverse Polish Notation (RPN).
 
 `run_tests.sh` accepts `--rpn` to display the same inputs, outputs and return codes in this mode. It still does not compare expected answers or produce PASS/FAIL results. Existing inputs using features from later stages will report the corresponding unsupported-feature diagnostics in this mode.
 
@@ -80,7 +84,7 @@ Functions, calls, RET, attributes, classes and `comptime` declarations are rejec
 - `src/lexer.c`, `src/transition_table.c`, `src/semantic_actions.c`: table-driven tokenization.
 - `src/diagnostics.c`: independent diagnostics and pending Bison recovery context.
 - `src/scope.c` and `include/scope.h`: scope stack, declarations and lexical name resolution.
-- `src/rpn.c` and `src/codegen.c`: dynamic intermediate representation and expression generation.
+- `src/rpn.c` and `src/codegen.c`: dynamic intermediate representation and code generation.
 - `src/symbol_table.c` and `include/`: stable symbol references and shared declarations.
 - `tests/`: source inputs for visual inspection through `run_tests.sh`.
 

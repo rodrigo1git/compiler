@@ -34,6 +34,10 @@
     #include "include/symbol_table.h"
     #include "include/scope.h"
     #include "include/codegen.h"
+    typedef struct {
+      scope_t *scope;
+      codegen_function_t *code;
+    } function_guard_t;
   }
 
   /* Token declarations */
@@ -45,6 +49,7 @@
     rpn_t *code;
     size_t jump_target;
     codegen_loop_t loop;
+    function_guard_t function;
   }
   %token <symbol_ref> TOKEN_ID TOKEN_CHAIN TOKEN_CONST
   %token TOKEN_INTEGER TOKEN_SINGLEF
@@ -52,7 +57,8 @@
   %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
   %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
   %token TOKEN_COMPTIME TOKEN_EXTENDS
-  %type <scope> function_prefix function_header method_prefix method_header class_header class_missing_code
+  %type <scope> method_prefix method_header class_header class_missing_code
+  %type <function> function_prefix function_header
   %type <declaration_type> type primitive_type
   %type <names> id_list
   %type <code> expr term factor factor_base nonconstant_factor assign_chain cond
@@ -61,6 +67,7 @@
   %type <symbol_ref> for_identifier for_initial for_final for_step
   %type <loop> for_header
   %destructor { scope_end($$); } <scope>
+  %destructor { codegen_function_abort($$.code); scope_end($$.scope); } <function>
   %destructor { scope_names_free($$); } <names>
   %destructor { codegen_free($$); } <code>
       /* Relational and assignment operators */
@@ -388,17 +395,17 @@ for_repeat:
     ;
 
 func_def:
-      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
-    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { scope_end($1); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
-    | function_prefix error ';' { scope_end($1); RECERR(@2, "Malformed function header"); RECOVER(); }
-    | function_header decl_list TOKEN_BEGIN compound_stmt YYEOF { scope_end($1); SYNERR(@4, "Missing end of function"); YYABORT; }
-    | function_header TOKEN_BEGIN compound_stmt YYEOF { scope_end($1); SYNERR(@3, "Missing end of function"); YYABORT; }
+      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+    | function_prefix error ';' { codegen_function_abort($1.code); scope_end($1.scope); RECERR(@2, "Malformed function header"); RECOVER(); }
+    | function_header decl_list TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@4, "Missing end of function"); YYABORT; }
+    | function_header TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@3, "Missing end of function"); YYABORT; }
     ;
 
 /* Open the scope before parameters and local declarations are recognized. */
 function_prefix:
-      type TOKEN_FUNCTION TOKEN_ID '(' { codegen_unsupported(@2.first_line, "function definitions"); $$ = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); }
-    | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$ = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); }
+      type TOKEN_FUNCTION TOKEN_ID '(' { $$.scope = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @3.first_line); }
+    | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$.scope = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = NULL; }
     ;
 
 function_header:
@@ -492,10 +499,10 @@ ret_stmt:
       ret_keyword expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in ret statement"); }
     | ret_keyword '(' ')' { SYNERR(@3, "Missing expression in ret statement"); }
     | ret_keyword '(' expr ')' {
-          codegen_free($3);
-          codegen_unsupported(@1.first_line, "RET statements");
-          if (scope_in_function())
+          if (scope_in_function()) {
+              codegen_return($3, @1.first_line);
               trace_printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
+          } else codegen_free($3);
       }
     | ret_keyword '(' expr error { codegen_free($3); RECERR(@4, "Missing closing parenthesis in ret statement"); RECOVER(); }
     ;

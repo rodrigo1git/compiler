@@ -21,7 +21,8 @@ typedef enum {
     RPN_BRANCH,
     RPN_DUPLICATE,
     RPN_TO_INTEGER,
-    RPN_OUTPUT
+    RPN_OUTPUT,
+    RPN_RETURN
 } rpn_operator_t;
 
 typedef enum {
