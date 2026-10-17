@@ -49,6 +49,13 @@ rpn_t *codegen_value(map_node_t *symbol, int line) {
     return fragment;
 }
 
+rpn_t *codegen_unary(rpn_t *value, rpn_operator_t operator, int line) {
+    if (value == NULL) return NULL;
+    rpn_append_operator(value, operator);
+    value->steps[value->count - 1].source_line = line;
+    return value;
+}
+
 rpn_t *codegen_binary(rpn_t *left, rpn_t *right,
                          rpn_operator_t operator, int line) {
     if (left == NULL || right == NULL) {
@@ -102,6 +109,13 @@ void codegen_assignment(map_node_t *target, rpn_t *value, int line) {
         value->steps[value->count - 1].source_line = line;
         rpn_append_sequence(&program, value);
     }
+    codegen_free(value);
+}
+
+void codegen_output(rpn_t *value, int line) {
+    value = codegen_unary(value, RPN_OUTPUT, line);
+    if (value == NULL) return;
+    rpn_append_sequence(&program, value);
     codegen_free(value);
 }
 

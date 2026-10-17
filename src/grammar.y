@@ -247,7 +247,7 @@ factor_base:
 nonconstant_factor:
   call { $$ = NULL; }
 | TOKEN_ID { $$ = codegen_value(scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
-| TOKEN_TOI '(' expr ')' { codegen_free($3); $$ = NULL; codegen_unsupported(@1.first_line, "toi conversions"); }
+| TOKEN_TOI '(' expr ')' { $$ = codegen_unary($3, RPN_TO_INTEGER, @1.first_line); }
 | TOKEN_TOI '(' ')' { $$ = NULL; SYNERR(@3, "Missing expression in toi conversion"); }
 | attr_ref { $$ = NULL; }
 ;
@@ -474,8 +474,8 @@ attr_ref:
     ;
 
 pout_stmt:
-      TOKEN_POUT_LOWER '(' expr ')' { codegen_free($3); codegen_unsupported(@1.first_line, "POUT statements"); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT_LOWER '(' TOKEN_CHAIN ')' { codegen_unsupported(@1.first_line, "POUT statements"); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+      TOKEN_POUT_LOWER '(' expr ')' { codegen_output($3, @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT_LOWER '(' TOKEN_CHAIN ')' { codegen_output(codegen_value($3, @3.first_line), @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
     | TOKEN_POUT_LOWER expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
     | TOKEN_POUT_LOWER '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
     | TOKEN_POUT_LOWER '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }

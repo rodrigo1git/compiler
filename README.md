@@ -34,11 +34,11 @@ Scope guards restore the active stack when Bison discards an incomplete declarat
 
 Scope checking covers lexical declarations and references, including object receivers and identifier indices. Qualified member selection, inherited member lookup, positional attribute validation, type compatibility and `comptime` evaluation remain separate TP3/TP4 work.
 
-## Reverse Polish Notation (RPN): expressions, assignments and control flow
+## Reverse Polish Notation (RPN)
 
 `include/rpn.h` and `src/rpn.c` provide a dynamic sequence of symbol references, operators and jump targets. Steps use one-based addresses. Reserved targets must be completed before printing; freeing a sequence preserves its borrowed symbol-table entries. Separate sequences can represent separate function bodies.
 
-The parser can generate RPN for scalar arithmetic, assignments, selections and FROM loops in a separate mode:
+The parser can generate RPN for scalar arithmetic, assignments, selections, FROM loops, POUT and explicit TOI conversions in a separate mode:
 
 ```bash
 ./build.sh
@@ -54,9 +54,13 @@ Conditions support `<`, `>`, `<=`, `>=`, `==` and `!=`. An `IF` emits its condit
 
 Topic 14 `FROM` loops initialize their control variable before the first comparison. When the initial constant is less than or equal to the final constant, the comparison is `<` and the update adds the BY constant. Otherwise, the comparison is `>` and the update subtracts it. Equal bounds execute no iterations. After the body, the update reads the control variable's current value and `BI` returns to the comparison; `BF` exits the loop. Each loop context stays on the parser stack, so loops and selections can be nested. Loop generation adds no sign restriction on BY; type checks, including the required integer control variable and constants, remain deferred to TP4 for RPN.
 
+An explicit `toi(expression)` appends `TOI` after its operand fragment and leaves a value for the enclosing expression. A `pout(expression)` or `pout(chain)` appends `POUT`, which consumes its argument. For example, `pout(toi(3.9));` produces `3.9 TOI POUT`. These operations remain part of the intermediate representation; this mode does not execute the program.
+
+CHAIN operands display with double quotes and escaped backslashes, quotes and control characters, keeping every step on one numbered line. This distinguishes literals such as `"BF"`, `"3$i"` and `"a:main"` from operators and other operands. Their symbol-table entries and source-language lexical rules are unchanged.
+
 `rpn_valid.txt` covers arithmetic, signed constants, assignment values, chains and side effects. `rpn_errors.txt` covers missing operands, out-of-range constants and undeclared destinations, including the suppression of partial output. Existing lexer and parser tests retain the other invalid-expression cases.
 
-Functions, calls, POUT, conversions, attributes, classes and `comptime` declarations are rejected explicitly in RPN mode until their generation stages are implemented. They remain available to the existing lexer/parser/scope analysis in default mode. General type compatibility checks remain deferred to TP4, as required for Reverse Polish Notation (RPN).
+Functions, calls, RET, attributes, classes and `comptime` declarations are rejected explicitly in RPN mode until their generation stages are implemented. They remain available to the existing lexer/parser/scope analysis in default mode. General type compatibility checks and conversion range checks remain deferred to TP4, as required for Reverse Polish Notation (RPN).
 
 `run_tests.sh` accepts `--rpn` to display the same inputs, outputs and return codes in this mode. It still does not compare expected answers or produce PASS/FAIL results. Existing inputs using features from later stages will report the corresponding unsupported-feature diagnostics in this mode.
 

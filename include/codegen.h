@@ -19,10 +19,12 @@ void codegen_unsupported(int line, const char *feature);
 
 /* Expression fragments are owned; combining or emitting consumes its inputs. */
 rpn_t *codegen_value(map_node_t *symbol, int line);
+rpn_t *codegen_unary(rpn_t *value, rpn_operator_t operator, int line);
 rpn_t *codegen_binary(rpn_t *left, rpn_t *right, rpn_operator_t operator, int line);
 rpn_t *codegen_target(rpn_t *targets, map_node_t *symbol, int line);
 rpn_t *codegen_assignment_expression(rpn_t *targets, rpn_t *value);
 void codegen_assignment(map_node_t *target, rpn_t *value, int line);
+void codegen_output(rpn_t *value, int line);
 /* Pending jump addresses live on the parser stack until their IF is reduced. */
 size_t codegen_if_begin(rpn_t *condition, int line);
 size_t codegen_if_else(size_t false_target, int line);

@@ -1,10 +1,12 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../include/rpn.h"
 
 static const char *operator_text(rpn_operator_t operator) {
     static const char *const names[] = {
-        "+", "-", "*", "/", ":=", "<", ">", "<=", ">=", "==", "!=", "BF", "BI", "DUP"
+        "+", "-", "*", "/", ":=", "<", ">", "<=", ">=", "==", "!=", "BF", "BI", "DUP",
+        "TOI", "POUT"
     };
     size_t index = (size_t)operator;
     return index < sizeof(names) / sizeof(names[0]) ? names[index] : NULL;
@@ -89,6 +91,33 @@ bool rpn_is_complete(const rpn_t *rpn) {
     return true;
 }
 
+/* Quoting chains keeps their contents distinct from operators and numeric operands. */
+static int print_symbol(FILE *stream, size_t address, const map_node_t *symbol) {
+    if (strcmp(symbol->value, "CHAIN") != 0)
+        return fprintf(stream, "%zu %s\n", address, symbol->key);
+
+    if (fprintf(stream, "%zu \"", address) < 0) return -1;
+    const unsigned char *text = (const unsigned char *)symbol->key;
+    for (size_t i = 0; text[i] != '\0'; i++) {
+        int result;
+        switch (text[i]) {
+            case '"': result = fputs("\\\"", stream); break;
+            case '\\': result = fputs("\\\\", stream); break;
+            case '\n': result = fputs("\\n", stream); break;
+            case '\r': result = fputs("\\r", stream); break;
+            case '\t': result = fputs("\\t", stream); break;
+            default:
+                if (text[i] < 0x20 || text[i] == 0x7f)
+                    result = fprintf(stream, "\\u%04x", (unsigned int)text[i]);
+                else
+                    result = fputc(text[i], stream);
+                break;
+        }
+        if (result < 0) return -1;
+    }
+    return fputs("\"\n", stream);
+}
+
 bool rpn_print(FILE *stream, const rpn_t *rpn) {
     if (!rpn_is_complete(rpn)) return false;
     for (size_t i = 0; i < rpn->count; i++) {
@@ -97,7 +126,7 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
         switch (step->kind) {
             case RPN_SYMBOL:
             case RPN_DESTINATION:
-                result = fprintf(stream, "%zu %s\n", i + 1, step->value.symbol->key);
+                result = print_symbol(stream, i + 1, step->value.symbol);
                 break;
             case RPN_OPERATOR:
                 result = fprintf(stream, "%zu %s\n", i + 1, operator_text(step->value.operator));

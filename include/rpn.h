@@ -19,7 +19,9 @@ typedef enum {
     RPN_NOT_EQUAL,
     RPN_BRANCH_FALSE,
     RPN_BRANCH,
-    RPN_DUPLICATE
+    RPN_DUPLICATE,
+    RPN_TO_INTEGER,
+    RPN_OUTPUT
 } rpn_operator_t;
 
 typedef enum {
