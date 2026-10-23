@@ -1,0 +1,53 @@
+method_program
+integer result, index;
+class box boxcode
+begin
+    integer value, other;
+    integer read(integer p)
+    begin
+        ret(value + p);
+    end;
+    integer change(integer p)
+    begin
+        value := p;
+        ret(read(1$i)[1$i]);
+    end;
+end;
+class parent parentcode
+begin
+    integer read(integer p)
+    begin
+        ret(p + 1$i);
+    end;
+end;
+class child childcode
+begin
+    extends parent;
+    integer unused;
+end;
+integer function modify(box copy)
+begin
+    copy[0$i] := 99$i;
+    ret(copy[0$i]);
+end;
+box first, second;
+child inherited;
+begin
+    first[0$i] := 4$i;
+    second[0$i] = 10$i;
+    index := 1$i;
+    first[index] := 6$i;
+    pout(first.read(first[index])[1$i]);
+    pout(second.read(2$i)[1$i]);
+    pout(first.change(20$i)[1$i]);
+    pout(first[0$i]);
+    pout(second[0$i]);
+    pout(first.read(second.read(1$i)[1$i])[1$i]);
+    pout(inherited.read(5$i)[1$i]);
+    pout(modify(first)[1$i]);
+    pout(first[0$i]);
+    second := first;
+    second[0$i] := 7$i;
+    pout(first[0$i]);
+    pout(second[0$i]);
+end;

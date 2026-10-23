@@ -1,0 +1,65 @@
+call_program
+integer a, b, result;
+integer function sum(integer p1, integer p2, integer p3)
+begin
+    ret(p1 + p2 + p3);
+end;
+integer function identity(integer p)
+begin
+    p := p + 1$i;
+    ret(p);
+end;
+integer function difference(integer p, integer q)
+begin
+    ret(p - q);
+end;
+integer function recursive(integer p)
+integer next;
+begin
+    if (p > 0$i) begin
+        next := p - 1$i;
+        ret(p + recursive(next)[1$i]);
+    end end_if;
+    ret(p);
+end;
+integer function outer(integer p)
+integer function inner(integer q)
+begin
+    ret(p + q);
+end;
+begin
+    ret(inner(2$i)[1$i]);
+end;
+integer function default_integer(integer p)
+begin
+    pout(p);
+end;
+singlef function default_float(singlef p)
+begin
+    pout(p);
+end;
+begin
+    // TP3 p.7: identical expressions, different evaluation order.
+    a := 1$i;
+    b := 2$i;
+    result := sum(a, b=4$i, a+b)[1$i,2$i,3$i];
+    pout(result);
+    a := 1$i;
+    b := 2$i;
+    result := sum(a, b=4$i, a+b)[1$i,3$i,2$i];
+    pout(result);
+    // A nested call to the same function must preserve the pending first copy.
+    result := sum(1$i, sum(4$i,5$i,6$i)[1$i,2$i,3$i],3$i)[1$i,2$i,3$i];
+    pout(result);
+    result := difference(10$i,3$i)[2$i,1$i];
+    pout(result);
+    a := 7$i;
+    result := identity(a)[1$i];
+    pout(a);
+    pout(result);
+    result := recursive(4$i)[1$i];
+    pout(result);
+    pout(outer(5$i)[1$i]);
+    pout(default_integer(9$i)[1$i]);
+    pout(default_float(2.5)[1$i]);
+end;

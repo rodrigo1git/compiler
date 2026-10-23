@@ -1,0 +1,17 @@
+control_program
+integer i, total;
+begin
+    total := 0$i;
+    from i := 1$i to 4$i by 1$i repeat begin
+        if (i > 1$i) total := total + i;
+        else total := total + 10$i;
+        end_if;
+    end;
+    pout(total);
+    from i := 4$i to 1$i by 1$i repeat total := total + i;;
+    pout(total);
+    from i := 2$i to 2$i by 1$i repeat total := 99$i;;
+    pout(total);
+    pout(toi(3.9));
+    pout("BF");
+end;

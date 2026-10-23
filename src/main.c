@@ -22,12 +22,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    bool generate_rpn = argc == 3 && strcmp(argv[1], "--rpn") == 0;
-    if ((!generate_rpn && argc != 2) || (strcmp(argv[1], "--rpn") == 0 && !generate_rpn)) {
-        fprintf(stderr, "Usage: %s [--rpn] input_file\n", argv[0]);
+    bool generate_rpn = true;
+    bool trace = false;
+    const char *input_path = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--rpn") == 0) generate_rpn = true;
+        else if (strcmp(argv[i], "--analyze") == 0) generate_rpn = false;
+        else if (strcmp(argv[i], "--trace") == 0) trace = true;
+        else if (argv[i][0] == '-' || input_path != NULL) {
+            fprintf(stderr, "Usage: %s [--rpn|--analyze] [--trace] input_file\n", argv[0]);
+            return 1;
+        } else input_path = argv[i];
+    }
+    if (input_path == NULL) {
+        fprintf(stderr, "Error: Missing input file.\n");
         return 1;
     }
-    const char *input_path = argv[generate_rpn ? 2 : 1];
 
     // Open source file
     source_file = fopen(input_path, "r");
@@ -41,11 +51,12 @@ int main(int argc, char *argv[]) {
     // Parse
     init_symbol_table();
     codegen_init(generate_rpn);
-    set_trace_enabled(!generate_rpn);
+    set_trace_enabled(trace);
     scope_init();
 
     int parse_result = yyparse();
     finish_error_recovery();
+    if (parse_result == 0 && global_errors == 0) codegen_finalize();
     map_purge_provisional(symbol_table);
     int success = (parse_result == 0 && global_errors == 0);
     if (success) {

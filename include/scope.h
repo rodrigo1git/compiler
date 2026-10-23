@@ -29,6 +29,15 @@ scope_names_t *scope_names_create(map_node_t *name, int line);
 scope_names_t *scope_names_append(scope_names_t *names, map_node_t *name, int line);
 void scope_names_free(scope_names_t *names);
 void scope_declare_names(scope_names_t *names, scope_type_t type);
+void scope_declare_comptime_names(scope_names_t *names, scope_type_t type);
+void scope_class_code(scope_t *scope, map_node_t *code);
+void scope_base(map_node_t *name, int line);
+map_node_t *scope_object(map_node_t *name, int line);
+map_node_t *scope_method(map_node_t *object, map_node_t *name, int line);
+bool scope_class_layout(map_node_t *class_symbol, int line);
+void scope_class_complete(map_node_t *class_symbol, int line);
+bool scope_classes_compatible(const map_node_t *left, const map_node_t *right);
+map_node_t *scope_attribute_at(map_node_t *class_symbol, size_t position, int line);
 map_node_t *scope_parameter(map_node_t *name, scope_type_t type, int line);
 map_node_t *scope_resolve(map_node_t *name, scope_reference_t reference, int line);
 

@@ -22,14 +22,21 @@ typedef enum {
     RPN_DUPLICATE,
     RPN_TO_INTEGER,
     RPN_OUTPUT,
-    RPN_RETURN
+    RPN_RETURN,
+    RPN_DROP
 } rpn_operator_t;
 
 typedef enum {
     RPN_SYMBOL,
     RPN_OPERATOR,
     RPN_TARGET,
-    RPN_DESTINATION
+    RPN_DESTINATION,
+    RPN_CALL_FRAME,
+    RPN_ARGUMENT_DESTINATION,
+    RPN_CALL,
+    RPN_ATTRIBUTE,
+    RPN_ATTRIBUTE_DESTINATION,
+    RPN_OBJECT_VALUE
 } rpn_step_kind_t;
 
 typedef struct {
@@ -40,6 +47,9 @@ typedef struct {
         size_t target;
     } value;
     int source_line;
+    const map_node_t *receiver;
+    const map_node_t *index;
+    size_t control_start;
 } rpn_step_t;
 
 typedef struct {
@@ -56,6 +66,7 @@ void rpn_free(rpn_t *rpn);
 size_t rpn_append_symbol(rpn_t *rpn, const map_node_t *symbol);
 size_t rpn_append_destination(rpn_t *rpn, const map_node_t *symbol);
 size_t rpn_append_operator(rpn_t *rpn, rpn_operator_t operator);
+size_t rpn_append_step(rpn_t *rpn, rpn_step_t step);
 size_t rpn_reserve_target(rpn_t *rpn);
 /* Copy a separate sequence, relocating its internal jump targets. */
 bool rpn_append_sequence(rpn_t *rpn, const rpn_t *source);

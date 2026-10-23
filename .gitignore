@@ -1,6 +1,7 @@
 # Build artifacts
 compiler
 y.output
+__pycache__/
 
 # Bison/Flex generated parsers
 *.tab.c
@@ -19,3 +20,5 @@ include_backup/
 *.output
 
 test_empty.y
+
+docs/

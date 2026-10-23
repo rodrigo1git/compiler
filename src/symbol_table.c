@@ -5,6 +5,41 @@
 
 hash_map_t* symbol_table = NULL;
 
+void symbol_list_append(symbol_list_t *list, map_node_t *symbol) {
+    if (symbol == NULL) return;
+    map_node_t **items = realloc(list->items, (list->count + 1) * sizeof(*items));
+    if (items == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate symbol metadata\n");
+        exit(1);
+    }
+    list->items = items;
+    list->items[list->count++] = symbol;
+}
+
+static void free_symbol(map_node_t *symbol) {
+    free(symbol->key);
+    free(symbol->value);
+    free(symbol->declared_type);
+    free(symbol->class_code);
+    free(symbol->parameters.items);
+    free(symbol->attributes.items);
+    free(symbol->methods.items);
+    free(symbol->bases.items);
+    free(symbol->effective_attributes.items);
+    free(symbol->comptime_bindings.items);
+    free(symbol->comptime_values.items);
+    free(symbol);
+}
+
+static void print_list(const char *label, const symbol_list_t *list) {
+    printf(" | %s: [", label);
+    for (size_t i = 0; i < list->count; i++) {
+        if (i != 0) printf(", ");
+        printf("%s", list->items[i]->key);
+    }
+    printf("]");
+}
+
 // djb2 hash function
 static unsigned long hash_func(const char* str) {
     unsigned long hash = 5381;
@@ -82,10 +117,7 @@ void map_free(hash_map_t* map) {
         while (current != NULL) {
             map_node_t* temp = current;
             current = current->next;
-            free(temp->key);
-            free(temp->value);
-            free(temp->declared_type);
-            free(temp);
+            free_symbol(temp);
         }
     }
     free(map->buckets);
@@ -102,7 +134,7 @@ void map_print(hash_map_t* map) {
                   current->usage == SYMBOL_LEXEME)) {
                 static const char *usage_names[] = {
                     "LEXEME", "PROGRAM", "VARIABLE", "PARAMETER", "FUNCTION",
-                    "CLASS", "ATTRIBUTE", "METHOD"
+                    "CLASS", "ATTRIBUTE", "METHOD", "OBJECT_VALUE"
                 };
                 printf("Lexeme: %s | Type: %s", current->key, current->value);
                 if (current->usage != SYMBOL_LEXEME) {
@@ -110,6 +142,31 @@ void map_print(hash_map_t* map) {
                     if (current->declared_type != NULL)
                         printf(" | Declared type: %s", current->declared_type);
                     printf(" | Line: %d", current->declaration_line);
+                    if (current->is_comptime) printf(" | Comptime: yes");
+                    if (current->comptime_value != NULL)
+                        printf(" | Compile-time value: %s", current->comptime_value->key);
+                    if (current->source_function != NULL)
+                        printf(" | Source function: %s", current->source_function->key);
+                    if (current->comptime_template) printf(" | Compile-time template: yes");
+                    if (current->comptime_bindings.count != 0) {
+                        printf(" | Compile-time bindings: [");
+                        for (size_t j = 0; j < current->comptime_bindings.count; j++) {
+                            if (j != 0) printf(", ");
+                            printf("%s=%s", current->comptime_bindings.items[j]->key,
+                                current->comptime_values.items[j]->key);
+                        }
+                        printf("]");
+                    }
+                    if (current->class_code != NULL)
+                        printf(" | Class code: %s", current->class_code);
+                    if (current->usage == SYMBOL_FUNCTION || current->usage == SYMBOL_METHOD)
+                        print_list("Parameters", &current->parameters);
+                    if (current->usage == SYMBOL_CLASS) {
+                        print_list("Attributes", &current->attributes);
+                        print_list("Effective attributes", &current->effective_attributes);
+                        print_list("Methods", &current->methods);
+                        print_list("Bases", &current->bases);
+                    }
                 }
                 putchar('\n');
             }
@@ -133,10 +190,7 @@ void map_purge_provisional(hash_map_t *map) {
             map_node_t *node = *link;
             if (node->provisional) {
                 *link = node->next;
-                free(node->key);
-                free(node->value);
-                free(node->declared_type);
-                free(node);
+                free_symbol(node);
             } else {
                 link = &node->next;
             }

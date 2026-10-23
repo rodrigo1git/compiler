@@ -4,6 +4,14 @@
 #include "rpn.h"
 
 typedef struct codegen_function codegen_function_t;
+typedef struct codegen_arguments codegen_arguments_t;
+typedef struct codegen_order codegen_order_t;
+typedef struct codegen_call codegen_call_t;
+typedef struct {
+    map_node_t *object;
+    map_node_t *index;
+    int line;
+} codegen_attribute_t;
 
 typedef struct {
     map_node_t *variable;
@@ -17,7 +25,7 @@ typedef struct {
 void codegen_init(bool enabled);
 void codegen_destroy(void);
 bool codegen_print(FILE *stream);
-void codegen_unsupported(int line, const char *feature);
+bool codegen_finalize(void);
 
 /* Expression fragments are owned; combining or emitting consumes its inputs. */
 rpn_t *codegen_value(map_node_t *symbol, int line);
@@ -41,5 +49,17 @@ codegen_loop_t codegen_for_begin(map_node_t *variable, map_node_t *initial,
                                 map_node_t *final, map_node_t *step, int line);
 void codegen_for_end(codegen_loop_t loop);
 void codegen_free(rpn_t *fragment);
+codegen_arguments_t *codegen_arguments_append(codegen_arguments_t *arguments, rpn_t *value);
+void codegen_arguments_free(codegen_arguments_t *arguments);
+codegen_order_t *codegen_order_append(codegen_order_t *order, map_node_t *constant);
+void codegen_order_free(codegen_order_t *order);
+codegen_call_t *codegen_call_begin(map_node_t *function, map_node_t *receiver,
+                                 codegen_arguments_t *arguments, int line);
+void codegen_call_free(codegen_call_t *call);
+rpn_t *codegen_call_end(codegen_call_t *call, codegen_order_t *order);
+codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int line);
+rpn_t *codegen_attribute_value(codegen_attribute_t attribute);
+void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value);
+void codegen_class_end(map_node_t *class_symbol, int line);
 
 #endif

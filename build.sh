@@ -46,7 +46,9 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/scope.c \
     src/rpn.c \
     src/codegen.c \
+    src/specialize.c \
     y.tab.c \
+    -lm \
     -o compiler
 
 echo "Build successful."
