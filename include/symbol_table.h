@@ -47,6 +47,8 @@ typedef struct map_node {
     struct map_node *source_function;
     symbol_list_t comptime_bindings;
     symbol_list_t comptime_values;
+    symbol_list_t object_fields;
+    symbol_list_t object_values;
     bool comptime_template;
     struct map_node* next;
 } map_node_t;

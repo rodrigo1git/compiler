@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../include/diagnostics.h"
 
@@ -14,6 +15,32 @@ static struct {
 
 int global_errors = 0;
 static bool trace_enabled = true;
+
+typedef struct semantic_diagnostic {
+    semantic_origin_t origin;
+    int line;
+    char *message;
+    struct semantic_diagnostic *next;
+} semantic_diagnostic_t;
+
+static semantic_origin_t semantic_origin;
+static semantic_diagnostic_t *semantic_diagnostics;
+
+semantic_origin_t set_semantic_origin(semantic_origin_t origin) {
+    semantic_origin_t previous = semantic_origin;
+    semantic_origin = origin;
+    return previous;
+}
+
+void clear_semantic_origins(void) {
+    while (semantic_diagnostics != NULL) {
+        semantic_diagnostic_t *next = semantic_diagnostics->next;
+        free(semantic_diagnostics->message);
+        free(semantic_diagnostics);
+        semantic_diagnostics = next;
+    }
+    semantic_origin = (semantic_origin_t){0};
+}
 
 void set_trace_enabled(bool enabled) {
     trace_enabled = enabled;
@@ -29,8 +56,37 @@ void trace_printf(const char *format, ...) {
 
 void report_semantic_error(int line, const char *format, ...) {
     va_list args;
-    fprintf(stderr, "Line %d: Semantic error: ", line);
     va_start(args, format);
+    if (semantic_origin.body != NULL) {
+        va_list copy;
+        va_copy(copy, args);
+        int length = vsnprintf(NULL, 0, format, copy);
+        va_end(copy);
+        char *message = length < 0 ? NULL : malloc((size_t)length + 1);
+        semantic_diagnostic_t *entry = malloc(sizeof(*entry));
+        if (message == NULL || entry == NULL) {
+            fprintf(stderr, "Fatal error: Cannot allocate semantic diagnostic\n");
+            exit(1);
+        }
+        vsnprintf(message, (size_t)length + 1, format, args);
+        va_end(args);
+        for (semantic_diagnostic_t *previous = semantic_diagnostics; previous != NULL;
+             previous = previous->next) {
+            if (previous->origin.body == semantic_origin.body &&
+                previous->origin.step == semantic_origin.step && previous->line == line &&
+                strcmp(previous->message, message) == 0) {
+                free(message);
+                free(entry);
+                return;
+            }
+        }
+        *entry = (semantic_diagnostic_t){semantic_origin, line, message, semantic_diagnostics};
+        semantic_diagnostics = entry;
+        fprintf(stderr, "Line %d: Semantic error: %s\n", line, message);
+        global_errors++;
+        return;
+    }
+    fprintf(stderr, "Line %d: Semantic error: ", line);
     vfprintf(stderr, format, args);
     va_end(args);
     fputc('\n', stderr);

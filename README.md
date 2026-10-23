@@ -2,6 +2,11 @@
 
 A C compiler front end for group 24, covering topics **3, 7, 10, 14, 15, 18, 19, 22, 24, 29, 32 and 34**. The lexer uses transition and semantic-action matrices, Bison builds the parser, and a dynamic hash table stores symbols. TP3 includes lexical scopes, ordered declaration metadata, calls with explicit argument order, methods, inherited positional attributes, structural class compatibility and compile-time evaluation. The implemented rules and their course references are documented in [docs/tp3_implementation.md](docs/tp3_implementation.md).
 
+The current delivery report is [docs/tp3_report.md](docs/tp3_report.md).
+Displaying symbolic bodies for uninvoked compile-time templates remains pending;
+those bodies are retained internally and marked in the symbol table. The existing
+test suite has not been extended for the latest object-capture corrections.
+
 ## Build and test
 
 Requires Bash, GCC and Bison 3.6 or newer; automated verification also requires Python 3. `build.sh` detects Homebrew Bison on macOS. Parser generation rejects all shift/reduce and reduce/reduce conflicts; C compilation uses `-Wall -Wextra -Werror`.
@@ -65,6 +70,12 @@ An explicit `RET` consumes the expression value and exits the current function. 
 Calls validate argument count, evaluation-order length and an INTEGER permutation of positions 1..N. `FRAME function` prepares a separate pending activation, followed by each argument fragment, `ARG formal`, and ordinary `:=` copying in the requested order. `CALL function` consumes that pending activation and yields its return value. Reordering evaluation never changes the argument-to-formal association. Method frames additionally retain `ON object`; unqualified method calls inherit the active receiver. These are abstract IR operations, with no machine layout or assembler convention imposed. See the detailed contract and course references in the implementation document.
 
 Positional operands display as `object[index]`, and destinations as `DEST object[index]`. They retain object and index symbol references; implicit attribute operands inside methods use the current receiver. Dynamic index type and runtime bounds checks remain for TP4; accesses to compile-time attributes require a determinable position. Separate instances keep separate attribute storage. `MATERIALIZE @valueN` overlays the captured compile-time fields onto an object value at its evaluation point, before later argument effects. The snapshot is retained in TS metadata; object stores copy only runtime fields, while compile-time fields are bound by the specialization pass.
+
+Snapshots also retain nested object fields through `Object fields` references to
+other OBJECT_VALUE entries. Compile-time state is identified by its root object
+and declaration path, so sibling fields, copied objects and function activations
+remain independent. Whole-object reads participate in specialization dependencies;
+cached code is reused only for matching compile-time bindings.
 
 `rpn_valid.txt` covers arithmetic, signed constants, assignment values, chains and side effects. `rpn_errors.txt` covers missing operands, out-of-range constants and undeclared destinations, including the suppression of partial output. Existing lexer and parser tests retain the other invalid-expression cases.
 

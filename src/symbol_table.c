@@ -28,6 +28,8 @@ static void free_symbol(map_node_t *symbol) {
     free(symbol->effective_attributes.items);
     free(symbol->comptime_bindings.items);
     free(symbol->comptime_values.items);
+    free(symbol->object_fields.items);
+    free(symbol->object_values.items);
     free(symbol);
 }
 
@@ -154,6 +156,15 @@ void map_print(hash_map_t* map) {
                             if (j != 0) printf(", ");
                             printf("%s=%s", current->comptime_bindings.items[j]->key,
                                 current->comptime_values.items[j]->key);
+                        }
+                        printf("]");
+                    }
+                    if (current->object_fields.count != 0) {
+                        printf(" | Object fields: [");
+                        for (size_t j = 0; j < current->object_fields.count; j++) {
+                            if (j != 0) printf(", ");
+                            printf("%s=%s", current->object_fields.items[j]->key,
+                                current->object_values.items[j]->key);
                         }
                         printf("]");
                     }

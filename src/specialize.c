@@ -33,6 +33,18 @@ typedef struct {
     size_t count;
 } environment_t;
 
+typedef struct object_location {
+    const map_node_t *parent;
+    const map_node_t *field;
+    map_node_t symbol;
+    struct object_location *next;
+} object_location_t;
+
+typedef struct type_path {
+    const map_node_t *type;
+    const struct type_path *parent;
+} type_path_t;
+
 typedef struct function_template {
     map_node_t *symbol;
     const rpn_t *body;
@@ -90,6 +102,7 @@ static rpn_t main_body;
 static unsigned int serial;
 static unsigned int depth;
 static size_t evaluation_budget;
+static object_location_t *object_locations;
 
 static void *resize(void *pointer, size_t size) {
     void *result = realloc(pointer, size);
@@ -98,6 +111,36 @@ static void *resize(void *pointer, size_t size) {
         exit(1);
     }
     return result;
+}
+
+static const map_node_t *object_location(const map_node_t *parent, const map_node_t *field) {
+    if (parent == NULL || field == NULL) return NULL;
+    for (object_location_t *item = object_locations; item != NULL; item = item->next)
+        if (item->parent == parent && item->field == field) return &item->symbol;
+    object_location_t *item = resize(NULL, sizeof(*item));
+    *item = (object_location_t){.parent = parent, .field = field, .next = object_locations};
+    size_t length = strlen(parent->key) + strlen(field->key) + 3;
+    item->symbol.key = resize(NULL, length);
+    snprintf(item->symbol.key, length, "%s[%s]", parent->key, field->key);
+    item->symbol.owner = parent->owner;
+    item->symbol.type_symbol = field->type_symbol;
+    object_locations = item;
+    return &item->symbol;
+}
+
+static const map_node_t *object_root(const map_node_t *object) {
+    for (;;) {
+        object_location_t *item = object_locations;
+        while (item != NULL && &item->symbol != object) item = item->next;
+        if (item == NULL) return object;
+        object = item->parent;
+    }
+}
+
+static bool type_in_path(const type_path_t *path, const map_node_t *type) {
+    for (; path != NULL; path = path->parent)
+        if (path->type == type) return true;
+    return false;
 }
 
 static bool same_value(value_t left, value_t right) {
@@ -149,7 +192,7 @@ static void forget_call_writes(environment_t *environment, const function_templa
             (binding->object != NULL || binding->symbol->type_symbol != NULL);
         for (size_t j = 0; j < source->runtime_writes.count; j++)
             if (source->runtime_writes.items[j] == binding->symbol ||
-                source->runtime_writes.items[j] == binding->object) written = true;
+                source->runtime_writes.items[j] == object_root(binding->object)) written = true;
         if (written) binding->value = (value_t){0};
     }
 }
@@ -245,45 +288,88 @@ static bool is_operator(const rpn_step_t *step, rpn_operator_t operator) {
     return step->kind == RPN_OPERATOR && step->value.operator == operator;
 }
 
-static bool class_has_comptime(const map_node_t *class_symbol) {
-    if (class_symbol == NULL) return false;
-    for (size_t i = 0; i < class_symbol->effective_attributes.count; i++)
-        if (class_symbol->effective_attributes.items[i]->is_comptime) return true;
+static bool class_has_comptime_path(const map_node_t *class_symbol, const type_path_t *path) {
+    if (class_symbol == NULL || type_in_path(path, class_symbol)) return false;
+    type_path_t current = {class_symbol, path};
+    for (size_t i = 0; i < class_symbol->effective_attributes.count; i++) {
+        const map_node_t *field = class_symbol->effective_attributes.items[i];
+        if (field->is_comptime || class_has_comptime_path(field->type_symbol, &current)) return true;
+    }
     return false;
 }
 
-static value_t object_field(value_t object, const map_node_t *field, const environment_t *environment) {
-    if (object.object_snapshot != NULL)
-        for (size_t i = 0; i < object.object_snapshot->comptime_bindings.count; i++)
-            if (object.object_snapshot->comptime_bindings.items[i] == field)
-                return numeric_constant(object.object_snapshot->comptime_values.items[i]);
-    return get_value(environment, field, object.object);
+static bool class_has_comptime(const map_node_t *class_symbol) {
+    return class_has_comptime_path(class_symbol, NULL);
 }
 
-static void materialize_object(context_t *context, value_t *value, int line) {
-    if (!class_has_comptime(value->object_type)) return;
+static value_t object_field(value_t object, const map_node_t *field, const environment_t *environment) {
+    value_t result = {0};
+    const map_node_t *snapshot = object.object_snapshot;
+    if (snapshot != NULL) {
+        for (size_t i = 0; i < snapshot->comptime_bindings.count; i++)
+            if (snapshot->comptime_bindings.items[i] == field)
+                return numeric_constant(snapshot->comptime_values.items[i]);
+        for (size_t i = 0; i < snapshot->object_fields.count; i++)
+            if (snapshot->object_fields.items[i] == field)
+                result.object_snapshot = snapshot->object_values.items[i];
+        if (field->is_comptime) return result;
+        if (field->type_symbol == NULL)
+            result = get_value(environment, field, object.object);
+    } else result = get_value(environment, field, object.object);
+    if (field->type_symbol != NULL) {
+        result.object_type = field->type_symbol;
+        result.object = object_location(object.object, field);
+    }
+    return result;
+}
+
+static map_node_t *capture_object(context_t *context, value_t value, int line,
+                                   const type_path_t *path) {
+    if (!class_has_comptime(value.object_type)) return NULL;
+    if (type_in_path(path, value.object_type)) {
+        if (value.object_snapshot != NULL) return (map_node_t *)value.object_snapshot;
+        report_semantic_error(line, "Compile-time fields in recursive object type '%s' have no finite known value",
+            value.object_type->key);
+        return NULL;
+    }
+    type_path_t current = {value.object_type, path};
     char name[64];
     snprintf(name, sizeof(name), "@value%u", ++serial);
     map_node_t *snapshot = map_put(symbol_table, name, "ID");
     snapshot->usage = SYMBOL_OBJECT_VALUE;
-    snapshot->type_symbol = (map_node_t *)value->object_type;
-    snapshot->declared_type = resize(NULL, strlen(value->object_type->key) + 1);
-    strcpy(snapshot->declared_type, value->object_type->key);
+    snapshot->type_symbol = (map_node_t *)value.object_type;
+    snapshot->declared_type = resize(NULL, strlen(value.object_type->key) + 1);
+    strcpy(snapshot->declared_type, value.object_type->key);
     snapshot->declaration_line = line;
-    for (size_t i = 0; i < value->object_type->effective_attributes.count; i++) {
-        map_node_t *field = value->object_type->effective_attributes.items[i];
-        if (!field->is_comptime) continue;
-        value_t field_value = object_field(*value, field, context->environment);
-        if (!field_value.known) {
-            report_semantic_error(line, "Comptime attribute '%s' has no known value when copying an object", field->key);
-            continue;
-        }
-        const map_node_t *constant = constant_symbol(field_value, line);
-        if (constant != NULL) {
-            symbol_list_append(&snapshot->comptime_bindings, field);
-            symbol_list_append(&snapshot->comptime_values, (map_node_t *)constant);
+    for (size_t i = 0; i < value.object_type->effective_attributes.count; i++) {
+        map_node_t *field = value.object_type->effective_attributes.items[i];
+        if (!field->is_comptime && !class_has_comptime(field->type_symbol)) continue;
+        value_t field_value = object_field(value, field, context->environment);
+        if (field->type_symbol != NULL) {
+            map_node_t *child = capture_object(context, field_value, line, &current);
+            if (child != NULL) {
+                symbol_list_append(&snapshot->object_fields, field);
+                symbol_list_append(&snapshot->object_values, child);
+            }
+        } else if (field->is_comptime) {
+            if (!field_value.known) {
+                report_semantic_error(line, "Comptime attribute '%s' has no known value when copying an object '%s'",
+                    field->key, value.object != NULL ? value.object->key : value.object_type->key);
+                continue;
+            }
+            const map_node_t *constant = constant_symbol(field_value, line);
+            if (constant != NULL) {
+                symbol_list_append(&snapshot->comptime_bindings, field);
+                symbol_list_append(&snapshot->comptime_values, (map_node_t *)constant);
+            }
         }
     }
+    return snapshot;
+}
+
+static void materialize_object(context_t *context, value_t *value, int line) {
+    map_node_t *snapshot = capture_object(context, *value, line, NULL);
+    if (snapshot == NULL) return;
     emit(context, (rpn_step_t){.kind = RPN_OBJECT_VALUE, .value.symbol = snapshot, .source_line = line});
     value->object_snapshot = snapshot;
 }
@@ -295,9 +381,8 @@ static bool has_comptime_effects(const rpn_t *input, size_t begin, size_t end) {
         if (step->kind == RPN_DESTINATION && class_has_comptime(step->value.symbol->type_symbol)) return true;
         if (step->kind == RPN_ATTRIBUTE_DESTINATION && step->value.symbol != NULL &&
             step->value.symbol->is_comptime) return true;
-        if (step->kind == RPN_ATTRIBUTE_DESTINATION && step->receiver != NULL)
-            for (size_t j = 0; j < step->receiver->type_symbol->effective_attributes.count; j++)
-                if (step->receiver->type_symbol->effective_attributes.items[j]->is_comptime) return true;
+        if (step->kind == RPN_ATTRIBUTE_DESTINATION && step->receiver != NULL &&
+            class_has_comptime(step->receiver->type_symbol)) return true;
         if (step->kind == RPN_CALL) {
             function_template_t *source = find_template(step->value.symbol);
             if (source != NULL && source->external_writes) return true;
@@ -462,6 +547,45 @@ static void evaluate_binary(context_t *context, rpn_step_t step) {
     push(context, result);
 }
 
+static void copy_object_fields(context_t *context, environment_t *target,
+                                const map_node_t *object, const map_node_t *type,
+                                value_t source, bool unknown_control, bool argument,
+                                int line, const type_path_t *path) {
+    if (type == NULL || type_in_path(path, type)) return;
+    type_path_t current = {type, path};
+    size_t count = type->effective_attributes.count;
+    value_t *fields = resize(NULL, count * sizeof(*fields));
+    for (size_t i = 0; i < count; i++) {
+        fields[i] = (value_t){0};
+        if (source.object_type != NULL && i < source.object_type->effective_attributes.count)
+            fields[i] = object_field(source, source.object_type->effective_attributes.items[i],
+                context->environment);
+    }
+    for (size_t i = 0; i < count; i++) {
+        map_node_t *field = type->effective_attributes.items[i];
+        if (field->type_symbol != NULL) {
+            const map_node_t *child = object_location(object, field);
+            copy_object_fields(context, target, child, field->type_symbol, fields[i],
+                unknown_control, argument, line, &current);
+            fields[i].object = child;
+            fields[i].object_type = field->type_symbol;
+            fields[i].object_snapshot = NULL;
+        } else if (field->is_comptime) {
+            if (!argument && (unknown_control ||
+                (context->external_unknown && object->owner != context->function)))
+                report_semantic_error(line, "Cannot modify comptime '%s' under unknown control in object '%s'",
+                    field->key, object->key);
+            else if (!fields[i].known)
+                report_semantic_error(line, argument ?
+                    "Comptime attribute '%s' has no known value in argument copy for object '%s'" :
+                    "Value for comptime '%s' is not known at compile time in object '%s'", field->key, object->key);
+        }
+        if (!argument || field->is_comptime)
+            set_value(target, field, object, fields[i]);
+    }
+    free(fields);
+}
+
 static void assign_value(context_t *context, value_t destination, value_t value,
                           bool unknown_control, int line) {
     const map_node_t *symbol = destination.destination;
@@ -495,43 +619,22 @@ static void assign_value(context_t *context, value_t destination, value_t value,
         .source_line = line, .receiver = destination.object, .index = destination.constant};
     emit(context, step);
     emit(context, (rpn_step_t){.kind = RPN_OPERATOR, .value.operator = RPN_ASSIGN, .source_line = line});
-    if (argument && symbol != NULL && symbol->type_symbol != NULL &&
-        context->pending != NULL && value.object_type != NULL) {
-        for (size_t i = 0; i < symbol->type_symbol->effective_attributes.count; i++) {
-            map_node_t *formal_field = symbol->type_symbol->effective_attributes.items[i];
-            if (!formal_field->is_comptime || i >= value.object_type->effective_attributes.count) continue;
-            value_t actual_field = object_field(value, value.object_type->effective_attributes.items[i],
-                context->environment);
-            if (!actual_field.known)
-                report_semantic_error(line, "Comptime attribute '%s' has no known value in argument copy", formal_field->key);
-            set_value(&context->pending->arguments, formal_field, symbol, actual_field);
-        }
-    }
+    if (argument && symbol != NULL && symbol->type_symbol != NULL && context->pending != NULL)
+        copy_object_fields(context, &context->pending->arguments, symbol, symbol->type_symbol,
+            value, false, true, line, NULL);
     if (symbol != NULL && value.object_type != NULL && symbol->type_symbol != NULL &&
         value.object_type != symbol->type_symbol && value.object_type->class_code != NULL &&
         symbol->type_symbol->class_code != NULL &&
         strcmp(value.object_type->class_code, symbol->type_symbol->class_code) != 0)
         report_semantic_error(line, "Object assignment requires matching class codes (topic 24)");
     if (!argument && symbol != NULL && symbol->type_symbol != NULL) {
-        size_t count = symbol->type_symbol->effective_attributes.count;
-        value_t *fields = resize(NULL, count * sizeof(*fields));
-        for (size_t i = 0; i < count; i++) {
-            fields[i] = (value_t){0};
-            if (value.object_type != NULL && value.object != NULL &&
-                i < value.object_type->effective_attributes.count)
-                fields[i] = object_field(value, value.object_type->effective_attributes.items[i],
-                    context->environment);
-        }
-        for (size_t i = 0; i < count; i++) {
-            map_node_t *field = symbol->type_symbol->effective_attributes.items[i];
-            if (field->is_comptime && (unknown_control ||
-                (context->external_unknown && symbol->owner != context->function)))
-                report_semantic_error(line, "Cannot modify comptime '%s' under unknown control", field->key);
-            else if (field->is_comptime && !fields[i].known)
-                report_semantic_error(line, "Value for comptime '%s' is not known at compile time", field->key);
-            set_value(context->environment, field, symbol, fields[i]);
-        }
-        free(fields);
+        const map_node_t *object = destination.destination_kind == RPN_ATTRIBUTE_DESTINATION ||
+            symbol->usage == SYMBOL_ATTRIBUTE ? object_location(destination.object, symbol) : symbol;
+        copy_object_fields(context, context->environment, object, symbol->type_symbol,
+            value, unknown_control, false, line, NULL);
+        value.object = object;
+        value.object_type = symbol->type_symbol;
+        value.object_snapshot = NULL;
     }
     if (!argument && destination.destination_kind == RPN_ATTRIBUTE_DESTINATION && symbol == NULL)
         for (size_t i = 0; i < context->environment->count; i++)
@@ -543,7 +646,9 @@ static void assign_value(context_t *context, value_t destination, value_t value,
 
 static void transform_range(context_t *context, size_t begin, size_t end, bool unknown_control,
                             bool inspect_first_control) {
+    semantic_origin_t previous_origin = set_semantic_origin((semantic_origin_t){context->input, begin});
     for (size_t pc = begin; pc < end && !context->stopped; pc++) {
+        set_semantic_origin((semantic_origin_t){context->input, pc});
         if ((pc != begin || inspect_first_control) && context->controls[pc] != 0) {
             pc = transform_control(context, pc, context->controls[pc] - 1, unknown_control) - 1;
             continue;
@@ -567,7 +672,8 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
                     }
                 }
                 value.object_type = symbol->type_symbol;
-                value.object = value.object_type != NULL ? symbol : NULL;
+                value.object = value.object_type == NULL ? NULL :
+                    (symbol->usage == SYMBOL_ATTRIBUTE ? object_location(context->receiver, symbol) : symbol);
                 value.object_snapshot = NULL;
                 value.start = context->output->count;
                 value.removable = true;
@@ -602,13 +708,9 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
                             (long)selected.number, object->type_symbol->key);
                     else attribute = scope_attribute_at(object->type_symbol, (size_t)selected.number, step.source_line);
                 }
-                if (attribute == NULL && !selected.known)
-                    for (size_t i = 0; i < object->type_symbol->effective_attributes.count; i++)
-                        if (object->type_symbol->effective_attributes.items[i]->is_comptime) {
-                            report_semantic_error(step.source_line,
-                                "Attribute position must be known when accessing comptime attributes");
-                            break;
-                        }
+                if (attribute == NULL && !selected.known && class_has_comptime(object->type_symbol))
+                    report_semantic_error(step.source_line,
+                        "Attribute position must be known when accessing comptime attributes");
                 if (step.kind == RPN_ATTRIBUTE_DESTINATION) {
                     value.destination = attribute;
                     value.destination_kind = step.kind;
@@ -626,6 +728,8 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
                         }
                     }
                     value.object_type = attribute != NULL ? attribute->type_symbol : NULL;
+                    value.object = value.object_type != NULL ? object_location(object, attribute) : NULL;
+                    value.object_snapshot = NULL;
                     value.start = context->output->count;
                     value.removable = true;
                     emit(context, step);
@@ -721,6 +825,7 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
                 break;
         }
     }
+    set_semantic_origin(previous_origin);
 }
 
 static void transform(const rpn_t *input, rpn_t *output, environment_t *environment,
@@ -854,6 +959,8 @@ void specialize_init(void) {
     serial = 0;
     depth = 0;
     evaluation_budget = 100000;
+    object_locations = NULL;
+    clear_semantic_origins();
     rpn_init(&main_body);
 }
 
@@ -879,6 +986,10 @@ bool specialize_program(const rpn_t *program) {
             if (source->symbol->parameters.items[i]->is_comptime) source->contextual = true;
         for (size_t i = 0; i < source->body->count; i++) {
             const rpn_step_t *step = &source->body->steps[i];
+            if ((step->kind == RPN_SYMBOL || step->kind == RPN_ATTRIBUTE) &&
+                (class_has_comptime(step->value.symbol != NULL ? step->value.symbol->type_symbol : NULL) ||
+                 (step->kind == RPN_ATTRIBUTE && class_has_comptime(step->receiver->type_symbol))))
+                source->contextual = true;
             if (step->kind == RPN_DESTINATION)
                 record_runtime_write(source, (map_node_t *)step->value.symbol);
             if (step->kind == RPN_DESTINATION && class_has_comptime(step->value.symbol->type_symbol)) {
@@ -962,6 +1073,13 @@ bool specialize_print(FILE *stream) {
 }
 
 void specialize_destroy(void) {
+    clear_semantic_origins();
+    while (object_locations != NULL) {
+        object_location_t *next = object_locations->next;
+        free(object_locations->symbol.key);
+        free(object_locations);
+        object_locations = next;
+    }
     rpn_free(&main_body);
     while (instances != NULL) {
         function_instance_t *next = instances->next;
