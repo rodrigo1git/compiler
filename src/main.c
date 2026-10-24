@@ -1,6 +1,6 @@
 #include <stdio.h> 
 #include "../include/lexer.h"
-#include "../include/semantic_actions.h" 
+#include "../include/lexer_actions.h"
 #include "../include/symbol_table.h"
 #include "../include/diagnostics.h"
 #include "../include/scope.h"
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     // Parse
     init_symbol_table();
-    codegen_init(generate_rpn);
+    codegen_init();
     set_trace_enabled(trace);
     scope_init();
 
@@ -79,10 +79,4 @@ int main(int argc, char *argv[]) {
     free_lexeme_buffer();
     fclose(source_file);
     return success ? 0 : 1;
-}
-
-void yyerror(const char *s) {
-    finish_error_recovery();
-    global_errors++;
-    fprintf(stderr, "Line %d: %s\n", current_line, s);
 }

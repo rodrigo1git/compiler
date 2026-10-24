@@ -18,6 +18,7 @@ semantic_origin_t set_semantic_origin(semantic_origin_t origin);
 void clear_semantic_origins(void);
 void begin_lexical_recovery(void);
 void begin_syntax_error(int line, const char *unexpected, const char *context);
+void report_parser_error(int line, const char *message);
 void report_syntax_error(int line, const char *message);
 void report_recovered_syntax_error(int line, const char *message);
 void report_recovered_syntax_error_with_context(int line, const char *message);

@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "../include/diagnostics.h"
-#include "../include/semantic_actions.h"
+#include "../include/lexer_actions.h"
 #include "../include/symbol_table.h"
 #include "../y.tab.h"
 
@@ -112,10 +112,6 @@ int sa_append(char c) {
         append_to_lexeme(c);
     }
     return -1;
-}
-
-map_node_t *add_to_symbol_table(const char* lexeme_buffer, const char* category) {
-    return map_put(symbol_table, lexeme_buffer, category);
 }
 
 int sa_token_consume(char c) {
@@ -292,9 +288,4 @@ int sa_operator_error(char c) {
     report_lexical_error(token_start_line,
                          "Incomplete operator '%s'; expected '='", lexeme_buffer);
     return YYerror;
-}
-void print_symbol_table() {
-    if (symbol_table != NULL) {
-        map_print(symbol_table);
-    }
 }

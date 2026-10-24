@@ -22,7 +22,7 @@ typedef struct {
     int source_line;
 } codegen_loop_t;
 
-void codegen_init(bool enabled);
+void codegen_init(void);
 void codegen_destroy(void);
 bool codegen_print(FILE *stream);
 bool codegen_finalize(void);
@@ -60,6 +60,5 @@ rpn_t *codegen_call_end(codegen_call_t *call, codegen_order_t *order);
 codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int line);
 rpn_t *codegen_attribute_value(codegen_attribute_t attribute);
 void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value);
-void codegen_class_end(map_node_t *class_symbol, int line);
 
 #endif

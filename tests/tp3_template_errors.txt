@@ -1,0 +1,19 @@
+template_error_program
+integer function sum(integer p, integer q)
+begin
+    ret(p + q);
+end;
+// An uninvoked template must still reject undeclared names.
+integer function missing(comptime integer p)
+begin
+    ret(absent);
+end;
+// Argument counts are checked even without concrete compile-time values.
+integer function wrong_call(comptime integer p)
+begin
+    ret(sum(p)[1$i,2$i]);
+end;
+begin
+    pout(1$i);
+    // Two semantic errors. Neither executable nor template RPN is published.
+end;

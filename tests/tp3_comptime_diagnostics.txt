@@ -1,0 +1,29 @@
+diagnostic_program
+integer function single(integer p)
+comptime integer x;
+integer i;
+begin
+    x := 3$i;
+    // Expanding two iterations must report this source operation only once.
+    from i := 0$i to 2$i by 1$i repeat begin
+        if (p > 0$i) x := 5$i; end_if;
+    end;
+    ret(x);
+end;
+integer function distinct(integer p)
+comptime integer x, y;
+integer i;
+begin
+    x := 3$i;
+    y := 4$i;
+    // Two different operations on the same line must both be reported.
+    from i := 0$i to 2$i by 1$i repeat begin
+        if (p > 0$i) begin x := 5$i; y := 6$i; end end_if;
+    end;
+    ret(x + y);
+end;
+begin
+    pout(single(0$i)[1$i]);
+    pout(distinct(0$i)[1$i]);
+    // Three errors: x in single, and x and y in distinct. No partial RPN.
+end;

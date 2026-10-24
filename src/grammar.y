@@ -4,13 +4,13 @@
   #include <string.h>
   #include "include/symbol_table.h"
   #include "include/scope.h"
+  #include "include/classes.h"
   #include "include/codegen.h"
 
   extern int yylex();
   extern int current_line;
   #include "include/diagnostics.h"
   void yyerror(const char *s);
-  map_node_t *add_to_symbol_table(const char *lexeme, const char *category);
 
   #define SYNERR(location, message) report_syntax_error((location).first_line, (message))
   #define RECERR(location, message) report_recovered_syntax_error((location).first_line, (message))
@@ -121,8 +121,8 @@ decl_list:
     ;
 
 var_decl:
-  type id_list ';' { scope_declare_names($2, $1); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
-| TOKEN_COMPTIME type id_list ';' { scope_declare_comptime_names($3, $2); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
+  type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
+| TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2, true); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
 | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); finish_statement(); }
 | type error ';' {
       if (syntax_error_unexpected() != NULL && strcmp(syntax_error_unexpected(), "TOKEN_ASSIGN") == 0)
@@ -280,7 +280,7 @@ call:
 /* Recover closed arguments locally; stop at ';' when the closing delimiter is missing. */
 call_arguments:
       TOKEN_ID '(' arg_list ')' { $$ = codegen_call_begin(scope_resolve($1, SCOPE_CALLABLE, @1.first_line), NULL, $3, @1.first_line); }
-    | TOKEN_ID '.' TOKEN_ID '(' arg_list ')' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_call_begin(scope_method(object, $3, @3.first_line), object, $5, @1.first_line); }
+    | TOKEN_ID '.' TOKEN_ID '(' arg_list ')' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_call_begin(class_resolve_method(object, $3, @3.first_line), object, $5, @1.first_line); }
     | TOKEN_ID '.' TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($5); $$ = NULL; scope_object($1, @1.first_line); SYNERR(@6, "Missing argument after ',' in method call"); }
     | TOKEN_ID '.' TOKEN_ID '(' error ')' { $$ = NULL; scope_object($1, @1.first_line); RECERR(@5, "Malformed method arguments"); RECOVER(); }
     | TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($3); $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); SYNERR(@4, "Missing argument after ',' in function call"); }
@@ -427,10 +427,10 @@ function_header:
     ;
 
 param_decl_list:
-      type TOKEN_ID { scope_parameter($2, $1, @2.first_line); }
-    | param_decl_list ',' type TOKEN_ID { scope_parameter($4, $3, @4.first_line); }
-    | TOKEN_COMPTIME type TOKEN_ID { map_node_t *parameter = scope_parameter($3, $2, @3.first_line); if (parameter != NULL) parameter->is_comptime = true; }
-    | param_decl_list ',' TOKEN_COMPTIME type TOKEN_ID { map_node_t *parameter = scope_parameter($5, $4, @5.first_line); if (parameter != NULL) parameter->is_comptime = true; }
+      type TOKEN_ID { scope_parameter($2, $1, false, @2.first_line); }
+    | param_decl_list ',' type TOKEN_ID { scope_parameter($4, $3, false, @4.first_line); }
+    | TOKEN_COMPTIME type TOKEN_ID { scope_parameter($3, $2, true, @3.first_line); }
+    | param_decl_list ',' TOKEN_COMPTIME type TOKEN_ID { scope_parameter($5, $4, true, @5.first_line); }
     | primitive_type error { RECERR(@2, "Missing formal parameter name"); RECOVER(); }
     | error TOKEN_ID { RECERR(@1, "Missing formal parameter type"); RECOVER(); }
     | param_decl_list ',' primitive_type error { RECERR(@4, "Missing formal parameter name"); RECOVER(); }
@@ -453,7 +453,7 @@ method_header:
     ;
 
 class_header:
-      TOKEN_CLASS TOKEN_ID TOKEN_ID { $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); scope_class_code($$, $3); }
+      TOKEN_CLASS TOKEN_ID TOKEN_ID { $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); class_set_code(scope_symbol($$), $3); }
     ;
 
 class_missing_code:
@@ -461,7 +461,7 @@ class_missing_code:
     ;
 
 class_def:
-      class_header TOKEN_BEGIN class_body TOKEN_END ';' { codegen_class_end(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
+      class_header TOKEN_BEGIN class_body TOKEN_END ';' { class_complete(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
     | class_missing_code class_body TOKEN_END ';' { scope_end($1); finish_statement(); }
     | class_header error TOKEN_END ';' { scope_end($1); RECERR(@2, "Missing 'begin' in class declaration"); RECOVER(); }
     | class_header TOKEN_BEGIN error TOKEN_END ';' { scope_end($1); RECERR(@3, "Malformed class body"); RECOVER(); }
@@ -523,6 +523,10 @@ ret_stmt:
     ;
 
 %%
+
+void yyerror(const char *message) {
+    report_parser_error(current_line, message);
+}
 
 static const char *friendly_symbol_name(yysymbol_kind_t symbol);
 

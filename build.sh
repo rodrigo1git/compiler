@@ -40,13 +40,16 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/main.c \
     src/diagnostics.c \
     src/lexer.c \
-    src/semantic_actions.c \
+    src/lexer_actions.c \
     src/transition_table.c \
     src/symbol_table.c \
     src/scope.c \
+    src/classes.c \
     src/rpn.c \
     src/codegen.c \
     src/specialize.c \
+    src/comptime_values.c \
+    src/comptime_objects.c \
     y.tab.c \
     -lm \
     -o compiler

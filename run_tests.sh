@@ -3,25 +3,17 @@ set -uo pipefail
 cd -- "$(dirname -- "$0")"
 
 compiler_command=(./compiler)
-show=false
 for option in "$@"; do
     case "$option" in
-        --show) show=true ;;
+        --show) : ;;
         --rpn|--analyze|--trace) compiler_command+=("$option") ;;
-        *) printf 'Usage: %s [--show [--rpn|--analyze] [--trace]]\n' "$0" >&2; exit 2 ;;
+        *) printf 'Usage: %s [--rpn|--analyze] [--trace]\n' "$0" >&2; exit 2 ;;
     esac
 done
 
 if ! ./build.sh; then
     printf 'Build failed; tests were not run.\n' >&2
     exit 1
-fi
-
-if [ "$show" = false ]; then
-    status=0
-    python3 tests/verify_tp3.py || status=1
-    python3 tests/verify_tp3_course.py || status=1
-    exit "$status"
 fi
 
 shopt -s nullglob

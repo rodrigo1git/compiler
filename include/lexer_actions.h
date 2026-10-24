@@ -1,5 +1,5 @@
-#ifndef SEMANTIC_ACTIONS_H 
-#define SEMANTIC_ACTIONS_H
+#ifndef LEXER_ACTIONS_H
+#define LEXER_ACTIONS_H
 
 #include <stdio.h>
 #include "../y.tab.h"
@@ -36,7 +36,5 @@ int sa_error(char c);
 int sa_operator_error(char c);
 
 int check_reserved_words(const char* word);
-map_node_t *add_to_symbol_table(const char* lex, const char* category);
-extern void print_symbol_table();
 
-#endif /* SEMANTIC_ACTIONS_H */
+#endif /* LEXER_ACTIONS_H */

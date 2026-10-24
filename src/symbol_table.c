@@ -80,10 +80,6 @@ map_node_t *map_get(hash_map_t* map, const char* key, const char* value) {
     return NULL;
 }
 
-bool map_contains(hash_map_t* map, const char* key, const char* value) {
-    return map_get(map, key, value) != NULL;
-}
-
 map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
     unsigned long index = hash_func(key) % map->capacity;
     for (map_node_t *current = map->buckets[index]; current != NULL; current = current->next) {
@@ -111,6 +107,10 @@ map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
     new_node->next = map->buckets[index];
     map->buckets[index] = new_node;
     return new_node;
+}
+
+map_node_t *add_to_symbol_table(const char *lexeme, const char *category) {
+    return map_put(symbol_table, lexeme, category);
 }
 
 void map_free(hash_map_t* map) {
@@ -185,6 +185,12 @@ void map_print(hash_map_t* map) {
         }
     }
     printf("-------------------------\n");
+}
+
+void print_symbol_table(void) {
+    if (symbol_table != NULL) {
+        map_print(symbol_table);
+    }
 }
 
 void init_symbol_table(void) {

@@ -36,6 +36,8 @@ def parse_output(text):
             sequence = sequences.setdefault("main", [])
         elif line.startswith("--- FUNCTION "):
             sequence = sequences.setdefault(line[len("--- FUNCTION "):-4], [])
+        elif line.startswith("--- TEMPLATE "):
+            sequence = None
         elif line == "--- SYMBOL TABLE ---":
             sequence = None
         elif line.startswith("Lexeme: "):
@@ -205,7 +207,8 @@ def main():
     # Every public input has an explicit expected acceptance status in analysis mode.
     valid = {"valid_comment_at_eof.txt", "valid_crlf.txt", "valid_eof_without_newline.txt",
              "valid_scopes.txt", "valid_scope_shadowing.txt", "rpn_valid.txt",
-             "tp3_calls.txt", "tp3_methods.txt", "tp3_control.txt"}
+             "tp3_calls.txt", "tp3_methods.txt", "tp3_control.txt", "tp3_templates.txt",
+             "tp3_comptime_specialization.txt", "tp3_comptime_copies.txt"}
     for path in sorted((ROOT / "tests").glob("*.txt")):
         result = compile_file(path, "--analyze")
         assert result.returncode == (0 if path.name in valid else 1), (path.name, result.stderr)

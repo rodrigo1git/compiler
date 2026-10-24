@@ -4,7 +4,7 @@
 #include "../include/diagnostics.h"
 
 #include "../include/lexer.h"
-#include "../include/semantic_actions.h"
+#include "../include/lexer_actions.h"
 #include "../include/transition_table.h"
 
 int current_line = 1;

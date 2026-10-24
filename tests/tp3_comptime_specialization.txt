@@ -1,0 +1,27 @@
+capture_program
+class sourceclass shared
+begin
+    comptime integer value;
+end;
+class targetclass shared
+begin
+    integer value;
+end;
+sourceclass source;
+targetclass target;
+integer function copy(integer p)
+begin
+    target := source;
+    ret(target[0$i]);
+end;
+begin
+    // Whole-object reads capture 3 and 7 in different specializations.
+    source[0$i] := 3$i;
+    pout(copy(0$i)[1$i]);
+    source[0$i] := 7$i;
+    pout(copy(0$i)[1$i]);
+    // Returning to 3 may reuse the first body, without keeping the value 7.
+    source[0$i] := 3$i;
+    pout(copy(0$i)[1$i]);
+    // Concrete output: 3, 7, 3.
+end;

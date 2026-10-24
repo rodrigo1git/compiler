@@ -54,49 +54,61 @@ void trace_printf(const char *format, ...) {
     va_end(args);
 }
 
+static char *format_message(const char *format, va_list args) {
+    va_list copy;
+    va_copy(copy, args);
+    int length = vsnprintf(NULL, 0, format, copy);
+    va_end(copy);
+    char *message = length < 0 ? NULL : malloc((size_t)length + 1);
+    if (message == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate diagnostic message\n");
+        exit(1);
+    }
+    vsnprintf(message, (size_t)length + 1, format, args);
+    return message;
+}
+
+static void write_diagnostic(const char *category, int line, const char *message) {
+    fprintf(stderr, "Line %d: ", line);
+    if (category != NULL) fprintf(stderr, "%s error: ", category);
+    fprintf(stderr, "%s\n", message);
+}
+
+static bool register_semantic_error(int line, const char *message) {
+    if (semantic_origin.body == NULL) return true;
+    for (semantic_diagnostic_t *previous = semantic_diagnostics; previous != NULL;
+         previous = previous->next) {
+        if (previous->origin.body == semantic_origin.body &&
+            previous->origin.step == semantic_origin.step && previous->line == line &&
+            strcmp(previous->message, message) == 0) return false;
+    }
+    semantic_diagnostic_t *entry = malloc(sizeof(*entry));
+    char *saved_message = strdup(message);
+    if (entry == NULL || saved_message == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate semantic diagnostic\n");
+        exit(1);
+    }
+    *entry = (semantic_diagnostic_t){semantic_origin, line, saved_message, semantic_diagnostics};
+    semantic_diagnostics = entry;
+    return true;
+}
+
 void report_semantic_error(int line, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    if (semantic_origin.body != NULL) {
-        va_list copy;
-        va_copy(copy, args);
-        int length = vsnprintf(NULL, 0, format, copy);
-        va_end(copy);
-        char *message = length < 0 ? NULL : malloc((size_t)length + 1);
-        semantic_diagnostic_t *entry = malloc(sizeof(*entry));
-        if (message == NULL || entry == NULL) {
-            fprintf(stderr, "Fatal error: Cannot allocate semantic diagnostic\n");
-            exit(1);
-        }
-        vsnprintf(message, (size_t)length + 1, format, args);
-        va_end(args);
-        for (semantic_diagnostic_t *previous = semantic_diagnostics; previous != NULL;
-             previous = previous->next) {
-            if (previous->origin.body == semantic_origin.body &&
-                previous->origin.step == semantic_origin.step && previous->line == line &&
-                strcmp(previous->message, message) == 0) {
-                free(message);
-                free(entry);
-                return;
-            }
-        }
-        *entry = (semantic_diagnostic_t){semantic_origin, line, message, semantic_diagnostics};
-        semantic_diagnostics = entry;
-        fprintf(stderr, "Line %d: Semantic error: %s\n", line, message);
-        global_errors++;
-        return;
-    }
-    fprintf(stderr, "Line %d: Semantic error: ", line);
-    vfprintf(stderr, format, args);
+    char *message = format_message(format, args);
     va_end(args);
-    fputc('\n', stderr);
-    global_errors++;
+    if (register_semantic_error(line, message)) {
+        write_diagnostic("Semantic", line, message);
+        global_errors++;
+    }
+    free(message);
 }
 
 static void flush_syntax_error(void) {
     if (recovery.pending) {
-        fprintf(stderr, "Line %d: Syntax error: %s\n", recovery.line,
-                recovery.context[0] ? recovery.context : "Invalid syntax");
+        write_diagnostic("Syntax", recovery.line,
+                         recovery.context[0] ? recovery.context : "Invalid syntax");
         recovery.pending = false;
     }
 }
@@ -108,12 +120,18 @@ void finish_error_recovery(void) {
 
 void report_lexical_error(int line, const char *format, ...) {
     va_list args;
-    fprintf(stderr, "Line %d: Lexical error: ", line);
     va_start(args, format);
-    vfprintf(stderr, format, args);
+    char *message = format_message(format, args);
     va_end(args);
-    fputc('\n', stderr);
+    write_diagnostic("Lexical", line, message);
+    free(message);
     global_errors++;
+}
+
+void report_parser_error(int line, const char *message) {
+    finish_error_recovery();
+    global_errors++;
+    write_diagnostic(NULL, line, message);
 }
 
 void begin_lexical_recovery(void) {
@@ -136,13 +154,13 @@ void begin_syntax_error(int line, const char *unexpected, const char *context) {
 void report_syntax_error(int line, const char *message) {
     /* Diagnostic productions without `error` detect independent problems. */
     global_errors++;
-    fprintf(stderr, "Line %d: Syntax error: %s\n", line, message);
+    write_diagnostic("Syntax", line, message);
 }
 
 void report_recovered_syntax_error(int line, const char *message) {
     /* Bison already counted this error; YYerror was reported by the lexer. */
     if (!recovery.pending) return;
-    fprintf(stderr, "Line %d: Syntax error: %s\n", line, message);
+    write_diagnostic("Syntax", line, message);
     recovery.pending = false;
 }
 

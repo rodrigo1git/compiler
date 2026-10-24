@@ -65,10 +65,11 @@ extern void init_symbol_table(void);
 
 hash_map_t* map_create(int capacity);
 map_node_t *map_get(hash_map_t *map, const char *key, const char *value);
-extern bool map_contains(hash_map_t* map, const char* key, const char* value);
 extern map_node_t *map_put(hash_map_t* map, const char* key, const char* value);
+map_node_t *add_to_symbol_table(const char *lexeme, const char *category);
 extern void map_free(hash_map_t* map);
 extern void map_print(hash_map_t* map);
+void print_symbol_table(void);
 void map_purge_provisional(hash_map_t *map);
 void symbol_list_append(symbol_list_t *list, map_node_t *symbol);
 

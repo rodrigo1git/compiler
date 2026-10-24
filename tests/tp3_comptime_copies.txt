@@ -1,0 +1,62 @@
+copy_program
+class inner innercode
+begin
+    comptime integer value;
+end;
+class outer outercode
+begin
+    inner left, right;
+end;
+inner first, second;
+outer object;
+integer function read(outer copy)
+inner a, b;
+begin
+    a := copy[0$i];
+    b := copy[1$i];
+    ret(a[0$i] + b[0$i]);
+end;
+integer function change(comptime integer p)
+begin
+    first[0$i] := p;
+    object[0$i] := first;
+    ret(p);
+end;
+integer function capture(outer copy, integer ignored)
+inner local;
+begin
+    local := copy[0$i];
+    ret(local[0$i]);
+end;
+integer function modify(outer copy)
+inner local;
+begin
+    local := copy[0$i];
+    local[0$i] := 11$i;
+    copy[0$i] := local;
+    ret(local[0$i]);
+end;
+begin
+    // Sibling fields retain independent compile-time values across calls.
+    first[0$i] := 3$i;
+    second[0$i] := 7$i;
+    object[0$i] := first;
+    object[1$i] := second;
+    pout(read(object)[1$i]);
+    first[0$i] := 9$i;
+    object[0$i] := first;
+    pout(read(object)[1$i]);
+    // Modifying the formal copy must leave the original object unchanged.
+    pout(modify(object)[1$i]);
+    pout(read(object)[1$i]);
+    // Copying before the second argument captures 3, before change writes 7.
+    first[0$i] := 3$i;
+    object[0$i] := first;
+    pout(capture(object, change(7$i)[1$i])[1$i,2$i]);
+    // Evaluating change first makes the copied nested field contain 7.
+    first[0$i] := 3$i;
+    object[0$i] := first;
+    pout(capture(object, change(7$i)[1$i])[2$i,1$i]);
+    pout(read(object)[1$i]);
+    // Concrete output: 10, 16, 11, 16, 3, 7, 14.
+end;
