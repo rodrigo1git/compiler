@@ -2,7 +2,7 @@
 #define TRANSITION_TABLE_H
 
 #define N_STATES  15
-#define N_COLS    17
+#define N_COLS    18
 
 #define F_CONS 99    /* Final state (consumes char) */
 #define F_RET  100   /* Final state (returns/ungets char) */
@@ -27,6 +27,7 @@
 #define COL_NL    14   /* newline */
 #define COL_WS    15   /* whitespace */
 #define COL_OTHER 16   /* other */
+#define COL_EOF   17   /* end of input */
 
 extern int transition_table[N_STATES][N_COLS];
 

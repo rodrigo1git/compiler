@@ -9,44 +9,18 @@
 
 int current_line = 1;
 
-typedef struct {
-    int previous_char;
-    bool eof_delimiter_sent;
-} lexer_input_state_t;
+static int previous_char;
 
-static lexer_input_state_t input_state;
-
-static int read_input_char(bool *is_synthetic) {
-    int c = fgetc(source_file);
-    *is_synthetic = false;
-
-    /* A single artificial delimiter finalizes lookahead-based tokens at EOF.
-       It is never counted as a real line or pushed back into the file. */
-    if (c == EOF && !input_state.eof_delimiter_sent) {
-        input_state.eof_delimiter_sent = true;
-        *is_synthetic = true;
-        return '\n';
-    }
-
-    return c;
-}
-
-static int update_line_number(int c, bool is_synthetic) {
+static int update_line_number(int c) {
     int advanced = 0;
-
-    if (is_synthetic) {
-        return advanced;
-    }
-
-    if (c == '\n' && input_state.previous_char != '\r') {
+    if (c == '\n' && previous_char != '\r') {
         current_line++;
         advanced = 1;
     } else if (c == '\r') {
         current_line++;
         advanced = 1;
     }
-
-    input_state.previous_char = c;
+    previous_char = c;
     return advanced;
 }
 
@@ -66,18 +40,18 @@ static void push_back_char(int c, int line_advanced) {
 
     if (c != EOF) {
         (void)ungetc(c, source_file);
-        input_state.previous_char = '\0';
+        previous_char = '\0';
     }
 }
 
-static void recover_from_lexical_error(int c, bool is_synthetic, int line_advanced) {
+static void recover_from_lexical_error(int c, int line_advanced) {
     while (!is_recovery_delimiter(c) && c != EOF) {
-        c = read_input_char(&is_synthetic);
-        line_advanced = update_line_number(c, is_synthetic);
+        c = getc(source_file);
+        line_advanced = (c == EOF) ? 0 : update_line_number(c);
     }
 
     if (c != EOF) {
-        push_back_char(is_synthetic ? EOF : c, line_advanced);
+        push_back_char(c, line_advanced);
     }
 
     reset_lexeme_buffer();
@@ -96,8 +70,7 @@ static void log_token(int token_id) {
 }
 
 void lexer_reset_input(void) {
-    input_state.previous_char = '\0';
-    input_state.eof_delimiter_sent = false;
+    previous_char = '\0';
     current_line = 1;
     token_start_line = 1;
     reset_lexeme_buffer();
@@ -106,35 +79,16 @@ void lexer_reset_input(void) {
 int yylex(void) {
     int state = 0;
 
-    for (;;) {
+    while(true) {
         if (state == 0) {
             token_start_line = current_line;
         }
 
-        bool is_synthetic = false;
-        int c = read_input_char(&is_synthetic);
-
-        if (c == EOF) {
-            set_token_location();
-            if (state == ST_CHAIN) {
-                report_lexical_error(token_start_line, "Unclosed string literal");
-                begin_lexical_recovery();
-                yylval.symbol_ref = NULL;
-                return YYerror;
-            }
-            if (state != 0) {
-                report_lexical_error(token_start_line, "Unexpected end of file within token");
-                begin_lexical_recovery();
-                yylval.symbol_ref = NULL;
-                return YYerror;
-            }
-            return YYEOF;
-        }
-
-        int line_advanced = update_line_number(c, is_synthetic);
-        int col = get_col(c);
+        int c = getc(source_file);
+        int line_advanced = (c == EOF) ? 0 : update_line_number(c);
+        int col = (c == EOF) ? COL_EOF : get_col(c);
         if (state < 0 || state >= N_STATES || col < 0 || col >= N_COLS) {
-            recover_from_lexical_error(c, is_synthetic, line_advanced);
+            recover_from_lexical_error(c, line_advanced);
             state = 0;
             continue;
         }
@@ -146,20 +100,25 @@ int yylex(void) {
         if (token_id == YYerror) {
             begin_lexical_recovery();
             if (next_state == F_RET || (next_state == E && is_valid_token_boundary(c))) {
-                if (!is_synthetic) push_back_char(c, line_advanced);
+                push_back_char(c, line_advanced);
             } else if (next_state == E) {
-                recover_from_lexical_error(c, is_synthetic, line_advanced);
+                recover_from_lexical_error(c, line_advanced);
             }
             set_token_location();
             yylval.symbol_ref = NULL;
+            reset_lexeme_buffer();
             return YYerror;
         }
 
-        if (next_state == F_RET) {
-            if (!is_synthetic) {
-                push_back_char(c, line_advanced);
-            }
+        if (token_id == YYEOF) {
+            set_token_location();
+            yylval.symbol_ref = NULL;
+            reset_lexeme_buffer();
+            return YYEOF;
         }
+
+        if (next_state == F_RET)
+            push_back_char(c, line_advanced);
 
         state = next_state;
 
@@ -169,12 +128,13 @@ int yylex(void) {
             continue;
         }
 
-        if (token_id == -1) {
+        if (token_id == -1)
             continue;
-        }
 
         log_token(token_id);
         set_token_location();
+        state = 0;
+        reset_lexeme_buffer();
         return token_id;
     }
 }

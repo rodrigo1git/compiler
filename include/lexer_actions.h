@@ -34,6 +34,8 @@ int sa_float_exponent_error(char c);
 int sa_float_decimal_error(char c);
 int sa_error(char c);
 int sa_operator_error(char c);
+int sa_unclosed_chain_error(char c);
+int sa_EOF(char c);
 
 int check_reserved_words(const char* word);
 
