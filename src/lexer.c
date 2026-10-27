@@ -30,7 +30,16 @@ static bool is_recovery_delimiter(int c) {
 }
 
 static bool is_valid_token_boundary(int c) {
-    return get_col(c) != COL_OTHER && !isalnum((unsigned char)c) && c != '_' && c != '$';
+    if (c == EOF) {
+        return false;
+    }
+    if (get_col(c) == COL_OTHER) {
+        return false;
+    }
+    if (isalnum((unsigned char)c) || c == '_' || c == '$') {
+        return false;
+    }
+    return true;
 }
 
 static void push_back_char(int c, int line_advanced) {
@@ -47,7 +56,7 @@ static void push_back_char(int c, int line_advanced) {
 static void recover_from_lexical_error(int c, int line_advanced) {
     while (!is_recovery_delimiter(c) && c != EOF) {
         c = getc(source_file);
-        line_advanced = (c == EOF) ? 0 : update_line_number(c);
+        line_advanced = update_line_number(c);
     }
 
     if (c != EOF) {
@@ -76,8 +85,10 @@ void lexer_reset_input(void) {
     reset_lexeme_buffer();
 }
 
+static int state = 0;
+
 int yylex(void) {
-    int state = 0;
+    
 
     while(true) {
         if (state == 0) {
@@ -85,8 +96,9 @@ int yylex(void) {
         }
 
         int c = getc(source_file);
-        int line_advanced = (c == EOF) ? 0 : update_line_number(c);
-        int col = (c == EOF) ? COL_EOF : get_col(c);
+
+        int line_advanced = update_line_number(c);
+        int col = get_col(c);
         if (state < 0 || state >= N_STATES || col < 0 || col >= N_COLS) {
             recover_from_lexical_error(c, line_advanced);
             state = 0;
@@ -106,15 +118,7 @@ int yylex(void) {
             }
             set_token_location();
             yylval.symbol_ref = NULL;
-            reset_lexeme_buffer();
             return YYerror;
-        }
-
-        if (token_id == YYEOF) {
-            set_token_location();
-            yylval.symbol_ref = NULL;
-            reset_lexeme_buffer();
-            return YYEOF;
         }
 
         if (next_state == F_RET)
@@ -128,13 +132,11 @@ int yylex(void) {
             continue;
         }
 
-        if (token_id == -1)
+        if (token_id == -1) 
             continue;
 
         log_token(token_id);
         set_token_location();
-        state = 0;
-        reset_lexeme_buffer();
         return token_id;
     }
 }

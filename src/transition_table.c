@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdio.h>
 #include "../include/transition_table.h"
 
 int transition_table[N_STATES][N_COLS] = {
@@ -21,7 +22,9 @@ int transition_table[N_STATES][N_COLS] = {
 };
 
 int get_col(int c) {
-    if (c == 'i')
+    if (c == EOF)
+        return COL_EOF;
+    else if (c == 'i')
         return COL_I;
     else if (c == 's')
         return COL_S;
