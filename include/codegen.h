@@ -23,9 +23,11 @@ typedef struct {
 } codegen_loop_t;
 
 void codegen_init(void);
+void codegen_enable_tp4(bool enabled);
 void codegen_destroy(void);
 bool codegen_print(FILE *stream);
 bool codegen_finalize(void);
+const rpn_t *codegen_source_body(void);
 
 /* Expression fragments are owned; combining or emitting consumes its inputs. */
 rpn_t *codegen_value(map_node_t *symbol, int line);

@@ -20,7 +20,8 @@ typedef enum {
     SYMBOL_CLASS,
     SYMBOL_ATTRIBUTE,
     SYMBOL_METHOD,
-    SYMBOL_OBJECT_VALUE
+    SYMBOL_OBJECT_VALUE,
+    SYMBOL_AUXILIARY
 } symbol_usage_t;
 
 typedef struct map_node {

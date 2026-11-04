@@ -5,6 +5,10 @@
 #include "../include/classes.h"
 #include "../include/specialize.h"
 
+static bool tp4_enabled;
+static unsigned int index_serial;
+void codegen_enable_tp4(bool enabled) { tp4_enabled = enabled; index_serial = 0; }
+
 static rpn_t program;
 static rpn_t *current_sequence;
 
@@ -50,6 +54,8 @@ bool codegen_print(FILE *stream) {
 bool codegen_finalize(void) {
     return specialize_program(&program);
 }
+
+const rpn_t *codegen_source_body(void) { return &program; }
 
 static rpn_t *new_fragment(void) {
     rpn_t *fragment = malloc(sizeof(*fragment));
@@ -267,6 +273,18 @@ void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value) {
     if (attribute.object == NULL || attribute.index == NULL) {
         codegen_free(value);
         return;
+    }
+    if (tp4_enabled && value && attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime) {
+        char name[64];
+        snprintf(name, sizeof(name), "@index%u", ++index_serial);
+        map_node_t *saved = map_put(symbol_table, name, "ID");
+        saved->usage = SYMBOL_VARIABLE;
+        saved->declared_type = strdup("INTEGER");
+        saved->owner = current_function ? current_function->symbol : NULL;
+        saved->declaration_line = attribute.line;
+        codegen_assignment(saved, codegen_value(attribute.index, attribute.line), attribute.line);
+        attribute.index = saved;
+        rpn_append_step(current_sequence, attribute_step(attribute, RPN_INDEX_CHECK));
     }
     rpn_step_t destination = attribute_step(attribute, RPN_ATTRIBUTE_DESTINATION);
     if (value != NULL) append_assignment(value, destination, attribute.line);
@@ -514,6 +532,8 @@ codegen_loop_t codegen_for_begin(map_node_t *variable, map_node_t *initial,
                                      codegen_value(final, line),
                                      ascending ? RPN_LESS : RPN_GREATER, line);
     loop.exit_target = codegen_if_begin(condition, line);
+    current_sequence->steps[loop.exit_target - 1].loop = true;
+    current_sequence->steps[loop.exit_target - 1].loop_variable = variable;
     return loop;
 }
 

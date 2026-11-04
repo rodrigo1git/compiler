@@ -21,6 +21,13 @@ def members(text):
 
 def validate_ir(text):
     sequences, symbols = oracle.parse_output(text)
+    all_sections, _ = oracle.parse_output(text, include_templates=True)
+    for name, body in all_sections.items():
+        if name.startswith("TEMPLATE "):
+            for index, step in enumerate(body):
+                if step in ("BF", "BI"):
+                    assert index > 0 and body[index - 1].isdigit(), (name, step)
+                    assert 1 <= int(body[index - 1]) <= len(body) + 1, (name, step)
     assert "main" in sequences, "Missing main sequence"
     assert symbols["course_program:main"]["Use"] == "PROGRAM"
     for name, sequence in sequences.items():
@@ -50,6 +57,8 @@ def validate_ir(text):
                 assert 0 <= position < len(fields), step
                 assert symbols[fields[position]].get("Comptime") != "yes", step
     for symbol, metadata in symbols.items():
+        if metadata.get("Compile-time template") == "yes":
+            assert "TEMPLATE " + symbol in all_sections, f"Declared symbolic body missing: {symbol}"
         if metadata.get("Use") in ("FUNCTION", "METHOD") and metadata.get("Compile-time template") != "yes":
             assert symbol in sequences, f"Declared executable body missing: {symbol}"
         if metadata.get("Use") == "CLASS":

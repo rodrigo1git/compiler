@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Compiler WebAssembly runner</title>
+<label>Choose the generated .wasm file <input id="file" type="file" accept=".wasm"></label>
+<pre id="output" aria-live="polite"></pre>
+<script type="module">
+import {execute} from './host.mjs';
+const output = document.querySelector('#output');
+document.querySelector('#file').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    output.textContent = '';
+    try {
+        await execute(await file.arrayBuffer(), value => output.textContent += `${value}\n`);
+    } catch (error) {
+        output.textContent += `${error.message}\n`;
+    }
+});
+</script>
+</html>

@@ -36,7 +36,8 @@ typedef enum {
     RPN_CALL,
     RPN_ATTRIBUTE,
     RPN_ATTRIBUTE_DESTINATION,
-    RPN_OBJECT_VALUE
+    RPN_OBJECT_VALUE,
+    RPN_INDEX_CHECK
 } rpn_step_kind_t;
 
 typedef struct {
@@ -50,6 +51,9 @@ typedef struct {
     const map_node_t *receiver;
     const map_node_t *index;
     size_t control_start;
+    bool loop;
+    const map_node_t *loop_variable;
+    const map_node_t *capture;
 } rpn_step_t;
 
 typedef struct {

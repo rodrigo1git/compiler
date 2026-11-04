@@ -1,0 +1,2160 @@
+{
+  "date": "2026-11-05T00:36:52.912672+00:00",
+  "compiler_sha256": "93bc9a022811413756ea933cd10423fbe7c3c5b9ea6999df478ba62b5ef06813",
+  "sources": {
+    "src/lexer.c": "adab8022ca74b392bec450727402bb20bf1bea7b564a6a0b91d690679080ed59",
+    "src/transition_table.c": "d55a1ebe6aa4a671602696f2ae57503e22774520b38f446bda347a3d77b30a46",
+    "src/codegen.c": "345f94477c1aa82f5c4a656059ae4e288439e95b798676dbeb21a81586c20332",
+    "src/grammar.y": "5064e685e5bbbec6dee5c545633fb0e3c21618258f83f3f0bb1459a115531c20",
+    "src/main.c": "538e25c286880b4556ff205c1a135b3044104eff570b804041358b875b49b58d",
+    "src/rpn.c": "9c918ec9ed843942113b02e221a22a598eb1856f854df232dd302608d944a25e",
+    "src/scope.c": "0a74acfc1f69acfcaeb3f135b7c35d75fd32844befc48c292ef63f9266715d2b",
+    "src/diagnostics.c": "16bd937e0e7c910813e4f03e3dca45737f6ebe6994166dcaad12ee5c481a4f70",
+    "src/specialize.c": "b311701dc7b18070ee3ed0a14c5fb48851b6a790c377f7639c1b5afa04eb21af",
+    "src/symbol_table.c": "698484f544a74fcc46e42ee39547a76ff4c22c83c49677cf0c82035b3d98bf97",
+    "src/lexer_actions.c": "3706ca9a898cf5d73ed9143071d91350e50cf537420d78af92a86e9aac20b624",
+    "src/classes.c": "1334177188e4ef9b9fa342758a3ae12d8053df4b3687bdeea86364d9b38bf0ca",
+    "src/comptime_values.c": "6fc81b6cfcca4a8b34a0418066aed548e129179cc70ba517c10ef037f8a10da8",
+    "src/comptime_objects.c": "ee6e623d539cc2e30dd3a06b3e77b191e5c5b108e252ecfb160124d4aab490e6",
+    "src/types.c": "775ba3c9471f1777c898a34a61a3401c8af3a8357104c78034ce1abcf0ac8593",
+    "src/layout.c": "cd1528c2c8fe117754069a35738cb01a30c852a8b45cad74701698014a3ec8c8",
+    "src/wasm_emit.c": "a988e052074c8acde7bf36de5e5a27add0588b95eb68b03f76e12052c0e8a767",
+    "src/numeric.c": "5c49b61bb6aef615893e3b17c4bcd1d8ac3b8aaed0d3ebaa844bf20a313e0a52",
+    "include/lexer.h": "ee19deb4462534475f46dda6d646bbe6a2dba6ec54121b424de0091e40d16176",
+    "include/transition_table.h": "498adb8f60e34b82840dc2767739e694b04e374be0a9a242900fffc7b78cac52",
+    "include/codegen.h": "12a16701e958fae6c03a9a573bac1fd46cc63b7794a5edca87f5cb2cf7186778",
+    "include/rpn.h": "6b836e6ccc7173098786ffda19379bd8ea8641bf951825c3ed5f0b3b639b8a73",
+    "include/scope.h": "fad6488cc7bb2bd68a8dec39367a7e5beee9562468ae0104ddd0c1ee5942b2b9",
+    "include/specialize.h": "7ab79a20e37ec43d3acd6392df21906fb9ab34f38bca78fec4d7b66813a48c9a",
+    "include/diagnostics.h": "af601d57b522f9a537be947e35de4bd9ce764731e476526c2df899d5986f574c",
+    "include/symbol_table.h": "c519fbbe709dbb02b10b27bd31af4df556c3cb9b5d9f9206a7808c36a0971cdb",
+    "include/lexer_actions.h": "3be46c5dc4df6123901eec34496ca6370716d5f564aa016bbb6f588ff35ca495",
+    "include/classes.h": "bf5a064c9c7f5828ffbf202096c639856ec2d9bf24486039043c89958019ae94",
+    "include/comptime_values.h": "594dcc0c938742ce1d2e3bc64faf5339314fd5135314a8fd90d3187b67e69efd",
+    "include/comptime_objects.h": "92208b28b3c7cda2b4696aa8c715b28808cf97676237ff3844af21352fea471f",
+    "include/types.h": "9faff01f9fdc93bba9d8ce028508886f8a1f4c47acf896bf1aed77be33101d32",
+    "include/layout.h": "8fd00bbbf2efaf8c2b100515624fea3c150f862771e6750d292b05132f56a34f",
+    "include/wasm_emit.h": "b080bbeb3b352ac72fcad1c584415e37ef97be35a8bb9dbd33ebc48c57f778ab",
+    "include/numeric.h": "bdff573613691f941d608bed4513960ff2082101ad4e37cd76e625d2fdaa90bd",
+    "build.sh": "55356cce3ce0dec0e72b96f6dea1c22b50d948582c7f2f149da8cd3fd5b7ab47",
+    "runtime/assemble.mjs": "18ab2ebb610e90d667cf47531ff6b18a3ddc87428b3220779241c27d9f6f1460",
+    "runtime/host.mjs": "b7a206b91654b8c0acd6d66ec23ddacf694990437674f3902d393b9b9dad1b58",
+    "runtime/run.mjs": "c2bdce563d06d23a969654298882e319c1bbc509c4a2b79d7079233dc48ed7d9",
+    "runtime/compile.mjs": "daa73d518403d6d5395b415a18ea8a105e7da03893c41f054aaa71e6148ae60b"
+  },
+  "counts": {
+    "normal": 139,
+    "runtime_errors": 31,
+    "compile_errors": 94,
+    "nonterminating": 1
+  },
+  "scenarios": [
+    {
+      "name": "integer_limits",
+      "expected": [
+        -32768,
+        32767
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "integer_wrap",
+      "expected": [
+        -32768,
+        32767
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "integer_wrap_comptime",
+      "expected": [
+        -32768
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "division_truncation",
+      "expected": [
+        -3,
+        -32768
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "product_valid",
+      "expected": [
+        -32640
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "product_positive",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(d)"
+    },
+    {
+      "name": "product_negative",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(d)"
+    },
+    {
+      "name": "product_minimum",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(d)"
+    },
+    {
+      "name": "product_from_call",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(d)"
+    },
+    {
+      "name": "product_comptime_error",
+      "expected": [],
+      "compile_error": "multiplication overflow",
+      "runtime_error": null
+    },
+    {
+      "name": "float_add_valid",
+      "expected": [
+        3.75
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "float_overflow_positive",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(c)"
+    },
+    {
+      "name": "float_overflow_negative",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(c)"
+    },
+    {
+      "name": "float_from_call",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(c)"
+    },
+    {
+      "name": "float_comptime_error",
+      "expected": [],
+      "compile_error": "addition overflow",
+      "runtime_error": null
+    },
+    {
+      "name": "float_rounding",
+      "expected": [
+        16777216
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "conversion_exact",
+      "expected": [
+        3,
+        -32768,
+        32767,
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "conversion_fraction",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(g)"
+    },
+    {
+      "name": "conversion_negative_fraction",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(g)"
+    },
+    {
+      "name": "conversion_large",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "not representable"
+    },
+    {
+      "name": "conversion_small",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "not representable"
+    },
+    {
+      "name": "conversion_nan",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "not representable"
+    },
+    {
+      "name": "conversion_infinity",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "not representable"
+    },
+    {
+      "name": "conversion_condition_effect",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(g)"
+    },
+    {
+      "name": "conversion_comptime_error",
+      "expected": [],
+      "compile_error": "fractional information",
+      "runtime_error": null
+    },
+    {
+      "name": "conversion_type_error",
+      "expected": [],
+      "compile_error": "TOI requires SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "dead_branch_types",
+      "expected": [],
+      "compile_error": "Incompatible assignment",
+      "runtime_error": null
+    },
+    {
+      "name": "unused_function_types",
+      "expected": [],
+      "compile_error": "return type",
+      "runtime_error": null
+    },
+    {
+      "name": "after_return_types",
+      "expected": [],
+      "compile_error": "return type",
+      "runtime_error": null
+    },
+    {
+      "name": "unused_template_types",
+      "expected": [],
+      "compile_error": "return type",
+      "runtime_error": null
+    },
+    {
+      "name": "recursion_direct",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "recursion_indirect",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "calls_successive_nested",
+      "expected": [
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "early_returns",
+      "expected": [
+        7,
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_reentry_receiver",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "inherited_second_base",
+      "expected": [
+        7,
+        22,
+        11
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_index_integer",
+      "expected": [
+        4,
+        8
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_index_mixed_print",
+      "expected": [
+        3,
+        0,
+        1.5,
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_index_mixed_reject",
+      "expected": [],
+      "compile_error": "Incompatible operand",
+      "runtime_error": null
+    },
+    {
+      "name": "index_negative",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "Attribute index"
+    },
+    {
+      "name": "index_upper",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "Attribute index"
+    },
+    {
+      "name": "comptime_index_deferred",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_index_bad_specialization",
+      "expected": [],
+      "compile_error": "return type",
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_index_unused",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_recursive",
+      "expected": [],
+      "compile_error": "Recursive object containment",
+      "runtime_error": null
+    },
+    {
+      "name": "nested_class_parameter_not_containment",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "operand_snapshot",
+      "expected": [
+        10,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "negative_condition",
+      "expected": [
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "destination_index_snapshot",
+      "expected": [
+        9,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_index_comptime_read",
+      "expected": [
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_index_comptime_write",
+      "expected": [],
+      "compile_error": "compile-time index",
+      "runtime_error": null
+    },
+    {
+      "name": "variable_object_copy",
+      "expected": [
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_object_destination",
+      "expected": [
+        0,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "lexical_parent_not_caller",
+      "expected": [
+        3,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_calls_nested",
+      "expected": [
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_read_snapshot_versions",
+      "expected": [
+        3,
+        7,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "known_variable_index_invalid_runtime",
+      "expected": [
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": "Attribute index"
+    },
+    {
+      "name": "invalid_destination_before_rhs",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": "Attribute index"
+    },
+    {
+      "name": "discarded_return_false_branch",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_valid_false_branch",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_return_else_branch",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_valid_else_branch",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_return_after_return",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_valid_after_return",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_return_after_returning_if",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_return_empty_loop",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_valid_empty_loop",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_assignment",
+      "expected": [],
+      "compile_error": "Incompatible assignment types: INTEGER := SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_binary",
+      "expected": [],
+      "compile_error": "Incompatible operand types: SINGLEF and INTEGER",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_conversion",
+      "expected": [],
+      "compile_error": "TOI requires SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_argument",
+      "expected": [],
+      "compile_error": "Incompatible assignment types: INTEGER := SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_nested_local_integer",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_nested_local_singlef",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_local_assignment",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_after_call_effect",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_cached_context",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "recursive_comptime_change_decrease",
+      "expected": [
+        200
+      ],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "recursive_comptime_change_increase",
+      "expected": [
+        200
+      ],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "recursive_comptime_base_case",
+      "expected": [
+        0,
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "recursive_comptime_indirect_change",
+      "expected": [
+        1,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "discarded_pure_call_preserves_global_index",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_negative_index",
+      "expected": [],
+      "compile_error": "does not exist",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_outside_index",
+      "expected": [],
+      "compile_error": "does not exist",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_call_result_integer",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_call_effect_integer",
+      "expected": [
+        0,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_object_copy_integer",
+      "expected": [
+        0,
+        1,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_object_argument_integer",
+      "expected": [
+        0,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_call_result_singlef",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_call_effect_singlef",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_object_copy_singlef",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_object_argument_singlef",
+      "expected": [],
+      "compile_error": "return type: SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_unrelated_call_write",
+      "expected": [
+        0,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "scope_mangling_example",
+      "expected": [
+        5,
+        4,
+        5,
+        100
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_undeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_redeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "function_undeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "function_redeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "class_undeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "class_redeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "method_undeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "method_redeclared",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "function_as_destination",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_as_function",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "class_as_value",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "variable_as_class",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "member_wrong_use",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "receiver_wrong_use",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "later_function_hidden",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "sibling_local_hidden",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "class_later_hidden",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "method_later_hidden",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "namespaces_same_scope",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "class_and_function_shadowing",
+      "expected": [
+        2,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_123",
+      "expected": [
+        10,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_123",
+      "expected": [
+        347,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_123",
+      "expected": [
+        347,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_132",
+      "expected": [
+        8,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_132",
+      "expected": [
+        345,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_132",
+      "expected": [
+        345,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_213",
+      "expected": [
+        10,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_213",
+      "expected": [
+        347,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_213",
+      "expected": [
+        347,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_231",
+      "expected": [
+        10,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_231",
+      "expected": [
+        345,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_231",
+      "expected": [
+        345,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_312",
+      "expected": [
+        8,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_312",
+      "expected": [
+        343,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_312",
+      "expected": [
+        343,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "argument_order_321",
+      "expected": [
+        8,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "formal_positions_321",
+      "expected": [
+        343,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_formal_positions_321",
+      "expected": [
+        343,
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "arity_short",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "arity_long",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_short",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_long",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_duplicate",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_zero",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_negative",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_too_large",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_float",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "order_missing",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "parameter_copy_and_defaults",
+      "expected": [
+        9,
+        3,
+        2,
+        0,
+        1.5,
+        0.0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "nested_and_recursive_calls",
+      "expected": [
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "returns_in_nested_control",
+      "expected": [
+        9,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_ascending_example",
+      "expected": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_descending_example",
+      "expected": [
+        10,
+        8,
+        6,
+        4,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_equal",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_ascending_overshoot",
+      "expected": [
+        1,
+        4,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_descending_overshoot",
+      "expected": [
+        8,
+        5,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_body_changes_control",
+      "expected": [
+        0,
+        1,
+        4,
+        5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "nested_loops_and_selection",
+      "expected": [
+        2,
+        1,
+        3,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "embedded_assignment_values",
+      "expected": [
+        36,
+        12,
+        12,
+        4,
+        4,
+        4,
+        6,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_update_example",
+      "expected": [
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_selection_example",
+      "expected": [
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_loop_example",
+      "expected": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_parameter_example",
+      "expected": [
+        3,
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_to_runtime_parameter",
+      "expected": [
+        3,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_runtime_assignment_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_unknown_control_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_unknown_argument_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_branch_rejects_equal_writes",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_known_branch_updates",
+      "expected": [
+        5,
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_unknown_branch_reads",
+      "expected": [
+        3,
+        3,
+        4,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_calls_propagate_guard",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_function_local_state",
+      "expected": [
+        5,
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_multiple_specializations",
+      "expected": [
+        4,
+        4,
+        8,
+        8,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_capture_changes",
+      "expected": [
+        4,
+        8
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_nested_capture",
+      "expected": [
+        11,
+        12,
+        11
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_recursive_parameters",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "comptime_loop_keeps_runtime_calls",
+      "expected": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_loop_body_changes_control",
+      "expected": [
+        3,
+        5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_loop_call_changes_control",
+      "expected": [
+        0,
+        1,
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_preserves_embedded_effect",
+      "expected": [
+        3,
+        3,
+        4,
+        4,
+        4,
+        5,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_call_runtime_effect",
+      "expected": [
+        2,
+        5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_float_and_conversion",
+      "expected": [
+        3.75,
+        3
+      ],
+      "compile_error": "fractional information",
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_uninitialized",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_integer_overflow",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_division_by_zero",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_empty_loop_under_guard",
+      "expected": [
+        3,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structural_copy_renamed_fields",
+      "expected": [
+        3,
+        1.5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structural_methods_do_not_count",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structure_count_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "structure_type_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "structure_order_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "structure_code_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "structure_qualified_field_type",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "nested_object_copy",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "positional_constant_and_variable",
+      "expected": [
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "positional_runtime_parameter",
+      "expected": [
+        3,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "position_negative",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "position_outside",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "position_after_declaration_only",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "diamond_identity_and_order",
+      "expected": [
+        4,
+        3,
+        4,
+        5,
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structural_effective_attributes",
+      "expected": [
+        1,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "inherited_implicit_lookup",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "own_method_precedes_bases",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "distinct_inherited_methods_ambiguous",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "distinct_inherited_attributes_ambiguous",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "inheritance_cycle",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "method_receiver_independence",
+      "expected": [
+        3,
+        7,
+        11,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_local_class_lexical_parent",
+      "expected": [
+        5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_method_bindings",
+      "expected": [
+        4,
+        9,
+        4
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_return_header",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "object_return_value",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "object_method_return",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "explicit_conversion_example",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(g)"
+    },
+    {
+      "name": "explicit_conversion_operand",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(g)"
+    },
+    {
+      "name": "mixed_operands_deferred",
+      "expected": [],
+      "compile_error": "Incompatible operand",
+      "runtime_error": null
+    },
+    {
+      "name": "float_assignment_deferred",
+      "expected": [],
+      "compile_error": "Incompatible assignment",
+      "runtime_error": null
+    },
+    {
+      "name": "loop_types_deferred",
+      "expected": [],
+      "compile_error": "FROM control",
+      "runtime_error": null
+    },
+    {
+      "name": "output_literal_disambiguation",
+      "expected": [
+        "BF",
+        "CALL f:main",
+        "3$i",
+        "a:main",
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "independent_error_recovery",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "ordinary_nonterminating_loop_compiles",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "specialization_resource_guard",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "integer_division_consistency",
+      "expected": [
+        3,
+        3,
+        -3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_float_parameters",
+      "expected": [
+        2.75,
+        4.0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_mixed_formals",
+      "expected": [
+        4,
+        5,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_runtime_recursion",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "ordinary_recursion_does_not_specialize",
+      "expected": [],
+      "compile_error": null,
+      "runtime_error": "(i)"
+    },
+    {
+      "name": "comptime_method_lexical_capture",
+      "expected": [
+        5,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_attribute_instances",
+      "expected": [
+        4,
+        8,
+        5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_attribute_dynamic_position",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_index_substitution",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_negative_index",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_runtime_index_invalidates_fields",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_object_copy_refreshes_fields",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "runtime_object_copy_invalidates_fields",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_loop_runtime_branch_join",
+      "expected": [
+        2,
+        2,
+        2,
+        3,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_return_inside_expanded_loop",
+      "expected": [
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "large_parameter_list",
+      "expected": [
+        -79
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "nested_noncommutative_copy",
+      "expected": [
+        33
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "operand_snapshot_before_call",
+      "expected": [
+        3,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_operand_snapshot",
+      "expected": [
+        2,
+        6,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_external_mutation_calls",
+      "expected": [
+        1,
+        2,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_loop_external_mutation_calls",
+      "expected": [
+        1,
+        2,
+        3,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "staged_function_keeps_runtime_global",
+      "expected": [
+        4,
+        10
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_local_does_not_restore_global",
+      "expected": [
+        4,
+        4,
+        2
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_read_only_known_dead_branch",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_runtime_helper_under_guard",
+      "expected": [
+        4,
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "own_attribute_and_base_storage",
+      "expected": [
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "mixed_inherited_layout_and_copy",
+      "expected": [
+        3,
+        1.5,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "mixed_inherited_order_error",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "literal_symbol_category_collision",
+      "expected": [
+        "a:main",
+        "1.5",
+        3,
+        3,
+        1.5
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "multiline_chain_output",
+      "expected": [
+        "firstsecond",
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "parameter_types_deferred",
+      "expected": [],
+      "compile_error": "Incompatible assignment",
+      "runtime_error": null
+    },
+    {
+      "name": "return_types_deferred",
+      "expected": [],
+      "compile_error": "return type",
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_indexed_write_effect",
+      "expected": [
+        7,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_indexed_write_in_loop",
+      "expected": [
+        7,
+        7,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "cached_indexed_write_respects_guard",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "object_copy_propagates_comptime_fields",
+      "expected": [
+        0,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_parameter_comptime_snapshot_1",
+      "expected": [
+        3,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_parameter_comptime_snapshot_2",
+      "expected": [
+        7,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structural_copy_comptime_to_runtime",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "structural_copy_runtime_to_comptime",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_parameter_local_comptime_state",
+      "expected": [
+        7,
+        7,
+        0,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_parameter_qualifier_source",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "object_parameter_qualifier_formal",
+      "expected": [
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "singlef_compiletime_runtime_rounding",
+      "expected": [
+        0.30000001192092896,
+        0.30000001192092896
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "expansion_resource_guard",
+      "expected": [],
+      "compile_error": true,
+      "runtime_error": null
+    },
+    {
+      "name": "from_negative_step_ascending",
+      "expected": [
+        0,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_negative_step_descending",
+      "expected": [
+        2,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "from_zero_step_with_body_progress",
+      "expected": [
+        0,
+        1
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "tp3_templates.txt",
+      "expected": [
+        3,
+        4,
+        7,
+        8,
+        6
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "tp3_comptime_copies.txt",
+      "expected": [
+        10,
+        16,
+        11,
+        16,
+        3,
+        7,
+        14
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "tp3_comptime_specialization.txt",
+      "expected": [
+        3,
+        7,
+        3
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    }
+  ],
+  "node": "v25.8.0",
+  "wabt": "1.0.39"
+}

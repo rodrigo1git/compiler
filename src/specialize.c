@@ -5,6 +5,7 @@
 #include "../include/comptime_objects.h"
 #include "../include/diagnostics.h"
 #include "../include/classes.h"
+#include "../include/types.h"
 
 typedef struct {
     const map_node_t *symbol;
@@ -224,11 +225,22 @@ static operand_t process_condition(context_t *context, control_t control, bool u
     return pop(context, context->input->steps[control.branch].source_line);
 }
 
+static void check_discarded(context_t *context, size_t begin, size_t end) {
+    if (comptime_tp4_enabled() && begin < end)
+        types_check_discarded(context->input, context->function, begin, end,
+                              context->environment, context->receiver);
+}
+
 static void process_if(context_t *context, control_t control, bool unknown_control) {
     int line = context->input->steps[control.branch].source_line;
+    size_t condition_output = context->output->count;
     operand_t condition = process_condition(context, control, unknown_control);
     if (condition.value.known) {
         discard(context, condition, line);
+        if (condition.value.number != 0 && control.has_else)
+            check_discarded(context, control.false_start, control.end);
+        else if (condition.value.number == 0)
+            check_discarded(context, control.branch + 2, control.body_end);
         if (condition.value.number != 0)
             transform_range(context, control.branch + 2, control.body_end, unknown_control, true);
         else if (control.has_else)
@@ -236,6 +248,7 @@ static void process_if(context_t *context, control_t control, bool unknown_contr
         return;
     }
     size_t false_target = rpn_reserve_target(context->output);
+    context->output->steps[false_target - 1].control_start = condition_output + 1;
     emit(context, (rpn_step_t){.kind = RPN_OPERATOR, .value.operator = RPN_BRANCH_FALSE, .source_line = line});
     comptime_environment_t original = comptime_copy_environment(context->environment);
     transform_range(context, control.branch + 2, control.body_end, true, true);
@@ -266,6 +279,7 @@ static void process_loop(context_t *context, control_t control, bool unknown_con
     size_t condition_output = context->output->count;
     operand_t condition = process_condition(context, control, unknown_control);
     if (condition.value.known && condition.value.number == 0) {
+        check_discarded(context, control.branch + 2, control.body_end);
         discard(context, condition, line);
         return;
     }
@@ -289,6 +303,9 @@ static void process_loop(context_t *context, control_t control, bool unknown_con
         return;
     }
     size_t false_target = rpn_reserve_target(context->output);
+    context->output->steps[false_target - 1].control_start = condition_output + 1;
+    context->output->steps[false_target - 1].loop = true;
+    context->output->steps[false_target - 1].loop_variable = context->input->steps[control.branch].loop_variable;
     emit(context, (rpn_step_t){.kind = RPN_OPERATOR, .value.operator = RPN_BRANCH_FALSE, .source_line = line});
     comptime_environment_t original = comptime_copy_environment(context->environment);
     comptime_forget_runtime(context->environment);
@@ -330,6 +347,8 @@ static void assign_comptime(context_t *context, destination_t destination,
     bool forbidden = !argument && (unknown_control || (context->external_unknown && !local));
     if (forbidden)
         report_semantic_error(line, "Cannot modify comptime '%s' under unknown control", symbol->key);
+    else if (value.error)
+        report_semantic_error(line, "%s required by comptime assignment", numeric_error_message(value.error));
     else if (!value.known)
         report_semantic_error(line, "Value for comptime '%s' is not known at compile time", symbol->key);
     else if (symbol->declared_type == NULL ||
@@ -426,16 +445,23 @@ static void process_attribute(context_t *context, rpn_step_t step) {
             report_semantic_error(step.source_line, "Comptime index '%s' has no known value", index->key);
         else step.index = comptime_make_constant(selected, step.source_line);
     }
+    bool runtime_index = comptime_tp4_enabled() && !index->is_comptime && index->usage != SYMBOL_LEXEME;
     map_node_t *attribute = NULL;
+    if (runtime_index && selected.known && (selected.number < 0 ||
+        selected.number >= object->type_symbol->effective_attributes.count)) selected.known = false;
     if (selected.known && !selected.floating) {
         if (selected.number < 0)
             report_semantic_error(step.source_line, "Attribute position %ld does not exist in class '%s'",
                 (long)selected.number, object->type_symbol->key);
         else attribute = class_attribute_at(object->type_symbol, (size_t)selected.number, step.source_line);
     }
-    if (attribute == NULL && !selected.known && class_has_comptime(object->type_symbol))
-        report_semantic_error(step.source_line,
+    if (((attribute == NULL && !selected.known) || runtime_index) && class_has_comptime(object->type_symbol)) {
+        if (comptime_tp4_enabled() && step.kind == RPN_ATTRIBUTE) {
+            comptime_value_t receiver = {.object_type = object->type_symbol, .object = object};
+            step.capture = comptime_capture_object(receiver, context->environment, &serial, step.source_line);
+        } else report_semantic_error(step.source_line,
             "Attribute position must be known when accessing comptime attributes");
+    }
     if (step.kind == RPN_ATTRIBUTE_DESTINATION) {
         operand.destination.symbol = attribute;
         operand.destination.kind = step.kind;
@@ -444,7 +470,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
         push(context, operand);
     } else {
         if (attribute != NULL) operand.value = comptime_get(context->environment, attribute, object);
-        if (attribute != NULL && attribute->is_comptime) {
+        if (attribute != NULL && attribute->is_comptime && !runtime_index) {
             if (!operand.value.known)
                 report_semantic_error(step.source_line, "Comptime attribute '%s' has no known value", attribute->key);
             else {
@@ -473,6 +499,12 @@ static void begin_call(context_t *context, rpn_step_t step) {
     emit(context, step);
 }
 
+static function_instance_t *find_active_instance(const function_template_t *source) {
+    for (function_instance_t *instance = instances; instance; instance = instance->next)
+        if (instance->active && instance->source == source) return instance;
+    return NULL;
+}
+
 static void process_call(context_t *context, rpn_step_t step, bool unknown_control) {
     operand_t operand = {.start = context->output->count, .removable = true};
     pending_call_t *pending = context->pending;
@@ -480,16 +512,18 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
         report_semantic_error(step.source_line, "Cannot resolve intermediate call");
         return;
     }
-    function_instance_t *instance = NULL;
-    if (global_errors == pending->errors)
+    function_instance_t *instance = comptime_tp4_enabled() ? find_active_instance(pending->source) : NULL;
+    if (!instance && global_errors == pending->errors)
         instance = instantiate(pending->source, context->environment,
             &pending->arguments, pending->receiver,
             unknown_control || context->external_unknown, step.source_line);
     if (instance != NULL) {
         context->output->steps[pending->frame_step].value.symbol = instance->symbol;
         step.value.symbol = instance->symbol;
-        operand.value = instance->returned;
-        apply_effects(instance, context->environment, pending->receiver);
+        if (!instance->active) {
+            operand.value = instance->returned;
+            apply_effects(instance, context->environment, pending->receiver);
+        } else forget_call_writes(context->environment, pending->source);
     }
     emit(context, step);
     operand.start = pending->frame_step;
@@ -547,6 +581,7 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
         set_semantic_origin((semantic_origin_t){context->input, pc});
         if ((pc != begin || inspect_first_control) && context->controls[pc] != 0) {
             pc = transform_control(context, pc, context->controls[pc] - 1, unknown_control) - 1;
+            if (context->stopped) check_discarded(context, pc + 1, end);
             continue;
         }
         rpn_step_t step = context->input->steps[pc];
@@ -568,6 +603,9 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
             case RPN_ATTRIBUTE_DESTINATION:
                 process_attribute(context, step);
                 break;
+            case RPN_INDEX_CHECK:
+                emit(context, step);
+                break;
             case RPN_CALL_FRAME:
                 begin_call(context, step);
                 break;
@@ -584,6 +622,7 @@ static void transform_range(context_t *context, size_t begin, size_t end, bool u
                 report_semantic_error(step.source_line, "Unexpected materialized object in a source template");
                 break;
         }
+        if (context->stopped) check_discarded(context, pc + 1, end);
     }
     set_semantic_origin(previous_origin);
 }
@@ -893,3 +932,40 @@ void specialize_destroy(void) {
         templates = next;
     }
 }
+
+comptime_value_t specialize_evaluate_call(const map_node_t *symbol,
+    comptime_environment_t *environment, const comptime_environment_t *arguments,
+    const map_node_t *receiver, int line) {
+    function_template_t *source = find_template(symbol);
+    if (!source || find_active_instance(source)) return (comptime_value_t){0};
+    function_instance_t *instance = instantiate(source, environment, arguments, receiver, false, line);
+    if (!instance) return (comptime_value_t){0};
+    apply_effects(instance, environment, receiver);
+    return instance->returned;
+}
+
+size_t specialize_source_count(void) {
+    size_t count = 0;
+    for (function_template_t *item = templates; item; item = item->next) count++;
+    return count;
+}
+const rpn_t *specialize_source_body(size_t index, map_node_t **symbol) {
+    function_template_t *item = templates;
+    while (item && index--) item = item->next;
+    if (!item) return NULL;
+    *symbol = item->symbol;
+    return item->body;
+}
+size_t specialize_instance_count(void) {
+    size_t count = 0;
+    for (function_instance_t *item = instances; item; item = item->next) count++;
+    return count;
+}
+const rpn_t *specialize_instance_body(size_t index, map_node_t **symbol) {
+    function_instance_t *item = instances;
+    while (item && index--) item = item->next;
+    if (!item) return NULL;
+    *symbol = item->symbol;
+    return &item->body;
+}
+const rpn_t *specialize_main_body(void) { return &main_body; }

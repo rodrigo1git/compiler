@@ -2,7 +2,7 @@
 
 A university project developed at Universidad Nacional del Centro de la Provincia de Buenos Aires (UNICEN), in Tandil, Argentina.
 
-An educational compiler front end written in C for a small imperative language. It demonstrates lexical analysis, parsing, scope checking, compile-time evaluation and intermediate code generation in Reverse Polish Notation (RPN).
+An educational compiler written in C for a small imperative language. It demonstrates lexical analysis, parsing, scope checking, compile-time evaluation and intermediate code generation in Reverse Polish Notation (RPN).
 
 ## Requirements
 
@@ -69,4 +69,27 @@ The script rebuilds the compiler and shows each input, its output and its exit s
 
 ## Project status
 
-The language supports arithmetic, conditionals, loops, functions, methods, inheritance and compile-time variables. This is a work in progress; numeric type compatibility checks and native code generation are still under development.
+The language supports arithmetic, conditionals, loops, functions, methods, inheritance and compile-time variables. This is a work in progress; the explicit `--wasm` mode adds type checking and WebAssembly generation.
+
+
+## TP4: WebAssembly
+
+```bash
+./build.sh
+npm ci --prefix runtime
+./compile_wasm.sh tests/tp3_templates.txt -o /tmp/templates.wat --run
+```
+
+This produces validated WAT/Wasm and runs the actual module with Node (18+).
+The existing default and `--analyze` modes preserve TP3 behavior. Use
+`./compiler --wasm -o output.wat input.txt` to generate WAT alone.
+The browser runner is in `runtime/index.html` and uses the same host imports.
+
+Run the complete regression suites with:
+
+```bash
+./tests/run_all.sh --report /tmp/tp4-report.json
+```
+
+[TP4 design and requirements](docs/TP4.md), [source walkthroughs](docs/FUNCTIONS.md),
+[validation](docs/VALIDATION.md) and [AI attribution](docs/AI.md).

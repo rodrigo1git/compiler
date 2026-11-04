@@ -29,7 +29,7 @@ def compile_file(path, *options):
     return result
 
 
-def parse_output(text):
+def parse_output(text, include_templates=False):
     sequences, symbols, sequence = {}, {}, None
     for line in text.splitlines():
         if line == "--- RPN ---":
@@ -37,7 +37,7 @@ def parse_output(text):
         elif line.startswith("--- FUNCTION "):
             sequence = sequences.setdefault(line[len("--- FUNCTION "):-4], [])
         elif line.startswith("--- TEMPLATE "):
-            sequence = None
+            sequence = sequences.setdefault("TEMPLATE " + line[len("--- TEMPLATE "):-4], []) if include_templates else None
         elif line == "--- SYMBOL TABLE ---":
             sequence = None
         elif line.startswith("Lexeme: "):
@@ -104,6 +104,22 @@ class Evaluator:
         attributes = self.symbols[kind].get("Effective attributes", self.symbols[kind]["Attributes"])[1:-1].split(", ")
         return self.read(object_name, frame), attributes[index]
 
+    def materialize(self, value, capture):
+        metadata = self.symbols[capture]
+        assert metadata["Use"] == "OBJECT_VALUE", capture
+        for binding in metadata.get("Compile-time bindings", "[]")[1:-1].split(", "):
+            if binding:
+                field, constant = binding.split("=", 1)
+                value[field] = int(constant[:-2]) if constant.endswith("$i") else \
+                    struct.unpack("f", struct.pack("f", float(constant.replace("s", "e"))))[0]
+        for binding in metadata.get("Object fields", "[]")[1:-1].split(", "):
+            if binding:
+                field, child = binding.split("=", 1)
+                assert child in self.symbols, child
+                nested = value.setdefault(field, {"__class__": self.symbols[child]["Declared type"]})
+                self.materialize(nested, child)
+        return value
+
     def run(self, name="main", frame=None):
         frame = frame or self.global_frame
         code, stack, pending, pc = self.code[name], [], [], 0
@@ -147,15 +163,8 @@ class Evaluator:
                 else:
                     values[key] = copy.deepcopy(value)
             elif step.startswith("MATERIALIZE "):
-                metadata = self.symbols[step.split(" ", 1)[1]]
-                value = copy.deepcopy(stack.pop())
-                for binding in metadata.get("Compile-time bindings", "[]")[1:-1].split(", "):
-                    if not binding:
-                        continue
-                    field, constant = binding.split("=", 1)
-                    value[field] = int(constant[:-2]) if constant.endswith("$i") else \
-                        struct.unpack("f", struct.pack("f", float(constant.replace("s", "e"))))[0]
-                stack.append(value)
+                capture = step.split(" ", 1)[1]
+                stack.append(self.materialize(copy.deepcopy(stack.pop()), capture))
             elif step in binary:
                 right, left = stack.pop(), stack.pop()
                 result = binary[step](left, right)
@@ -224,6 +233,9 @@ def main():
         "tp3_calls.txt": [10, 8, 19, 7, 7, 8, 10, 7, 9, 0, 2.5, 0.0],
         "tp3_methods.txt": [10, 12, 21, 20, 10, 31, 6, 99, 20, 20, 7],
         "tp3_control.txt": [15, 24, 24, 3, "BF"],
+        "tp3_templates.txt": [3, 4, 7, 8, 6],
+        "tp3_comptime_copies.txt": [10, 16, 11, 16, 3, 7, 14],
+        "tp3_comptime_specialization.txt": [3, 7, 3],
     }.items():
         result = compile_file(ROOT / "tests" / name)
         assert result.returncode == 0, result.stderr

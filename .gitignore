@@ -21,4 +21,9 @@ include_backup/
 
 test_empty.y
 
-docs/
+!docs/
+
+# WebAssembly output and local tooling
+*.wat
+*.wasm
+node_modules/

@@ -6,6 +6,11 @@
 #include "../include/scope.h"
 #include "../include/codegen.h"
 #include <string.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include "../include/comptime_values.h"
+#include "../include/types.h"
+#include "../include/wasm_emit.h"
 #include "../y.tab.h"
 
 FILE *source_file = NULL;
@@ -24,13 +29,18 @@ int main(int argc, char *argv[]) {
 
     bool generate_rpn = true;
     bool trace = false;
+    bool wasm = false;
+    const char *output_path = NULL;
+    char *default_output = NULL;
     const char *input_path = NULL;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--rpn") == 0) generate_rpn = true;
         else if (strcmp(argv[i], "--analyze") == 0) generate_rpn = false;
+        else if (strcmp(argv[i], "--wasm") == 0) wasm = true;
+        else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) output_path = argv[++i];
         else if (strcmp(argv[i], "--trace") == 0) trace = true;
         else if (argv[i][0] == '-' || input_path != NULL) {
-            fprintf(stderr, "Usage: %s [--rpn|--analyze] [--trace] input_file\n", argv[0]);
+            fprintf(stderr, "Usage: %s [--rpn|--analyze] [--wasm [-o output.wat]] [--trace] input_file\n", argv[0]);
             return 1;
         } else input_path = argv[i];
     }
@@ -46,17 +56,43 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    if (output_path) {
+        struct stat input_stat, output_stat;
+        if (stat(input_path, &input_stat) == 0 && stat(output_path, &output_stat) == 0 &&
+            input_stat.st_dev == output_stat.st_dev && input_stat.st_ino == output_stat.st_ino) {
+            fprintf(stderr, "Output path must differ from the source file\n");
+            fclose(source_file);
+            return 1;
+        }
+    }
+    if (output_path && !wasm) {
+        fprintf(stderr, "-o requires --wasm\n");
+        fclose(source_file);
+        return 1;
+    }
     lexer_reset_input();
 
     // Parse
     init_symbol_table();
     codegen_init();
+    comptime_enable_tp4(wasm);
+    codegen_enable_tp4(wasm);
     set_trace_enabled(trace);
     scope_init();
 
     int parse_result = yyparse();
     finish_error_recovery();
+    if (parse_result == 0 && global_errors == 0 && wasm) types_check_sources(codegen_source_body());
     if (parse_result == 0 && global_errors == 0) codegen_finalize();
+    if (parse_result == 0 && global_errors == 0 && wasm) {
+        if (!output_path) {
+            default_output = malloc(strlen(input_path) + 5);
+            if (!default_output) exit(1);
+            sprintf(default_output, "%s.wat", input_path);
+            output_path = default_output;
+        }
+        wasm_write(output_path);
+    }
     map_purge_provisional(symbol_table);
     int success = (parse_result == 0 && global_errors == 0);
     if (success) {
@@ -78,5 +114,6 @@ int main(int argc, char *argv[]) {
     map_free(symbol_table);
     free_lexeme_buffer();
     fclose(source_file);
+    free(default_output);
     return success ? 0 : 1;
 }

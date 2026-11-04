@@ -145,10 +145,13 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
                 result = fprintf(stream, "%zu MATERIALIZE %s\n", i + 1, step->value.symbol->key);
                 break;
             case RPN_ATTRIBUTE:
+            case RPN_INDEX_CHECK:
             case RPN_ATTRIBUTE_DESTINATION:
                 result = fprintf(stream, "%zu %s%s[%s]\n", i + 1,
-                    step->kind == RPN_ATTRIBUTE_DESTINATION ? "DEST " : "",
+                    step->kind == RPN_ATTRIBUTE_DESTINATION ? "DEST " : step->kind == RPN_INDEX_CHECK ? "CHECK_INDEX " : "",
                     step->receiver->key, step->index->key);
+                if (step->capture && result >= 0)
+                    result = fprintf(stream, "  capture: %s\n", step->capture->key);
                 break;
             case RPN_OPERATOR:
                 result = fprintf(stream, "%zu %s\n", i + 1, operator_text(step->value.operator));

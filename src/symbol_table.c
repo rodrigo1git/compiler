@@ -136,7 +136,7 @@ void map_print(hash_map_t* map) {
                   current->usage == SYMBOL_LEXEME)) {
                 static const char *usage_names[] = {
                     "LEXEME", "PROGRAM", "VARIABLE", "PARAMETER", "FUNCTION",
-                    "CLASS", "ATTRIBUTE", "METHOD", "OBJECT_VALUE"
+                    "CLASS", "ATTRIBUTE", "METHOD", "OBJECT_VALUE", "AUXILIARY"
                 };
                 printf("Lexeme: %s | Type: %s", current->key, current->value);
                 if (current->usage != SYMBOL_LEXEME) {

@@ -2,8 +2,10 @@
 #define COMPTIME_VALUES_H
 
 #include "rpn.h"
+#include "numeric.h"
 
 typedef struct {
+    numeric_error_t error;
     bool known;
     double number;
     bool floating;
@@ -23,6 +25,9 @@ typedef struct {
     comptime_binding_t *items;
     size_t count;
 } comptime_environment_t;
+
+void comptime_enable_tp4(bool enabled);
+bool comptime_tp4_enabled(void);
 
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right);
 comptime_value_t comptime_get(const comptime_environment_t *environment, const map_node_t *symbol,

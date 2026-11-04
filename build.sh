@@ -38,6 +38,10 @@ echo "Generating parser..."
 echo "Compiling C source files..."
 gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/main.c \
+    src/types.c \
+    src/numeric.c \
+    src/layout.c \
+    src/wasm_emit.c \
     src/diagnostics.c \
     src/lexer.c \
     src/lexer_actions.c \
