@@ -15,6 +15,9 @@ typedef struct {
 void comptime_objects_init(void);
 void comptime_objects_destroy(void);
 const map_node_t *comptime_object_location(const map_node_t *parent, const map_node_t *field);
+/* Resolve attribute objects against their concrete enclosing receiver.
+   NULL denotes the implicit receiver; ordinary objects retain their identity. */
+const map_node_t *comptime_resolve_object(const map_node_t *object, const map_node_t *receiver);
 const map_node_t *comptime_object_root(const map_node_t *object);
 comptime_value_t comptime_object_field(comptime_value_t object, const map_node_t *field,
                                        const comptime_environment_t *environment);

@@ -5,9 +5,7 @@
 #include "../include/classes.h"
 #include "../include/specialize.h"
 
-static bool tp4_enabled;
 static unsigned int index_serial;
-void codegen_enable_tp4(bool enabled) { tp4_enabled = enabled; index_serial = 0; }
 
 static rpn_t program;
 static rpn_t *current_sequence;
@@ -25,6 +23,7 @@ static codegen_function_t *last_function;
 static codegen_function_t *current_function;
 
 void codegen_init(void) {
+    index_serial = 0;
     specialize_init();
     rpn_init(&program);
     current_sequence = &program;
@@ -274,7 +273,7 @@ void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value) {
         codegen_free(value);
         return;
     }
-    if (tp4_enabled && value && attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime) {
+    if (value && attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime) {
         char name[64];
         snprintf(name, sizeof(name), "@index%u", ++index_serial);
         map_node_t *saved = map_put(symbol_table, name, "ID");

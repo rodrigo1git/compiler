@@ -1,0 +1,231 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [4 0 R 6 0 R 8 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 5732 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(# TP3 course validation) Tj T*
+() Tj T*
+(The course source is `Tp03-2026.pdf` in `/home/rodrigo/facultad/compi`.) Tj T*
+(This validation covers every example and requirement applicable to group 24,) Tj T*
+(plus the confirmed decisions and regression cases for their interactions.) Tj T*
+(References are attached to the executable scenarios in) Tj T*
+(`tests/tp3_course_cases.py`; `tests/verify_tp3_course.py` checks them independently) Tj T*
+(of the compiler's exit-status summary.) Tj T*
+() Tj T*
+(## Coverage by page) Tj T*
+() Tj T*
+(| TP3 source | Applicable requirement or example | Scenario coverage |) Tj T*
+(| --- | --- | --- |) Tj T*
+(| p.1 | Dynamic RPN, executable statements, references, types and uses | All successful scenarios check ) Tj T*
+(sequential addresses, local jump destinations, callable bodies, metadata and absence of residual compile-) Tj T*
+(time operands. `large_parameter_list` exceeds the initial RPN and parameter storage sizes. The original ) Tj T*
+(expression/control cases remain. |) Tj T*
+(| p.2 | Nested/sibling scopes and mangled identifiers | `scope_mangling_example` implements aa/aaa/bb/cc,) Tj T*
+( checks qualified names and observable shadowing. `class_and_function_shadowing` covers distinct types ) Tj T*
+(and declarations in nested scopes. |) Tj T*
+(| p.3 | Undeclared, invisible, redeclared symbols and incorrect uses | Separate cases cover variables, ) Tj T*
+(functions, classes and methods; forward references, sibling visibility, a later method, cross-category ) Tj T*
+(redeclarations, wrong receivers and function-as-destination errors. Both modes must reject with source ) Tj T*
+(locations. |) Tj T*
+(| p.4 | Topic 34 explicit conversions | `explicit_conversion_example` and `explicit_conversion_operand` ) Tj T*
+(evaluate the valid arithmetic forms with TOI. `mixed_operands_deferred` and `float_assignment_deferred` ) Tj T*
+(preserve the two invalid numeric examples as TP4-boundary cases, without inventing an early compatibility) Tj T*
+( pass. |) Tj T*
+(| p.5 | Function/method metadata and independent bodies | Formal lists and types are inspected; unused ) Tj T*
+(ordinary functions must still have code. Nested, recursive and noncommutative calls, default ) Tj T*
+(INTEGER/SINGLEF returns, lexical captures and independent receivers are evaluated. |) Tj T*
+(| p.5 | Invocation counts, copy semantics and types | Short/long argument and order lists fail. Scalar, ) Tj T*
+(object and object-attribute copies are checked for isolation and snapshots before later argument effects.) Tj T*
+( Numeric parameter/return incompatibilities are explicitly compile-only TP4 cases. |) Tj T*
+(| p.6 | Topic 14 ascending and descending examples | `from_ascending_example` outputs 1 through 9; ) Tj T*
+(`from_descending_example` outputs 10, 8, 6, 4, 2. Equal bounds, overshoot, nested loops, control-variable) Tj T*
+( changes in the body and changes through calls are covered. Negative and zero BY examples make progress ) Tj T*
+(through their bodies and verify that no extra sign restriction was introduced. |) Tj T*
+(| p.6 | Required integer loop operands | `loop_types_deferred` checks that the invalid numeric operand ) Tj T*
+(types are preserved for the RPN-to-assembler stage, as directed by p.4. It is not counted as successful ) Tj T*
+(runtime type validation. |) Tj T*
+(| p.7 | Topic 18 embedded identifier/constant assignments | `embedded_assignment_values`, ) Tj T*
+(`operand_snapshot_before_call` and `comptime_preserves_embedded_effect` check assignment values, chains, ) Tj T*
+(evaluation snapshots and retained runtime effects. |) Tj T*
+(| p.7 | Topic 19 examples and evaluation/copy order | The two course results 10 and 8 are checked ) Tj T*
+(directly. All six permutations are also checked with a noncommutative result that distinguishes formal ) Tj T*
+(positions, with ordinary and compile-time formals. Missing, repeated, invalid and out-of-range positions ) Tj T*
+(fail. |) Tj T*
+(| p.8, valid 1 | Incrementing a compile-time variable and using it | `comptime_update_example` records ) Tj T*
+(and substitutes 4$i. |) Tj T*
+(| p.8, valid 2 | Known selection using a compile-time value | `comptime_selection_example` executes the ) Tj T*
+(selected ordinary increment and produces 1. |) Tj T*
+(| p.8, valid 3 | Known compile-time loop | `comptime_loop_example` traverses 3 through 9 and reaches ) Tj T*
+(final value 10, using the group's FROM construct. |) Tj T*
+(| p.8, valid 4 | Compile-time formal with a constant actual | `comptime_parameter_example` prints 3 and ) Tj T*
+(verifies the default INTEGER return. |) Tj T*
+(| p.8, valid 5 | Compile-time actual passed to an ordinary formal | `comptime_to_runtime_parameter` ) Tj T*
+(prints and returns 3 without changing the caller's binding. |) Tj T*
+(| p.8, invalid 1 | Unknown assignment to a compile-time variable | `comptime_runtime_assignment_error` ) Tj T*
+(fails at x := z. |) Tj T*
+(| p.8, invalid 2 | Compile-time modification under unknown control | `comptime_unknown_control_error` ) Tj T*
+(checks the same unknown-condition obligation within FROM. Equal writes in both branches and modifications) Tj T*
+( hidden in calls are additional confirmed-rule regressions. |) Tj T*
+(| p.8, invalid 3 | Unknown actual passed to a compile-time formal | `comptime_unknown_argument_error` ) Tj T*
+(fails at the invocation. |) Tj T*
+(| p.8, combinations | Compile-time state across control and activations | Known/dead branches, runtime ) Tj T*
+(branches, expanded loops, early RET, nested captures, repeated instances, mixed formals, float ) Tj T*
+(evaluation, integer limits, uninitialized values, call effects and resource limits are covered. |) Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (1 / 3) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 4980 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(| p.9 | Topic 24 class codes and structural compatibility | Renamed fields and different methods remain ) Tj T*
+(compatible with matching type/order; count, type, order, qualified class type and code mismatches fail. ) Tj T*
+(Effective inherited schemas are compared. Nested and independent copies, including compile-time ) Tj T*
+(qualifiers, are evaluated. |) Tj T*
+(| p.10 | Topic 29 positional existence and visibility | Constant and variable positions, positions ) Tj T*
+(supplied at runtime, missing/negative positions, wrong receiver use, compile-time indices and fields ) Tj T*
+(declared after the use are checked. |) Tj T*
+(| p.11 | Topic 32 inherited lookup and ambiguity | Explicit and implicit inherited methods, own method ) Tj T*
+(precedence, distinct homonyms, cycles, inherited-first layouts, diamond declaration identity and ) Tj T*
+(compatible effective copies are checked. |) Tj T*
+(| p.12 | Output requirements | Successful output must have main RPN, callable bodies, numbered local ) Tj T*
+(jumps, readable literals and semantic TS metadata without debug traces. Errors require source lines and ) Tj T*
+(suppress partial RPN. Independent recovery diagnostics are checked. |) Tj T*
+() Tj T*
+(## Explicit adaptations and exclusions) Tj T*
+() Tj T*
+(- Generic LONGINT/ULONGINT examples use INTEGER and `$i`, the type assigned to) Tj T*
+(  group 24. Program and identifier names follow the group's lexical rules.) Tj T*
+(- Calls include the mandatory order list of topic 19, even where a generic) Tj T*
+(  example omits it. Missing declarative and executable scaffolding is supplied) Tj T*
+(  so each illustration becomes an independent complete program.) Tj T*
+(- The p.8 generic WHILE examples are adapted to FROM, topic 14. The unknown) Tj T*
+(  control rejection example uses an unknown IF inside FROM to exercise the same) Tj T*
+(  compile-time modification rule. WHILE syntax is not added to this group.) Tj T*
+(- The second valid conversion line on p.4 uses `toul` and describes z as floating,) Tj T*
+(  which is inconsistent with this group's `toi` and the same page's mixed-type) Tj T*
+(  rule. Its adapted test uses `toi\(x\)+b` with INTEGER b. The original spelling is) Tj T*
+(  not silently classified as a valid group-24 input.) Tj T*
+(- Topics 11-13, 17, 20-21, 23, 25-28, 30-31, 33 and 35 belong to other groups.) Tj T*
+(  Their alternative language features are outside this compiler's assignment.) Tj T*
+(  Shared function/copy rules still apply where referenced by the assigned topics.) Tj T*
+(- Simple Reduction is excluded because neither member belongs to the 2011 plan.) Tj T*
+(- Five numeric incompatibility scenarios remain explicit TP4 boundaries. The) Tj T*
+(  suite does not claim that their assembler or eventual runtime behavior has) Tj T*
+(  been implemented or validated.) Tj T*
+() Tj T*
+(## Checks and results) Tj T*
+() Tj T*
+(The original verifier runs 107 checks. The course verifier defines 170 scenarios) Tj T*
+(and compiles each in both modes, giving 340 additional compiler runs:) Tj T*
+() Tj T*
+(- 103 valid scenarios have their RPN evaluated against explicit observable output.) Tj T*
+(- 60 negative scenarios must fail with the required diagnostic and no partial RPN.) Tj T*
+(- Seven scenarios are compile-only: five TP4 boundaries and two intentionally) Tj T*
+(  nonterminating runtime programs that must not be expanded during compilation.) Tj T*
+() Tj T*
+(Successful IR also receives structural and metadata checks. Jump destinations) Tj T*
+(are local and valid, every CALL has a body, declaration identities are unique in) Tj T*
+(effective schemas, formal lists reference parameters, and compile-time reads and) Tj T*
+(ARG stores do not survive as runtime operands. MATERIALIZE snapshots must refer) Tj T*
+(to declared compile-time fields and numeric constants.) Tj T*
+() Tj T*
+(The observable evaluator implements INTEGER division, SINGLEF rounding, lexical) Tj T*
+(parents, pending call frames, object receivers and value copies. It does not) Tj T*
+(execute the compiler's specialization algorithm to obtain its expected values.) Tj T*
+(Output expectations are explicit, or calculated from an independent evaluation) Tj T*
+(of source argument order. No production failure was resolved by changing the) Tj T*
+(expected source behavior to match the compiler's incorrect output.) Tj T*
+() Tj T*
+(The plain-build per-scenario record, including the compiler SHA-256, is in) Tj T*
+([tp3_test_results.json]\(tp3_test_results.json\). The instrumented binary's matching) Tj T*
+(scenario report is in [tp3_test_results_asan.json]\(tp3_test_results_asan.json\).) Tj T*
+(All 340 course runs pass in each report. The original 107 checks also pass on) Tj T*
+(both binaries, for 447 compiler checks per build. Both builds have zero Bison) Tj T*
+(conflicts and compile with warnings treated as errors.) Tj T*
+() Tj T*
+(## Defects found and corrected) Tj T*
+() Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (2 / 3) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 2354 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(1. Cached calls restored unrelated compile-time bindings from their original) Tj T*
+(   environment. Effect replay now updates only actual effects; repeated calls) Tj T*
+(   inside expanded loops no longer roll the caller's counter backward.) Tj T*
+(2. Known nonlocal runtime writes were discarded after a call. Proven final) Tj T*
+(   values are propagated, so a function that sets the FROM control variable to a) Tj T*
+(   known bound does not make the compile-time loop spuriously unknown.) Tj T*
+(3. Indexed writes and whole-object copies involving compile-time fields were) Tj T*
+(   missing from call-effect summaries. Summaries now include them, preserving) Tj T*
+(   updates, driving loop expansion and preventing a cached call from bypassing) Tj T*
+(   the unknown-control rule.) Tj T*
+(4. Object argument copies lost compile-time fields or read them after subsequent) Tj T*
+(   arguments had changed the source. Bindings are captured at the argument copy,) Tj T*
+(   and separate activation environments receive the captured field values.) Tj T*
+(5. A compile-time source field had no runtime value available when copied into) Tj T*
+(   a compatible ordinary field. MATERIALIZE retains a logical object value with) Tj T*
+(   constant-field snapshots in TS metadata, while runtime destinations continue) Tj T*
+(   to omit compile-time storage.) Tj T*
+() Tj T*
+(The tests also exposed limitations in the original oracle: local-class methods) Tj T*
+(needed the correct enclosing lexical frame; integer division and floating-point) Tj T*
+(rounding needed the assigned representations; literal/symbol category collisions) Tj T*
+(needed separate interpretation; and object copies needed the effective schema.) Tj T*
+(Those oracle corrections remain distinct from compiler corrections.) Tj T*
+() Tj T*
+(## Reproduction) Tj T*
+() Tj T*
+(```bash) Tj T*
+(./run_tests.sh) Tj T*
+(python3 tests/verify_tp3_course.py --case comptime_loop) Tj T*
+(python3 tests/verify_tp3_course.py --report docs/tp3_test_results.json) Tj T*
+(```) Tj T*
+() Tj T*
+(Both suites are also run with ASan, UBSan and leak detection. In this environment) Tj T*
+(Clang supplies the installed sanitizer runtime, and LeakSanitizer requires running) Tj T*
+(outside the restricted sandbox to inspect process state.) Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (3 / 3) Tj ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000195 00000 n 
+0000000321 00000 n 
+0000006104 00000 n 
+0000006230 00000 n 
+0000011261 00000 n 
+0000011387 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+13792
+%%EOF

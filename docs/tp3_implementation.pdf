@@ -1,0 +1,216 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [4 0 R 6 0 R 8 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 4752 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(# TP3 implementation and course references) Tj T*
+() Tj T*
+(This document describes the current implementation. The original decisions and) Tj T*
+(completion plan remain in `tp3_decisions.md` and `tp3_completion_plan.md` as design) Tj T*
+(history. The confirmed rules are implemented; the previous pending-clarification) Tj T*
+(messages have been removed. Neither member belongs to the 2011 study plan, so) Tj T*
+(Simple Reduction is not part of this group's requirements.) Tj T*
+() Tj T*
+(## Requirements and implementation) Tj T*
+() Tj T*
+(Course documents are available in `/home/rodrigo/facultad/compi`.) Tj T*
+() Tj T*
+(| Source | Requirement and implementation |) Tj T*
+(| --- | --- |) Tj T*
+(| TP3 pp.1-3; 08.4 slide 11 | Dynamic RPN with stable symbol references, types, uses, lexical scopes and ) Tj T*
+(declaration-order lookup. Existing scope guards also restore discarded definitions. |) Tj T*
+(| TP3 p.5 | Independent executable function and method bodies, ordered formal parameter metadata, copy ) Tj T*
+(semantics, primitive RET and default zero of the declared primitive type. |) Tj T*
+(| TP2 p.4; TP3 p.7 | Mandatory evaluation order, matching counts and argument-to-formal association. ) Tj T*
+(Argument fragments are copied in the requested order using separate pending frames. |) Tj T*
+(| TP2 p.7; TP3 pp.10-11 | Positional member access, existence, visibility and inherited lookup. Effective) Tj T*
+( attributes are used consistently for access, copies and structural comparison. |) Tj T*
+(| TP3 p.9 | Class codes are retained; equal-code classes are checked when complete. Copies between ) Tj T*
+(distinct classes require matching codes. |) Tj T*
+(| TP3 p.8; 08.3 slides 31-33 | Compile-time values and semantic attributes. A post-parse pass evaluates ) Tj T*
+(known state and replaces compile-time reads with constants. |) Tj T*
+(| TP3 p.6 | FROM retains strict comparisons and updates the control variable's current value after the ) Tj T*
+(body. Compile-time-dependent loops process those updates on each expanded iteration. |) Tj T*
+(| TP3 p.4; 08.3 slide 66 | General runtime numeric compatibility remains in the later RPN-to-assembler ) Tj T*
+(translation. Evaluating a compile-time binding requires a representable value of its declared type. |) Tj T*
+(| 08.3 slide 78 | Explicit TOI remains in RPN; the compile-time evaluator can evaluate it when its ) Tj T*
+(operand is known. |) Tj T*
+(| TP3 p.12 | Successful output contains numbered, readable RPN and TS metadata; diagnostics include ) Tj T*
+(source lines. Debug traces are opt-in. |) Tj T*
+() Tj T*
+(The following specific rules were confirmed by the user to complete details) Tj T*
+(not stated explicitly by the course: rejecting compile-time modifications under) Tj T*
+(unknown control; structural equality by attribute type and order; inherited) Tj T*
+(attributes before own attributes; declaration identity in diamonds; each argument) Tj T*
+(position appearing once; and excluding object returns. They are not presented as) Tj T*
+(literal statements from the slides.) Tj T*
+() Tj T*
+(## Class schemas) Tj T*
+() Tj T*
+(Own declarations remain separate from effective attributes. Bases are traversed) Tj T*
+(in source order, recursively placing their inherited attributes first; own) Tj T*
+(attributes follow. This traversal order is an explicit representation convention.) Tj T*
+(It never grants first-base priority when distinct inherited declarations conflict.) Tj T*
+() Tj T*
+(The same declaration reached through multiple paths is included once. Distinct) Tj T*
+(homonymous inherited declarations remain subject to topic 32 ambiguity checks.) Tj T*
+(Cycles produce diagnostics instead of leaving a traversal running indefinitely.) Tj T*
+(Member lookup also works from within derived methods, following lexical lookup) Tj T*
+(and the inherited member rules.) Tj T*
+() Tj T*
+(Classes with the same code must have the same number of effective attributes and) Tj T*
+(the same declared type at each position. Attribute names and method signatures do) Tj T*
+(not participate. Class-valued attribute types retain their qualified symbol) Tj T*
+(identity. Copies are abstract value copies between corresponding effective) Tj T*
+(positions; the backend must not copy by attribute name or alias object storage.) Tj T*
+() Tj T*
+(Known integer positions are checked statically. Unknown positions remain symbol) Tj T*
+(references with their receiver and class schema for TP4. A determinable position) Tj T*
+(is required when it may select compile-time storage.) Tj T*
+() Tj T*
+(## Compile-time processing) Tj T*
+() Tj T*
+(Parsing retains expression fragments, complete function bodies and structured) Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (1 / 3) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 5017 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(control boundaries in dynamic RPN. Symbol references are resolved at their source) Tj T*
+(occurrence, before this later pass, preserving declaration-order visibility.) Tj T*
+() Tj T*
+(`specialize.c` processes these bodies with an environment per activation. It) Tj T*
+(tracks known numeric values, runtime writes and pending argument copies. It does) Tj T*
+(not mutate a global compile-time environment merely by parsing a function body.) Tj T*
+() Tj T*
+(Compile-time assignments update the environment and compile-time reads become) Tj T*
+(constant references. Pure removed computations are discarded. If a removed) Tj T*
+(assignment encloses runtime effects, those effects remain and DROP consumes the) Tj T*
+(unused value. No runtime storage assignment for a compile-time symbol survives) Tj T*
+(successful specialization. The final TS records main compile-time values and) Tj T*
+(function-instance local compile-time bindings.) Tj T*
+() Tj T*
+(Known selections process their selected path for compile-time effects. Unknown) Tj T*
+(selections retain branches and reject compile-time modifications at the responsible) Tj T*
+(assignment, even if both branches would write the same value. Runtime knowledge) Tj T*
+(is joined conservatively across branches. Syntax and name checks still cover the) Tj T*
+(source as it is parsed, including paths later eliminated by specialization.) Tj T*
+() Tj T*
+(FROM loops with compile-time modifications are expanded while control is known.) Tj T*
+(The body and its update are processed each iteration, so body changes to the) Tj T*
+(control variable are respected. Other loops retain BF/BI. Calls invalidate the) Tj T*
+(runtime values they may modify rather than treating unrelated state as changed.) Tj T*
+(Unknown control cannot hide a compile-time modification inside a called function. Effect summaries ) Tj T*
+(include indexed writes and whole-object copies involving compile-time attributes. Cached calls replay ) Tj T*
+(only their actual effects instead of restoring unrelated captured state; known runtime writes are ) Tj T*
+(propagated when the body proves their values.) Tj T*
+() Tj T*
+(Source functions requiring compile-time parameters or captured compile-time state) Tj T*
+(are templates in the TS. Concrete instances receive `$ctN` labels linked to their) Tj T*
+(source function. Bindings and activation state remain separate between instances.) Tj T*
+(An uninvoked context-dependent template does not require a concrete executable) Tj T*
+(instance; its body is retained during compilation. Ordinary declared functions) Tj T*
+(are emitted even when uncalled. Recursive ordinary calls reuse an in-progress) Tj T*
+(instance instead of being expanded during compilation.) Tj T*
+() Tj T*
+(POUT and ordinary stores remain runtime effects. No output operation is executed) Tj T*
+(by the compiler. General runtime numeric type checking is not performed by this) Tj T*
+(pass. Numeric values materialized for compile-time bindings use the language's) Tj T*
+(INTEGER/SINGLEF representations, with explicit TOI when needed.) Tj T*
+() Tj T*
+(Expansion has a 100,000-iteration budget and specialization a depth limit of 128.) Tj T*
+(Exceeding these reports an evaluation resource limit and suppresses output. These) Tj T*
+(are compiler resource limits, not language rules requiring BY to be positive or) Tj T*
+(requiring ordinary runtime recursion to terminate at compile time.) Tj T*
+() Tj T*
+(## Calls and returns) Tj T*
+() Tj T*
+(FRAME prepares a pending activation. Argument expressions are evaluated in the) Tj T*
+(caller and ordinary ARG destinations receive copies in the specified order.) Tj T*
+(Compile-time formals are bound in the specialization environment instead. CALL) Tj T*
+(selects the prepared executable instance and leaves its result as an operand.) Tj T*
+(Nested calls cannot overwrite a different pending activation's parameters.) Tj T*
+(Object arguments also snapshot their compile-time attributes at the ARG copy,) Tj T*
+(not after the remaining arguments have run. MATERIALIZE overlays the constants) Tj T*
+(of that logical value onto its runtime fields; its OBJECT_VALUE TS record retains) Tj T*
+(the original field declarations and constants. This preserves copies between) Tj T*
+(compatible classes even when corresponding attributes have different compile-time) Tj T*
+(qualifiers. Destination compile-time fields are bound in the compile-time) Tj T*
+(environment and are not allocated or assigned by the runtime copy.) Tj T*
+() Tj T*
+(Methods retain their receiver through FRAME/CALL. Unqualified method invocations) Tj T*
+(inherit the active receiver. An inherited method's implicit attribute access and) Tj T*
+(its receiver's positional access refer to the same declaration and object state.) Tj T*
+() Tj T*
+(Return headers must name INTEGER or SINGLEF. Object-valued return expressions) Tj T*
+(are rejected. This restriction does not remove class-valued parameters, object) Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (2 / 3) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 1340 >>
+stream
+BT /F1 8 Tf 36 756 Td 10 TL
+(variables, attributes or structural assignments. Numeric return compatibility) Tj T*
+(continues to belong to TP4.) Tj T*
+() Tj T*
+(## Verification) Tj T*
+() Tj T*
+(The current suite includes 107 original checks and 170 course scenarios, each) Tj T*
+(compiled in RPN and analysis modes. Of the new scenarios, 103 are evaluated for) Tj T*
+(observable output, 60 must reject the input, and seven are compile-only. Five) Tj T*
+(compile-only scenarios explicitly exercise numeric checks deferred to TP4; two) Tj T*
+(contain deliberately nonterminating runtime code and must still compile.) Tj T*
+() Tj T*
+(`./run_tests.sh` builds with `-Wall -Wextra -Werror`, requires zero Bison conflicts,) Tj T*
+(and runs both verifiers. The same suites also run under ASan/UBSan with leak) Tj T*
+(detection. See [tp3_validation.md]\(tp3_validation.md\) for references, adaptations,) Tj T*
+(the defects exposed by these tests, and reproducible commands.) Tj T*
+() Tj T*
+(`--analyze` runs semantic processing and specialization but suppresses RPN output.) Tj T*
+(`--trace` enables debug output. Neither mode bypasses confirmed language rules.) Tj T*
+(The generated RPN is still an intermediate representation; assembler generation) Tj T*
+(and general runtime numeric checks remain TP4.) Tj T*
+ET
+BT /F1 8 Tf 36 28 Td (3 / 3) Tj ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000195 00000 n 
+0000000321 00000 n 
+0000005124 00000 n 
+0000005250 00000 n 
+0000010318 00000 n 
+0000010444 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+11835
+%%EOF

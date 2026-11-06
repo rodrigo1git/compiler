@@ -4,6 +4,9 @@
 #include "comptime_values.h"
 
 bool specialize_has_comptime_effects(const rpn_t *input, size_t begin, size_t end);
+/* Inspect a runtime-loop body on private state, without emitting code or diagnostics. */
+bool specialize_requires_iteration(const rpn_t *input, size_t begin, size_t end,
+    const comptime_environment_t *environment, const map_node_t *receiver);
 
 void specialize_init(void);
 void specialize_register(map_node_t *symbol, const rpn_t *body);

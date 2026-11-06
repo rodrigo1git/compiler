@@ -1,0 +1,3080 @@
+{
+  "generated_at": "2026-10-23T20:27:28.156744+00:00",
+  "compiler_sha256": "32fbe7860afc628c4448b831baf1872fd2766b965210a8955236ac5a8bc68604",
+  "cases": 170,
+  "compiler_runs": 340,
+  "passed": 340,
+  "failed": 0,
+  "results": [
+    {
+      "case": "scope_mangling_example",
+      "reference": "TP3 p.2",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0026
+    },
+    {
+      "case": "scope_mangling_example",
+      "reference": "TP3 p.2",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0016
+    },
+    {
+      "case": "variable_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "variable_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0016
+    },
+    {
+      "case": "variable_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0018
+    },
+    {
+      "case": "variable_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0018
+    },
+    {
+      "case": "function_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "function_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "function_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "function_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "class_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "class_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "class_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "class_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "method_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0015
+    },
+    {
+      "case": "method_undeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "method_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "method_redeclared",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "function_as_destination",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0015
+    },
+    {
+      "case": "function_as_destination",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "variable_as_function",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "variable_as_function",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0015
+    },
+    {
+      "case": "class_as_value",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "class_as_value",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "variable_as_class",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "variable_as_class",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "member_wrong_use",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0016
+    },
+    {
+      "case": "member_wrong_use",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0018
+    },
+    {
+      "case": "receiver_wrong_use",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0016
+    },
+    {
+      "case": "receiver_wrong_use",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "later_function_hidden",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "later_function_hidden",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "sibling_local_hidden",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "sibling_local_hidden",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "class_later_hidden",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "class_later_hidden",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "method_later_hidden",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "method_later_hidden",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "namespaces_same_scope",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0014
+    },
+    {
+      "case": "namespaces_same_scope",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "class_and_function_shadowing",
+      "reference": "TP3 p.3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.002
+    },
+    {
+      "case": "class_and_function_shadowing",
+      "reference": "TP3 p.3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0031
+    },
+    {
+      "case": "argument_order_123",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0115
+    },
+    {
+      "case": "argument_order_123",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "formal_positions_123",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "formal_positions_123",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0063
+    },
+    {
+      "case": "comptime_formal_positions_123",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0062
+    },
+    {
+      "case": "comptime_formal_positions_123",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "argument_order_132",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0062
+    },
+    {
+      "case": "argument_order_132",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "formal_positions_132",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0091
+    },
+    {
+      "case": "formal_positions_132",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "comptime_formal_positions_132",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0053
+    },
+    {
+      "case": "comptime_formal_positions_132",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "argument_order_213",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.007
+    },
+    {
+      "case": "argument_order_213",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "formal_positions_213",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.007
+    },
+    {
+      "case": "formal_positions_213",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "comptime_formal_positions_213",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0065
+    },
+    {
+      "case": "comptime_formal_positions_213",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "argument_order_231",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0058
+    },
+    {
+      "case": "argument_order_231",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "formal_positions_231",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "formal_positions_231",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_formal_positions_231",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0061
+    },
+    {
+      "case": "comptime_formal_positions_231",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "argument_order_312",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "argument_order_312",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "formal_positions_312",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0069
+    },
+    {
+      "case": "formal_positions_312",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0099
+    },
+    {
+      "case": "comptime_formal_positions_312",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0075
+    },
+    {
+      "case": "comptime_formal_positions_312",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "argument_order_321",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "argument_order_321",
+      "reference": "TP3 p.7, topic 19",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "formal_positions_321",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0071
+    },
+    {
+      "case": "formal_positions_321",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_formal_positions_321",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "comptime_formal_positions_321",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0058
+    },
+    {
+      "case": "arity_short",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "arity_short",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "arity_long",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "arity_long",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "order_short",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "order_short",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "order_long",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "order_long",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "order_duplicate",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "order_duplicate",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "order_zero",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "order_zero",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "order_negative",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "order_negative",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "order_too_large",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "order_too_large",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "order_float",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "order_float",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "order_missing",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "order_missing",
+      "reference": "TP3 pp.5,7; confirmed permutation rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "parameter_copy_and_defaults",
+      "reference": "TP3 p.5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0092
+    },
+    {
+      "case": "parameter_copy_and_defaults",
+      "reference": "TP3 p.5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "nested_and_recursive_calls",
+      "reference": "TP3 p.5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0142
+    },
+    {
+      "case": "nested_and_recursive_calls",
+      "reference": "TP3 p.5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "returns_in_nested_control",
+      "reference": "TP3 pp.5-6",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0072
+    },
+    {
+      "case": "returns_in_nested_control",
+      "reference": "TP3 pp.5-6",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "from_ascending_example",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0075
+    },
+    {
+      "case": "from_ascending_example",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "from_descending_example",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "from_descending_example",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "from_equal",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "from_equal",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "from_ascending_overshoot",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.005
+    },
+    {
+      "case": "from_ascending_overshoot",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "from_descending_overshoot",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0076
+    },
+    {
+      "case": "from_descending_overshoot",
+      "reference": "TP3 p.6, topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "from_body_changes_control",
+      "reference": "TP3 p.6",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0071
+    },
+    {
+      "case": "from_body_changes_control",
+      "reference": "TP3 p.6",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0096
+    },
+    {
+      "case": "nested_loops_and_selection",
+      "reference": "TP3 pp.1,6",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.009
+    },
+    {
+      "case": "nested_loops_and_selection",
+      "reference": "TP3 pp.1,6",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "embedded_assignment_values",
+      "reference": "TP3 p.7, topic 18",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0062
+    },
+    {
+      "case": "embedded_assignment_values",
+      "reference": "TP3 p.7, topic 18",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "comptime_update_example",
+      "reference": "TP3 p.8, valid example 1",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0049
+    },
+    {
+      "case": "comptime_update_example",
+      "reference": "TP3 p.8, valid example 1",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "comptime_selection_example",
+      "reference": "TP3 p.8, valid example 2",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0049
+    },
+    {
+      "case": "comptime_selection_example",
+      "reference": "TP3 p.8, valid example 2",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "comptime_loop_example",
+      "reference": "TP3 p.8, valid example 3 adapted to topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0065
+    },
+    {
+      "case": "comptime_loop_example",
+      "reference": "TP3 p.8, valid example 3 adapted to topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "comptime_parameter_example",
+      "reference": "TP3 p.8, valid example 4",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "comptime_parameter_example",
+      "reference": "TP3 p.8, valid example 4",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0104
+    },
+    {
+      "case": "comptime_to_runtime_parameter",
+      "reference": "TP3 p.8, valid example 5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0055
+    },
+    {
+      "case": "comptime_to_runtime_parameter",
+      "reference": "TP3 p.8, valid example 5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "comptime_runtime_assignment_error",
+      "reference": "TP3 p.8, invalid example 1",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_runtime_assignment_error",
+      "reference": "TP3 p.8, invalid example 1",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "comptime_unknown_control_error",
+      "reference": "TP3 p.8, invalid example 2 adapted to topic 14",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_unknown_control_error",
+      "reference": "TP3 p.8, invalid example 2 adapted to topic 14",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "comptime_unknown_argument_error",
+      "reference": "TP3 p.8, invalid example 3",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "comptime_unknown_argument_error",
+      "reference": "TP3 p.8, invalid example 3",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_branch_rejects_equal_writes",
+      "reference": "Confirmed unknown-control rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "comptime_branch_rejects_equal_writes",
+      "reference": "Confirmed unknown-control rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "comptime_known_branch_updates",
+      "reference": "TP3 p.8; confirmed control rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0058
+    },
+    {
+      "case": "comptime_known_branch_updates",
+      "reference": "TP3 p.8; confirmed control rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_unknown_branch_reads",
+      "reference": "TP3 p.8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "comptime_unknown_branch_reads",
+      "reference": "TP3 p.8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "comptime_calls_propagate_guard",
+      "reference": "TP3 p.8; confirmed control rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "comptime_calls_propagate_guard",
+      "reference": "TP3 p.8; confirmed control rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_function_local_state",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "comptime_function_local_state",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "comptime_multiple_specializations",
+      "reference": "TP3 p.8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.005
+    },
+    {
+      "case": "comptime_multiple_specializations",
+      "reference": "TP3 p.8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_capture_changes",
+      "reference": "TP3 pp.3,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "comptime_capture_changes",
+      "reference": "TP3 pp.3,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "comptime_nested_capture",
+      "reference": "TP3 pp.2,5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0071
+    },
+    {
+      "case": "comptime_nested_capture",
+      "reference": "TP3 pp.2,5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "comptime_recursive_parameters",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "comptime_recursive_parameters",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_loop_keeps_runtime_calls",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0067
+    },
+    {
+      "case": "comptime_loop_keeps_runtime_calls",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_loop_body_changes_control",
+      "reference": "TP3 pp.6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_loop_body_changes_control",
+      "reference": "TP3 pp.6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "comptime_loop_call_changes_control",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "comptime_loop_call_changes_control",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0077
+    },
+    {
+      "case": "comptime_preserves_embedded_effect",
+      "reference": "TP3 pp.7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0081
+    },
+    {
+      "case": "comptime_preserves_embedded_effect",
+      "reference": "TP3 pp.7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "comptime_call_runtime_effect",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "comptime_call_runtime_effect",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_float_and_conversion",
+      "reference": "TP3 pp.4,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "comptime_float_and_conversion",
+      "reference": "TP3 pp.4,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "comptime_uninitialized",
+      "reference": "TP3 p.8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_uninitialized",
+      "reference": "TP3 p.8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "comptime_integer_overflow",
+      "reference": "TP3 p.8; topic 3 range",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_integer_overflow",
+      "reference": "TP3 p.8; topic 3 range",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "comptime_division_by_zero",
+      "reference": "TP3 p.8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "comptime_division_by_zero",
+      "reference": "TP3 p.8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_empty_loop_under_guard",
+      "reference": "TP3 pp.6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0053
+    },
+    {
+      "case": "comptime_empty_loop_under_guard",
+      "reference": "TP3 pp.6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "structural_copy_renamed_fields",
+      "reference": "TP3 p.9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "structural_copy_renamed_fields",
+      "reference": "TP3 p.9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "structural_methods_do_not_count",
+      "reference": "TP3 p.9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "structural_methods_do_not_count",
+      "reference": "TP3 p.9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "structure_count_error",
+      "reference": "TP3 p.9",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "structure_count_error",
+      "reference": "TP3 p.9",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0034
+    },
+    {
+      "case": "structure_type_error",
+      "reference": "TP3 p.9",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0034
+    },
+    {
+      "case": "structure_type_error",
+      "reference": "TP3 p.9",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0032
+    },
+    {
+      "case": "structure_order_error",
+      "reference": "TP3 p.9; confirmed rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0032
+    },
+    {
+      "case": "structure_order_error",
+      "reference": "TP3 p.9; confirmed rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0056
+    },
+    {
+      "case": "structure_code_error",
+      "reference": "TP3 p.9",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "structure_code_error",
+      "reference": "TP3 p.9",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "structure_qualified_field_type",
+      "reference": "TP3 pp.3,9; confirmed rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "structure_qualified_field_type",
+      "reference": "TP3 pp.3,9; confirmed rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "nested_object_copy",
+      "reference": "TP3 pp.5,9",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0059
+    },
+    {
+      "case": "nested_object_copy",
+      "reference": "TP3 pp.5,9",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "positional_constant_and_variable",
+      "reference": "TP3 p.10; TP2 p.7",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0053
+    },
+    {
+      "case": "positional_constant_and_variable",
+      "reference": "TP3 p.10; TP2 p.7",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "positional_runtime_parameter",
+      "reference": "TP3 p.10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0062
+    },
+    {
+      "case": "positional_runtime_parameter",
+      "reference": "TP3 p.10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0069
+    },
+    {
+      "case": "position_negative",
+      "reference": "TP3 p.10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0097
+    },
+    {
+      "case": "position_negative",
+      "reference": "TP3 p.10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "position_outside",
+      "reference": "TP3 p.10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "position_outside",
+      "reference": "TP3 p.10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "position_after_declaration_only",
+      "reference": "TP3 pp.3,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "position_after_declaration_only",
+      "reference": "TP3 pp.3,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0072
+    },
+    {
+      "case": "diamond_identity_and_order",
+      "reference": "TP3 pp.10-11; confirmed inheritance rules",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0064
+    },
+    {
+      "case": "diamond_identity_and_order",
+      "reference": "TP3 pp.10-11; confirmed inheritance rules",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "structural_effective_attributes",
+      "reference": "TP3 pp.9-11; confirmed inheritance rules",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "structural_effective_attributes",
+      "reference": "TP3 pp.9-11; confirmed inheritance rules",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "inherited_implicit_lookup",
+      "reference": "TP3 p.11",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0055
+    },
+    {
+      "case": "inherited_implicit_lookup",
+      "reference": "TP3 p.11",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0053
+    },
+    {
+      "case": "own_method_precedes_bases",
+      "reference": "TP3 p.11",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0085
+    },
+    {
+      "case": "own_method_precedes_bases",
+      "reference": "TP3 p.11",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0049
+    },
+    {
+      "case": "distinct_inherited_methods_ambiguous",
+      "reference": "TP3 p.11",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "distinct_inherited_methods_ambiguous",
+      "reference": "TP3 p.11",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "distinct_inherited_attributes_ambiguous",
+      "reference": "TP3 pp.10-11",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "distinct_inherited_attributes_ambiguous",
+      "reference": "TP3 pp.10-11",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "inheritance_cycle",
+      "reference": "TP3 p.11; finite schema requirement",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "inheritance_cycle",
+      "reference": "TP3 p.11; finite schema requirement",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "method_receiver_independence",
+      "reference": "TP3 p.5; topic 29",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0062
+    },
+    {
+      "case": "method_receiver_independence",
+      "reference": "TP3 p.5; topic 29",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "method_local_class_lexical_parent",
+      "reference": "TP3 pp.2-3,5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "method_local_class_lexical_parent",
+      "reference": "TP3 pp.2-3,5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "comptime_method_bindings",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "comptime_method_bindings",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "object_return_header",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "object_return_header",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "object_return_value",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "object_return_value",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "object_method_return",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "object_method_return",
+      "reference": "Confirmed primitive return rule; TP2 p.1",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.007
+    },
+    {
+      "case": "explicit_conversion_example",
+      "reference": "TP3 p.4, topic 34",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0078
+    },
+    {
+      "case": "explicit_conversion_example",
+      "reference": "TP3 p.4, topic 34",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "explicit_conversion_operand",
+      "reference": "TP3 p.4, topic 34 adapted to INTEGER",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0072
+    },
+    {
+      "case": "explicit_conversion_operand",
+      "reference": "TP3 p.4, topic 34 adapted to INTEGER",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "mixed_operands_deferred",
+      "reference": "TP3 p.4, invalid numeric examples deferred to TP4",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric compatibility",
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "mixed_operands_deferred",
+      "reference": "TP3 p.4, invalid numeric examples deferred to TP4",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric compatibility",
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "float_assignment_deferred",
+      "reference": "TP3 p.4, invalid numeric examples deferred to TP4",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric compatibility",
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "float_assignment_deferred",
+      "reference": "TP3 p.4, invalid numeric examples deferred to TP4",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric compatibility",
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "loop_types_deferred",
+      "reference": "TP3 pp.4,6, numeric checks deferred for RPN",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 loop operand types",
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "loop_types_deferred",
+      "reference": "TP3 pp.4,6, numeric checks deferred for RPN",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 loop operand types",
+      "elapsed_seconds": 0.0032
+    },
+    {
+      "case": "output_literal_disambiguation",
+      "reference": "TP3 pp.1,12",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "output_literal_disambiguation",
+      "reference": "TP3 pp.1,12",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "independent_error_recovery",
+      "reference": "TP3 p.12",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "independent_error_recovery",
+      "reference": "TP3 p.12",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "ordinary_nonterminating_loop_compiles",
+      "reference": "TP3 p.6; runtime/compile-time boundary",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "ordinary_nonterminating_loop_compiles",
+      "reference": "TP3 p.6; runtime/compile-time boundary",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "specialization_resource_guard",
+      "reference": "Documented implementation resource limit",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0167
+    },
+    {
+      "case": "specialization_resource_guard",
+      "reference": "Documented implementation resource limit",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0111
+    },
+    {
+      "case": "integer_division_consistency",
+      "reference": "TP3 pp.1,8; INTEGER representation",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "integer_division_consistency",
+      "reference": "TP3 pp.1,8; INTEGER representation",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_float_parameters",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "comptime_float_parameters",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_mixed_formals",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0055
+    },
+    {
+      "case": "comptime_mixed_formals",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.005
+    },
+    {
+      "case": "comptime_runtime_recursion",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "comptime_runtime_recursion",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "case": "ordinary_recursion_does_not_specialize",
+      "reference": "TP3 p.5; runtime boundary",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "ordinary_recursion_does_not_specialize",
+      "reference": "TP3 p.5; runtime boundary",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "comptime_method_lexical_capture",
+      "reference": "TP3 pp.2-3,5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0122
+    },
+    {
+      "case": "comptime_method_lexical_capture",
+      "reference": "TP3 pp.2-3,5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "comptime_attribute_instances",
+      "reference": "TP3 pp.8,10; instance isolation",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0055
+    },
+    {
+      "case": "comptime_attribute_instances",
+      "reference": "TP3 pp.8,10; instance isolation",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "comptime_attribute_dynamic_position",
+      "reference": "TP3 pp.8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "comptime_attribute_dynamic_position",
+      "reference": "TP3 pp.8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "comptime_index_substitution",
+      "reference": "TP3 pp.8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_index_substitution",
+      "reference": "TP3 pp.8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "comptime_negative_index",
+      "reference": "TP3 pp.8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "comptime_negative_index",
+      "reference": "TP3 pp.8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "comptime_runtime_index_invalidates_fields",
+      "reference": "TP3 pp.8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "comptime_runtime_index_invalidates_fields",
+      "reference": "TP3 pp.8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0061
+    },
+    {
+      "case": "comptime_object_copy_refreshes_fields",
+      "reference": "TP3 pp.8-10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0056
+    },
+    {
+      "case": "comptime_object_copy_refreshes_fields",
+      "reference": "TP3 pp.8-10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "runtime_object_copy_invalidates_fields",
+      "reference": "TP3 pp.5,8-10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0034
+    },
+    {
+      "case": "runtime_object_copy_invalidates_fields",
+      "reference": "TP3 pp.5,8-10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_loop_runtime_branch_join",
+      "reference": "TP3 pp.6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0061
+    },
+    {
+      "case": "comptime_loop_runtime_branch_join",
+      "reference": "TP3 pp.6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "comptime_return_inside_expanded_loop",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "comptime_return_inside_expanded_loop",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "large_parameter_list",
+      "reference": "TP3 pp.1,5,7; dynamic storage",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0333
+    },
+    {
+      "case": "large_parameter_list",
+      "reference": "TP3 pp.1,5,7; dynamic storage",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0084
+    },
+    {
+      "case": "nested_noncommutative_copy",
+      "reference": "TP3 pp.5,7",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.005
+    },
+    {
+      "case": "nested_noncommutative_copy",
+      "reference": "TP3 pp.5,7",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "operand_snapshot_before_call",
+      "reference": "TP3 pp.5,7",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0141
+    },
+    {
+      "case": "operand_snapshot_before_call",
+      "reference": "TP3 pp.5,7",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.007
+    },
+    {
+      "case": "comptime_operand_snapshot",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0071
+    },
+    {
+      "case": "comptime_operand_snapshot",
+      "reference": "TP3 pp.5,7-8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "comptime_external_mutation_calls",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0049
+    },
+    {
+      "case": "comptime_external_mutation_calls",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0055
+    },
+    {
+      "case": "comptime_loop_external_mutation_calls",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0057
+    },
+    {
+      "case": "comptime_loop_external_mutation_calls",
+      "reference": "TP3 pp.5-6,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "staged_function_keeps_runtime_global",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0053
+    },
+    {
+      "case": "staged_function_keeps_runtime_global",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "comptime_local_does_not_restore_global",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "comptime_local_does_not_restore_global",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0036
+    },
+    {
+      "case": "comptime_read_only_known_dead_branch",
+      "reference": "TP3 p.8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "comptime_read_only_known_dead_branch",
+      "reference": "TP3 p.8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0035
+    },
+    {
+      "case": "comptime_runtime_helper_under_guard",
+      "reference": "TP3 pp.5,8",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.005
+    },
+    {
+      "case": "comptime_runtime_helper_under_guard",
+      "reference": "TP3 pp.5,8",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "own_attribute_and_base_storage",
+      "reference": "TP3 pp.10-11; confirmed effective layout",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0059
+    },
+    {
+      "case": "own_attribute_and_base_storage",
+      "reference": "TP3 pp.10-11; confirmed effective layout",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.004
+    },
+    {
+      "case": "mixed_inherited_layout_and_copy",
+      "reference": "TP3 pp.9-11; confirmed base order",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0052
+    },
+    {
+      "case": "mixed_inherited_layout_and_copy",
+      "reference": "TP3 pp.9-11; confirmed base order",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0042
+    },
+    {
+      "case": "mixed_inherited_order_error",
+      "reference": "TP3 pp.9-11; confirmed base order",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "mixed_inherited_order_error",
+      "reference": "TP3 pp.9-11; confirmed base order",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "literal_symbol_category_collision",
+      "reference": "TP3 pp.1,12",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "literal_symbol_category_collision",
+      "reference": "TP3 pp.1,12",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0065
+    },
+    {
+      "case": "multiline_chain_output",
+      "reference": "TP3 pp.1,12; topic 10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0054
+    },
+    {
+      "case": "multiline_chain_output",
+      "reference": "TP3 pp.1,12; topic 10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "parameter_types_deferred",
+      "reference": "TP3 pp.4-5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 parameter compatibility",
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "parameter_types_deferred",
+      "reference": "TP3 pp.4-5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 parameter compatibility",
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "return_types_deferred",
+      "reference": "TP3 pp.4-5",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric return compatibility",
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "return_types_deferred",
+      "reference": "TP3 pp.4-5",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "boundary": "TP4 numeric return compatibility",
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "comptime_indexed_write_effect",
+      "reference": "TP3 pp.5,8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0044
+    },
+    {
+      "case": "comptime_indexed_write_effect",
+      "reference": "TP3 pp.5,8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0038
+    },
+    {
+      "case": "comptime_indexed_write_in_loop",
+      "reference": "TP3 pp.5-6,8,10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0143
+    },
+    {
+      "case": "comptime_indexed_write_in_loop",
+      "reference": "TP3 pp.5-6,8,10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0039
+    },
+    {
+      "case": "cached_indexed_write_respects_guard",
+      "reference": "TP3 pp.5,8,10; confirmed control rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0041
+    },
+    {
+      "case": "cached_indexed_write_respects_guard",
+      "reference": "TP3 pp.5,8,10; confirmed control rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.0051
+    },
+    {
+      "case": "object_copy_propagates_comptime_fields",
+      "reference": "TP3 pp.5,8-10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0061
+    },
+    {
+      "case": "object_copy_propagates_comptime_fields",
+      "reference": "TP3 pp.5,8-10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "object_parameter_comptime_snapshot_1",
+      "reference": "TP3 pp.5,7-10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0059
+    },
+    {
+      "case": "object_parameter_comptime_snapshot_1",
+      "reference": "TP3 pp.5,7-10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "object_parameter_comptime_snapshot_2",
+      "reference": "TP3 pp.5,7-10",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0048
+    },
+    {
+      "case": "object_parameter_comptime_snapshot_2",
+      "reference": "TP3 pp.5,7-10",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "structural_copy_comptime_to_runtime",
+      "reference": "TP3 pp.8-9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "structural_copy_comptime_to_runtime",
+      "reference": "TP3 pp.8-9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "structural_copy_runtime_to_comptime",
+      "reference": "TP3 pp.8-9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0047
+    },
+    {
+      "case": "structural_copy_runtime_to_comptime",
+      "reference": "TP3 pp.8-9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "object_parameter_local_comptime_state",
+      "reference": "TP3 pp.5,8-10; per-activation isolation",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0097
+    },
+    {
+      "case": "object_parameter_local_comptime_state",
+      "reference": "TP3 pp.5,8-10; per-activation isolation",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0059
+    },
+    {
+      "case": "object_parameter_qualifier_source",
+      "reference": "TP3 pp.5,8-9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0046
+    },
+    {
+      "case": "object_parameter_qualifier_source",
+      "reference": "TP3 pp.5,8-9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0037
+    },
+    {
+      "case": "object_parameter_qualifier_formal",
+      "reference": "TP3 pp.5,8-9; confirmed type/order rule",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0043
+    },
+    {
+      "case": "object_parameter_qualifier_formal",
+      "reference": "TP3 pp.5,8-9; confirmed type/order rule",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0059
+    },
+    {
+      "case": "singlef_compiletime_runtime_rounding",
+      "reference": "TP3 pp.1,8; topic 7 representation",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0045
+    },
+    {
+      "case": "singlef_compiletime_runtime_rounding",
+      "reference": "TP3 pp.1,8; topic 7 representation",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0033
+    },
+    {
+      "case": "expansion_resource_guard",
+      "reference": "Documented implementation resource limit",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.4535
+    },
+    {
+      "case": "expansion_resource_guard",
+      "reference": "Documented implementation resource limit",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "error",
+      "evaluated": false,
+      "elapsed_seconds": 0.2006
+    },
+    {
+      "case": "from_negative_step_ascending",
+      "reference": "TP3 p.6; update uses the body's current control value",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0013
+    },
+    {
+      "case": "from_negative_step_ascending",
+      "reference": "TP3 p.6; update uses the body's current control value",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0011
+    },
+    {
+      "case": "from_negative_step_descending",
+      "reference": "TP3 p.6; update uses the body's current control value",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0016
+    },
+    {
+      "case": "from_negative_step_descending",
+      "reference": "TP3 p.6; update uses the body's current control value",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    },
+    {
+      "case": "from_zero_step_with_body_progress",
+      "reference": "TP3 p.6; no extra BY sign restriction",
+      "mode": "rpn",
+      "passed": true,
+      "expected": "success",
+      "evaluated": true,
+      "elapsed_seconds": 0.0018
+    },
+    {
+      "case": "from_zero_step_with_body_progress",
+      "reference": "TP3 p.6; no extra BY sign restriction",
+      "mode": "analysis",
+      "passed": true,
+      "expected": "success",
+      "evaluated": false,
+      "elapsed_seconds": 0.0012
+    }
+  ]
+}

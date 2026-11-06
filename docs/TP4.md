@@ -192,6 +192,32 @@ representable conforme al rango de literales. Estas políticas se aplican en
 
 ## Verificación y entrega
 
+La revisión del 6 de noviembre corrige tres problemas del análisis comptime:
+
+- Los atributos objeto se identifican por su receptor concreto y declaración.
+  Los símbolos originales de la IR se conservan para calcular direcciones runtime.
+- La igualdad interna de caché y propagación distingue +0 y −0 SINGLEF y no
+  unifica NaN. El operador `==` del lenguaje conserva su igualdad numérica.
+- La expansión de FROM contempla tanto escrituras comptime como argumentos que
+  necesitan el valor de cada iteración. Un análisis previo sobre entornos privados
+  comprueba esos requisitos sin crear instancias, emitir código ni diagnósticos.
+  Respeta asignaciones internas, orden de argumentos, llamadas y controles
+  anidados. Las impresiones se conservan exclusivamente en el código generado.
+  Los argumentos invariantes permiten mantener ciclos runtime, incluso infinitos.
+  Un ciclo interior finito puede especializar argumentos bajo un control exterior
+  desconocido; ese control sigue prohibiendo las escrituras comptime afectadas.
+
+El chequeo de código descartado usa el mismo criterio de iteración y la misma
+identidad de receptores. La política de validación de plantillas sin invocar
+queda fuera de estas correcciones, por indicación del usuario. Los casos nuevos
+están en `tests/correction_cases.py`; los ceros con signo e infinitos se verifican
+con salida textual para evitar la pérdida de información al convertirlos a JSON.
+
+La captura de índices de destino existente en `codegen.c` se conserva para ambos
+modos de IR. Su contador se reinicia en `codegen_init`; se retiraron la declaración
+y llamada residuales de `codegen_enable_tp4`, cuya definición ya había sido
+eliminada. El evaluador de pruebas TP3 reconoce esos temporales y CHECK_INDEX.
+
 ```sh
 ./tests/run_all.sh --report /tmp/tp4-report.json
 ```

@@ -62,6 +62,9 @@ class Evaluator:
         self.fuel = 100000
 
     def frame_for(self, symbol, frame):
+        # Saved destination indices are private temporaries of the current body.
+        if re.fullmatch(r'@index\d+', symbol):
+            return frame
         scope = symbol.split(":", 1)[1]
         while frame is not None:
             if frame["scope"] == scope:
@@ -199,6 +202,8 @@ class Evaluator:
                 stack.append(int(step[:-2]))
             elif step.startswith("DEST "):
                 stack.append(self.attribute(step[5:], frame))
+            elif step.startswith("CHECK_INDEX "):
+                self.attribute(step[len("CHECK_INDEX "):], frame)
             elif "[" in step:
                 values, key = self.attribute(step, frame)
                 stack.append(values[key])

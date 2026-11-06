@@ -228,8 +228,7 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
         value.value = comptime_read_symbol(&context->environment, symbol, context->receiver);
         value.value.object_type = symbol->type_symbol;
         if (symbol->type_symbol)
-            value.value.object = symbol->usage == SYMBOL_ATTRIBUTE ?
-                comptime_object_location(context->receiver, symbol) : symbol;
+            value.value.object = comptime_resolve_object(symbol, context->receiver);
         push_type_value(context, value);
         break;
     }
@@ -249,10 +248,11 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
         if (index.known && !index.floating && index.number >= 0 &&
             index.number < step->receiver->type_symbol->effective_attributes.count) {
             const map_node_t *field = step->receiver->type_symbol->effective_attributes.items[(size_t)index.number];
-            comptime_value_t object = {.object = step->receiver, .object_type = step->receiver->type_symbol};
+            const map_node_t *receiver = comptime_resolve_object(step->receiver, context->receiver);
+            comptime_value_t object = {.object = receiver, .object_type = step->receiver->type_symbol};
             value.value = comptime_object_field(object, field, &context->environment);
             value.destination = field;
-            value.object = step->receiver;
+            value.object = receiver;
         }
         if (step->index && step->index->usage == SYMBOL_LEXEME && index.known && !index.floating) {
             if (index.number < 0)
@@ -266,7 +266,7 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
     }
     case RPN_CALL_FRAME:
         context->calls[context->call_count++] = (type_call_t){.symbol = step->value.symbol,
-            .receiver = step->receiver ? step->receiver : context->receiver, .errors = global_errors};
+            .receiver = comptime_resolve_object(step->receiver, context->receiver), .errors = global_errors};
         break;
     case RPN_CALL: {
         if (!context->call_count) break;
@@ -377,7 +377,9 @@ static size_t resolve_control(type_resolution_t *context, size_t begin, size_t t
     resolve_range(context, begin, target);
     comptime_value_t condition = context->count ? context->stack[--context->count].value : (comptime_value_t){0};
     if (branch->loop && condition.known && condition.number != 0 &&
-        specialize_has_comptime_effects(context->origin, target + 2, body_end)) {
+        (specialize_has_comptime_effects(context->origin, target + 2, body_end) ||
+         specialize_requires_iteration(context->origin, target + 2, body_end,
+             &context->environment, context->receiver))) {
         if (check_resolved_range(context, begin, target + 2))
             resolve_loop(context, begin, target, body_end);
         return finish;

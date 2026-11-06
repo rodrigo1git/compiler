@@ -20,7 +20,9 @@ static void *resize(void *pointer, size_t size) {
 
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right) {
     return left.known == right.known && (!left.known ||
-        (left.number == right.number && left.floating == right.floating));
+        (left.number == right.number && left.floating == right.floating &&
+         (!left.floating || left.number != 0.0 ||
+          !!signbit(left.number) == !!signbit(right.number))));
 }
 
 comptime_value_t comptime_get(const comptime_environment_t *environment, const map_node_t *symbol,

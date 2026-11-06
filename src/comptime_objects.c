@@ -52,6 +52,11 @@ const map_node_t *comptime_object_root(const map_node_t *object) {
     }
 }
 
+const map_node_t *comptime_resolve_object(const map_node_t *object, const map_node_t *receiver) {
+    if (object == NULL) return receiver;
+    return object->usage == SYMBOL_ATTRIBUTE ? comptime_object_location(receiver, object) : object;
+}
+
 static bool type_in_path(const type_path_t *path, const map_node_t *type) {
     for (; path != NULL; path = path->parent)
         if (path->type == type) return true;

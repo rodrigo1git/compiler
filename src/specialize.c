@@ -11,6 +11,7 @@ typedef struct {
     const map_node_t *symbol;
     rpn_step_kind_t kind;
     const map_node_t *object;
+    const map_node_t *receiver;
     const map_node_t *index;
 } destination_t;
 
@@ -220,6 +221,313 @@ static control_t describe_control(const rpn_t *input, size_t start, size_t branc
     return control;
 }
 
+/* A private abstract execution answers whether forgetting runtime values loses
+   information required by a comptime argument. It never instantiates functions,
+   emits IR, constructs constants, or reports speculative errors. */
+typedef struct {
+    comptime_value_t value;
+    destination_t destination;
+    comptime_environment_t fields;
+} probe_operand_t;
+
+typedef struct probe_call {
+    function_template_t *source;
+    const map_node_t *receiver;
+    comptime_environment_t arguments;
+    struct probe_call *parent;
+} probe_call_t;
+
+typedef struct {
+    const rpn_t *input;
+    comptime_environment_t environment;
+    const map_node_t *receiver;
+    probe_operand_t *stack;
+    size_t count;
+    probe_call_t *pending;
+    size_t *budget;
+    unsigned int depth;
+    bool needs_iteration;
+    bool stopped;
+    bool has_return;
+    comptime_value_t returned;
+} probe_t;
+
+static void probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first);
+
+static void probe_push(probe_t *probe, probe_operand_t value) {
+    probe->stack = resize(probe->stack, (probe->count + 1) * sizeof(*probe->stack));
+    if (value.value.object_type != NULL)
+        value.fields = comptime_copy_environment(&probe->environment);
+    probe->stack[probe->count++] = value;
+}
+
+static probe_operand_t probe_pop(probe_t *probe) {
+    return probe->count ? probe->stack[--probe->count] : (probe_operand_t){0};
+}
+
+static void probe_destroy(probe_t *probe) {
+    for (size_t i = 0; i < probe->count; i++) free(probe->stack[i].fields.items);
+    while (probe->pending != NULL) {
+        probe_call_t *parent = probe->pending->parent;
+        free(probe->pending->arguments.items);
+        free(probe->pending);
+        probe->pending = parent;
+    }
+    free(probe->stack);
+    free(probe->environment.items);
+}
+
+static void probe_copy_object(probe_t *probe, comptime_environment_t *destination,
+    const map_node_t *object, const map_node_t *type, comptime_value_t value,
+    const comptime_environment_t *fields, bool argument, unsigned int depth) {
+    if (type == NULL || depth == 128 || !*probe->budget) return;
+    (*probe->budget)--;
+    for (size_t i = 0; i < type->effective_attributes.count; i++) {
+        const map_node_t *field = type->effective_attributes.items[i];
+        comptime_value_t selected = {0};
+        if (value.object_type && i < value.object_type->effective_attributes.count)
+            selected = comptime_object_field(value, value.object_type->effective_attributes.items[i], fields);
+        if (field->type_symbol) {
+            const map_node_t *child = comptime_object_location(object, field);
+            probe_copy_object(probe, destination, child, field->type_symbol, selected,
+                fields, argument, depth + 1);
+            selected.object = child;
+            selected.object_type = field->type_symbol;
+            selected.object_snapshot = NULL;
+        } else if (field->is_comptime && !selected.known) probe->needs_iteration = true;
+        if (!argument || field->is_comptime)
+            comptime_set(destination, field, object, selected);
+    }
+}
+
+static comptime_value_t probe_invoke(probe_t *probe, probe_call_t *call) {
+    function_template_t *source = call->source;
+    if (source == NULL) return (comptime_value_t){0};
+    for (size_t i = 0; i < source->symbol->parameters.count; i++) {
+        const map_node_t *parameter = source->symbol->parameters.items[i];
+        if (parameter->is_comptime && !comptime_get(&call->arguments, parameter, NULL).known)
+            probe->needs_iteration = true;
+    }
+    if (probe->needs_iteration || probe->depth == 128 || !*probe->budget) {
+        forget_call_writes(&probe->environment, source);
+        return (comptime_value_t){0};
+    }
+    probe_t callee = {.input = source->body, .receiver = call->receiver,
+        .environment = comptime_copy_environment(&probe->environment),
+        .depth = probe->depth + 1, .budget = probe->budget};
+    comptime_forget_runtime(&callee.environment);
+    for (size_t i = 0; i < callee.environment.count; i++) {
+        comptime_binding_t *binding = &callee.environment.items[i];
+        if (binding->symbol->owner == source->symbol ||
+            (binding->object && binding->object->owner == source->symbol))
+            binding->value = (comptime_value_t){0};
+    }
+    for (size_t i = 0; i < call->arguments.count; i++) {
+        comptime_binding_t binding = call->arguments.items[i];
+        if (binding.symbol->is_comptime)
+            comptime_set(&callee.environment, binding.symbol, binding.object, binding.value);
+    }
+    probe_range(&callee, 0, source->body->count, true);
+    probe->needs_iteration |= callee.needs_iteration;
+    forget_call_writes(&probe->environment, source);
+    /* Apply only the effects that normal specialization exports to its caller. */
+    for (size_t i = 0; i < callee.environment.count; i++) {
+        comptime_binding_t binding = callee.environment.items[i];
+        if ((binding.symbol->is_comptime && source->external_writes &&
+             binding.symbol->owner != source->symbol &&
+             (!binding.object || binding.object->owner != source->symbol)) ||
+            (!binding.symbol->is_comptime && binding.value.known && binding.object &&
+             binding.object->owner != source->symbol))
+            comptime_set(&probe->environment, binding.symbol, binding.object, binding.value);
+    }
+    for (size_t i = 0; i < source->runtime_writes.count; i++) {
+        const map_node_t *symbol = source->runtime_writes.items[i];
+        if (symbol->usage != SYMBOL_ATTRIBUTE)
+            comptime_set(&probe->environment, symbol, NULL,
+                comptime_get(&callee.environment, symbol, NULL));
+    }
+    comptime_value_t returned = callee.returned;
+    probe_destroy(&callee);
+    return returned;
+}
+
+static void probe_step(probe_t *probe, const rpn_step_t *step) {
+    probe_operand_t operand = {0};
+    switch (step->kind) {
+    case RPN_SYMBOL:
+        operand.value = comptime_read_symbol(&probe->environment, step->value.symbol, probe->receiver);
+        operand.value.object_type = step->value.symbol->type_symbol;
+        if (operand.value.object_type)
+            operand.value.object = comptime_resolve_object(step->value.symbol, probe->receiver);
+        probe_push(probe, operand);
+        break;
+    case RPN_DESTINATION: case RPN_ARGUMENT_DESTINATION:
+        operand.destination = (destination_t){.symbol = step->value.symbol, .kind = step->kind,
+            .object = step->value.symbol->usage == SYMBOL_ATTRIBUTE ? probe->receiver : NULL};
+        probe_push(probe, operand);
+        break;
+    case RPN_ATTRIBUTE: case RPN_ATTRIBUTE_DESTINATION: {
+        const map_node_t *object = comptime_resolve_object(step->receiver, probe->receiver);
+        comptime_value_t index = comptime_read_symbol(&probe->environment, step->index, probe->receiver);
+        const map_node_t *field = NULL;
+        if (index.known && !index.floating && index.number >= 0 && object &&
+            index.number < object->type_symbol->effective_attributes.count)
+            field = object->type_symbol->effective_attributes.items[(size_t)index.number];
+        if (step->index->is_comptime && !index.known) probe->needs_iteration = true;
+        if (step->kind == RPN_ATTRIBUTE_DESTINATION)
+            operand.destination = (destination_t){.symbol = field, .object = object, .kind = step->kind};
+        else if (field)
+            operand.value = comptime_object_field((comptime_value_t){.object = object,
+                .object_type = object->type_symbol}, field, &probe->environment);
+        probe_push(probe, operand);
+        break;
+    }
+    case RPN_CALL_FRAME: {
+        probe_call_t *call = resize(NULL, sizeof(*call));
+        *call = (probe_call_t){.source = find_template(step->value.symbol),
+            .receiver = comptime_resolve_object(step->receiver, probe->receiver), .parent = probe->pending};
+        probe->pending = call;
+        break;
+    }
+    case RPN_CALL: {
+        probe_call_t *call = probe->pending;
+        if (call == NULL) break;
+        operand.value = probe_invoke(probe, call);
+        probe->pending = call->parent;
+        free(call->arguments.items);
+        free(call);
+        probe_push(probe, operand);
+        break;
+    }
+    case RPN_OPERATOR: {
+        rpn_operator_t op = step->value.operator;
+        probe_operand_t right = probe_pop(probe);
+        if (op <= RPN_NOT_EQUAL) {
+            probe_operand_t left = probe_pop(probe);
+            if (op == RPN_ASSIGN) {
+                destination_t destination = right.destination;
+                bool argument = destination.kind == RPN_ARGUMENT_DESTINATION && probe->pending;
+                comptime_environment_t *environment = argument ?
+                    &probe->pending->arguments : &probe->environment;
+                if (destination.symbol) {
+                    if (destination.symbol->type_symbol) {
+                        const map_node_t *object = destination.object ?
+                            comptime_object_location(destination.object, destination.symbol) : destination.symbol;
+                        /* Keep the source snapshot separate, including self-copies. */
+                        probe_copy_object(probe, environment, object, destination.symbol->type_symbol,
+                            left.value, &left.fields, argument, 0);
+                    }
+                    comptime_set(environment, destination.symbol, destination.object, left.value);
+                } else if (!argument) {
+                    for (size_t i = 0; i < environment->count; i++)
+                        if (environment->items[i].object == destination.object)
+                            environment->items[i].value = (comptime_value_t){0};
+                }
+            } else {
+                operand.value = comptime_binary(left.value, right.value, op);
+                probe_push(probe, operand);
+            }
+            free(left.fields.items);
+        } else if (op == RPN_TO_INTEGER) {
+            operand.value = comptime_to_integer(right.value);
+            probe_push(probe, operand);
+        } else if (op == RPN_DUPLICATE) {
+            operand.value = right.value;
+            probe_push(probe, operand);
+            probe_push(probe, operand);
+        } else if (op == RPN_RETURN) {
+            if (!probe->has_return) probe->returned = right.value;
+            else if (!comptime_values_equal(probe->returned, right.value)) probe->returned = (comptime_value_t){0};
+            probe->has_return = true;
+            probe->stopped = true;
+        }
+        free(right.fields.items);
+        break;
+    }
+    case RPN_INDEX_CHECK: case RPN_TARGET: case RPN_OBJECT_VALUE: break;
+    }
+}
+
+static comptime_value_t probe_condition(probe_t *probe, control_t control) {
+    probe_range(probe, control.start, control.branch, false);
+    probe_operand_t condition = probe_pop(probe);
+    free(condition.fields.items);
+    return condition.value;
+}
+
+static void probe_control(probe_t *probe, control_t control) {
+    comptime_value_t condition = probe_condition(probe, control);
+    if (condition.known && condition.number == 0 && control.loop) return;
+    if (control.loop) {
+        probe_t attempt = {.input = probe->input, .receiver = probe->receiver,
+            .environment = comptime_copy_environment(&probe->environment),
+            .depth = probe->depth, .budget = probe->budget};
+        comptime_forget_runtime(&attempt.environment);
+        probe_range(&attempt, control.branch + 2, control.body_end, true);
+        bool needs_iteration = attempt.needs_iteration;
+        bool expand = needs_iteration ||
+            specialize_has_comptime_effects(probe->input, control.branch + 2, control.body_end);
+        probe_destroy(&attempt);
+        if (!expand || !condition.known) {
+            probe->needs_iteration |= needs_iteration;
+            comptime_forget_runtime(&probe->environment);
+            return;
+        }
+        while (condition.known && condition.number != 0 && !probe->stopped && *probe->budget) {
+            probe_range(probe, control.branch + 2, control.body_end, true);
+            if (probe->stopped || probe->needs_iteration) return;
+            condition = probe_condition(probe, control);
+        }
+        if (!condition.known || !*probe->budget) probe->needs_iteration = true;
+        return;
+    }
+    if (condition.known) {
+        if (condition.number != 0) probe_range(probe, control.branch + 2, control.body_end, true);
+        else if (control.has_else) probe_range(probe, control.false_start, control.end, true);
+        return;
+    }
+    comptime_environment_t original = comptime_copy_environment(&probe->environment);
+    probe_range(probe, control.branch + 2, control.body_end, true);
+    bool stopped = probe->stopped;
+    comptime_environment_t left = probe->environment;
+    probe->environment = original;
+    probe->stopped = false;
+    if (control.has_else) probe_range(probe, control.false_start, control.end, true);
+    probe->stopped &= stopped;
+    comptime_environment_t joined = comptime_join_environments(&left, &probe->environment);
+    free(left.items);
+    free(probe->environment.items);
+    probe->environment = joined;
+}
+
+static void probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first) {
+    for (size_t pc = begin; pc < end && !probe->stopped && !probe->needs_iteration; pc++) {
+        if (!*probe->budget) return;
+        (*probe->budget)--;
+        size_t branch = pc;
+        if (pc != begin || inspect_first)
+            while (branch < end && probe->input->steps[branch].control_start != pc + 1) branch++;
+        else branch = end;
+        if (branch < end) {
+            control_t control = describe_control(probe->input, pc, branch);
+            probe_control(probe, control);
+            pc = control.end - 1;
+        } else probe_step(probe, &probe->input->steps[pc]);
+    }
+}
+
+bool specialize_requires_iteration(const rpn_t *input, size_t begin, size_t end,
+    const comptime_environment_t *environment, const map_node_t *receiver) {
+    size_t budget = 100000;
+    probe_t probe = {.input = input, .environment = comptime_copy_environment(environment),
+        .receiver = receiver, .budget = &budget};
+    comptime_forget_runtime(&probe.environment);
+    probe_range(&probe, begin, end, true);
+    bool result = probe.needs_iteration;
+    probe_destroy(&probe);
+    return result;
+}
+
 static operand_t process_condition(context_t *context, control_t control, bool unknown_control) {
     transform_range(context, control.start, control.branch, unknown_control, false);
     return pop(context, context->input->steps[control.branch].source_line);
@@ -275,7 +583,8 @@ static void process_if(context_t *context, control_t control, bool unknown_contr
 
 static void process_loop(context_t *context, control_t control, bool unknown_control) {
     int line = context->input->steps[control.branch].source_line;
-    bool expand = specialize_has_comptime_effects(context->input, control.branch + 2, control.body_end);
+    bool effects = specialize_has_comptime_effects(context->input, control.branch + 2, control.body_end);
+    bool expand = effects;
     size_t condition_output = context->output->count;
     operand_t condition = process_condition(context, control, unknown_control);
     if (condition.value.known && condition.value.number == 0) {
@@ -283,7 +592,10 @@ static void process_loop(context_t *context, control_t control, bool unknown_con
         discard(context, condition, line);
         return;
     }
-    if (expand && condition.value.known && !unknown_control) {
+    if (!expand && condition.value.known)
+        expand = specialize_requires_iteration(context->input, control.branch + 2, control.body_end,
+            context->environment, context->receiver);
+    if (expand && condition.value.known && (!unknown_control || !effects)) {
         for (;;) {
             discard(context, condition, line);
             if (condition.value.number == 0 || context->stopped) break;
@@ -291,9 +603,10 @@ static void process_loop(context_t *context, control_t control, bool unknown_con
                 report_semantic_error(line, "Compile-time loop evaluation exceeded the resource limit");
                 break;
             }
-            transform_range(context, control.branch + 2, control.body_end, false, true);
-            if (context->stopped) break;
-            condition = process_condition(context, control, false);
+            int errors = global_errors;
+            transform_range(context, control.branch + 2, control.body_end, unknown_control, true);
+            if (context->stopped || global_errors != errors) break;
+            condition = process_condition(context, control, unknown_control);
             if (!condition.value.known) {
                 report_semantic_error(line, "Compile-time loop control became unknown");
                 transform_range(context, control.branch + 2, control.body_end, true, true);
@@ -379,7 +692,7 @@ static void assign_value(context_t *context, destination_t destination, operand_
         return;
     }
     rpn_step_t step = {.kind = destination.kind, .value.symbol = symbol,
-        .source_line = line, .receiver = destination.object, .index = destination.index};
+        .source_line = line, .receiver = destination.receiver, .index = destination.index};
     emit(context, step);
     emit(context, (rpn_step_t){.kind = RPN_OPERATOR, .value.operator = RPN_ASSIGN, .source_line = line});
     if (argument && symbol != NULL && symbol->type_symbol != NULL && context->pending != NULL) {
@@ -422,7 +735,7 @@ static void process_symbol(context_t *context, rpn_step_t step) {
     }
     operand.value.object_type = symbol->type_symbol;
     operand.value.object = operand.value.object_type == NULL ? NULL :
-        (symbol->usage == SYMBOL_ATTRIBUTE ? comptime_object_location(context->receiver, symbol) : symbol);
+        comptime_resolve_object(symbol, context->receiver);
     operand.value.object_snapshot = NULL;
     operand.start = context->output->count;
     operand.removable = true;
@@ -434,7 +747,7 @@ static void process_symbol(context_t *context, rpn_step_t step) {
 
 static void process_attribute(context_t *context, rpn_step_t step) {
     operand_t operand = {.start = context->output->count, .removable = true};
-    const map_node_t *object = step.receiver;
+    const map_node_t *object = comptime_resolve_object(step.receiver, context->receiver);
     const map_node_t *index = step.index;
     comptime_value_t selected = comptime_read_symbol(context->environment, index, context->receiver);
     if (index->is_comptime) {
@@ -464,6 +777,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
         operand.destination.kind = step.kind;
         operand.destination.index = step.index;
         operand.destination.object = object;
+        operand.destination.receiver = step.receiver;
         push(context, operand);
     } else {
         if (attribute != NULL) operand.value = comptime_get(context->environment, attribute, object);
@@ -490,7 +804,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
 static void begin_call(context_t *context, rpn_step_t step) {
     pending_call_t *pending = resize(NULL, sizeof(*pending));
     *pending = (pending_call_t){.source = find_template(step.value.symbol),
-        .receiver = step.receiver != NULL ? step.receiver : context->receiver,
+        .receiver = comptime_resolve_object(step.receiver, context->receiver),
         .frame_step = context->output->count, .errors = global_errors, .parent = context->pending};
     context->pending = pending;
     emit(context, step);

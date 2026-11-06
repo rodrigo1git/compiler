@@ -23,7 +23,6 @@ typedef struct {
 } codegen_loop_t;
 
 void codegen_init(void);
-void codegen_enable_tp4(bool enabled);
 void codegen_destroy(void);
 bool codegen_print(FILE *stream);
 bool codegen_finalize(void);

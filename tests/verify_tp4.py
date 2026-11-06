@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 from tp3_course_cases import CASES as COURSE
 from tp4_cases import CASES
+from correction_cases import CASES as CORRECTIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ERRORS = {
@@ -58,7 +59,7 @@ def main():
     args = parser.parse_args()
     compiler = args.compiler.resolve()
     cases = [dict(case, compile_error=re.escape(case['compile_error']) if case.get('compile_error') else None)
-             for case in CASES]
+             for case in CASES + CORRECTIONS]
     for original in COURSE:
         case = dict(original)
         if original.get('error'):
@@ -113,9 +114,12 @@ def main():
                     counts['nonterminating'] += 1
                     continue
                 raise AssertionError((case['name'],'Expected nonterminating loop'))
-            executed = run(['node','runtime/run.mjs','--json',str(wasm)])
-            actual = json.loads(executed.stdout)
-            assert actual == case.get('output',[]), (case['name'],actual,case.get('output'),executed.stderr)
+            textual = 'output_text' in case
+            command = ['node', 'runtime/run.mjs'] + ([] if textual else ['--json']) + [str(wasm)]
+            executed = run(command)
+            actual = executed.stdout.splitlines() if textual else json.loads(executed.stdout)
+            expected = case['output_text'] if textual else case.get('output', [])
+            assert actual == expected, (case['name'], actual, expected, executed.stderr)
             runtime_error = case.get('runtime_error')
             if runtime_error:
                 assert executed.returncode == 1 and runtime_error in executed.stderr, (case['name'],executed.stderr)
@@ -137,7 +141,7 @@ def main():
         report = dict(date=datetime.now(timezone.utc).isoformat(),
                       compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       sources={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths if p.is_file()},
-                      counts=dict(counts), scenarios=[dict(name=c['name'], expected=c.get('output',[]),
+                      counts=dict(counts), scenarios=[dict(name=c['name'], expected=c.get('output_text', c.get('output',[])),
                           compile_error=c.get('compile_error'), runtime_error=c.get('runtime_error')) for c in cases],
                       node=run(['node','--version']).stdout.strip(),
                       wabt=json.loads((ROOT/'runtime/package.json').read_text())['dependencies']['wabt'])

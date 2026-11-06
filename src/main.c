@@ -76,7 +76,6 @@ int main(int argc, char *argv[]) {
     init_symbol_table();
     codegen_init();
     comptime_enable_tp4(wasm);
-    codegen_enable_tp4(wasm);
     set_trace_enabled(trace);
     scope_init();
 

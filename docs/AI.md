@@ -48,3 +48,16 @@ de símbolos, se amplió el recorrido aislado de esos ciclos y se incorporaron
 regresiones. También se corrigió el verificador TP4 para exigir diagnósticos
 concretos y rechazar errores de sanitizadores. Se comprobaron las suites normales,
 sanitizadores, navegador y resultados manuales registrados en VALIDATION.md.
+
+
+La instrucción «ignora este error y arregla los otros» excluyó la validación de
+plantillas sin invocar y autorizó corregir H1–H3 de la auditoría del 6 de noviembre:
+receptores de objetos anidados, igualdad interna de ceros SINGLEF y llamadas con
+argumentos comptime dentro de FROM. Codex incorporó 38 regresiones permanentes,
+resolución común de receptores y un análisis previo de requisitos por iteración
+sobre entornos privados, sin instanciación ni diagnósticos especulativos. Las
+expectativas se comprobaron ejecutando Wasm real, incluida salida textual para
+infinitos. Se conservó un cambio concurrente de captura de índices en codegen.c
+y se completó su integración retirando referencias a una función eliminada;
+el evaluador TP3 se actualizó para reconocer esa IR. La validación de esta
+intervención se registra separadamente en CORRECTIONS.md.
