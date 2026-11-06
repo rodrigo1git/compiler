@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-05T00:36:52.912672+00:00",
-  "compiler_sha256": "93bc9a022811413756ea933cd10423fbe7c3c5b9ea6999df478ba62b5ef06813",
+  "date": "2026-11-05T22:22:06.312750+00:00",
+  "compiler_sha256": "4d1cbe0378272e072c66904eb8dd2b114982992f884990fcba212cd847e12933",
   "sources": {
     "src/lexer.c": "adab8022ca74b392bec450727402bb20bf1bea7b564a6a0b91d690679080ed59",
     "src/transition_table.c": "d55a1ebe6aa4a671602696f2ae57503e22774520b38f446bda347a3d77b30a46",
@@ -10,13 +10,13 @@
     "src/rpn.c": "9c918ec9ed843942113b02e221a22a598eb1856f854df232dd302608d944a25e",
     "src/scope.c": "0a74acfc1f69acfcaeb3f135b7c35d75fd32844befc48c292ef63f9266715d2b",
     "src/diagnostics.c": "16bd937e0e7c910813e4f03e3dca45737f6ebe6994166dcaad12ee5c481a4f70",
-    "src/specialize.c": "b311701dc7b18070ee3ed0a14c5fb48851b6a790c377f7639c1b5afa04eb21af",
+    "src/specialize.c": "e8f7c409b83cf019e743c7f23fbf23e6f590cee2e8230c3e66894abb05558a1c",
     "src/symbol_table.c": "698484f544a74fcc46e42ee39547a76ff4c22c83c49677cf0c82035b3d98bf97",
     "src/lexer_actions.c": "3706ca9a898cf5d73ed9143071d91350e50cf537420d78af92a86e9aac20b624",
     "src/classes.c": "1334177188e4ef9b9fa342758a3ae12d8053df4b3687bdeea86364d9b38bf0ca",
-    "src/comptime_values.c": "6fc81b6cfcca4a8b34a0418066aed548e129179cc70ba517c10ef037f8a10da8",
+    "src/comptime_values.c": "2f1df12693d8f8cdbfb3b6c8fb1dd6762a6359ebf45ff59052fba90055f341c3",
     "src/comptime_objects.c": "ee6e623d539cc2e30dd3a06b3e77b191e5c5b108e252ecfb160124d4aab490e6",
-    "src/types.c": "775ba3c9471f1777c898a34a61a3401c8af3a8357104c78034ce1abcf0ac8593",
+    "src/types.c": "45193206e1b6af34222d8ae88d8ed87b001952872d8d3bd194dbbdd05d39a830",
     "src/layout.c": "cd1528c2c8fe117754069a35738cb01a30c852a8b45cad74701698014a3ec8c8",
     "src/wasm_emit.c": "a988e052074c8acde7bf36de5e5a27add0588b95eb68b03f76e12052c0e8a767",
     "src/numeric.c": "5c49b61bb6aef615893e3b17c4bcd1d8ac3b8aaed0d3ebaa844bf20a313e0a52",
@@ -25,12 +25,12 @@
     "include/codegen.h": "12a16701e958fae6c03a9a573bac1fd46cc63b7794a5edca87f5cb2cf7186778",
     "include/rpn.h": "6b836e6ccc7173098786ffda19379bd8ea8641bf951825c3ed5f0b3b639b8a73",
     "include/scope.h": "fad6488cc7bb2bd68a8dec39367a7e5beee9562468ae0104ddd0c1ee5942b2b9",
-    "include/specialize.h": "7ab79a20e37ec43d3acd6392df21906fb9ab34f38bca78fec4d7b66813a48c9a",
+    "include/specialize.h": "94869c1088ba35f96913751a4fae028ca53d9a63f818bf6eb76ebdf8c901c7a3",
     "include/diagnostics.h": "af601d57b522f9a537be947e35de4bd9ce764731e476526c2df899d5986f574c",
     "include/symbol_table.h": "c519fbbe709dbb02b10b27bd31af4df556c3cb9b5d9f9206a7808c36a0971cdb",
     "include/lexer_actions.h": "3be46c5dc4df6123901eec34496ca6370716d5f564aa016bbb6f588ff35ca495",
     "include/classes.h": "bf5a064c9c7f5828ffbf202096c639856ec2d9bf24486039043c89958019ae94",
-    "include/comptime_values.h": "594dcc0c938742ce1d2e3bc64faf5339314fd5135314a8fd90d3187b67e69efd",
+    "include/comptime_values.h": "901ff2db5df1ed1fad82d72c50e8fd172c82e54c11efb1b4e6f31e652051396d",
     "include/comptime_objects.h": "92208b28b3c7cda2b4696aa8c715b28808cf97676237ff3844af21352fea471f",
     "include/types.h": "9faff01f9fdc93bba9d8ce028508886f8a1f4c47acf896bf1aed77be33101d32",
     "include/layout.h": "8fd00bbbf2efaf8c2b100515624fea3c150f862771e6750d292b05132f56a34f",
@@ -40,12 +40,21 @@
     "runtime/assemble.mjs": "18ab2ebb610e90d667cf47531ff6b18a3ddc87428b3220779241c27d9f6f1460",
     "runtime/host.mjs": "b7a206b91654b8c0acd6d66ec23ddacf694990437674f3902d393b9b9dad1b58",
     "runtime/run.mjs": "c2bdce563d06d23a969654298882e319c1bbc509c4a2b79d7079233dc48ed7d9",
-    "runtime/compile.mjs": "daa73d518403d6d5395b415a18ea8a105e7da03893c41f054aaa71e6148ae60b"
+    "runtime/compile.mjs": "daa73d518403d6d5395b415a18ea8a105e7da03893c41f054aaa71e6148ae60b",
+    "tests/tp3_course_cases.py": "43819e10b2b3e3be66ebade0da503fb49ffce56211b81f4adbd4932c63ab5cae",
+    "tests/verify_tp3.py": "b015847f686e52adc4f9a42a6ca3e7c7b6c760fffcb1c68203d654ef0c17a6b0",
+    "tests/verify_tp3_course.py": "aa6ed0537c77ab45609af8de2d73c0e248e9b26cb4021f842cb8cd1298cde0ee",
+    "tests/tp4_cases.py": "2378abbc78837e4cf73f36a001e104f8d6f874c6f6bdaa7eac413be06039fda6",
+    "tests/verify_tp4.py": "44c64d2f3d758bb29cdcdbfd1490038c6684bbd784dab6e15180b4332a9e111e",
+    "tests/verify_tp4_browser.py": "d6bdb5d47dd02af5fdc56901b2962db3f52d246aa534e21d7232441d7e800c81",
+    "tests/verify_function_docs.py": "23156667a26aefed914c556d51ef957c90e6311fa824136db225db9453a2a5d1",
+    "tests/test_verify_tp4.py": "de194807c9189241dcc0ef9ba7027a2ec21ffbccf217e4140d037ca504940c6b",
+    "tests/run_all.sh": "900b0c8a969ac08fd9624cfd267e320958e3d904db4b05b9924fcc97dc88703f"
   },
   "counts": {
-    "normal": 139,
+    "normal": 148,
     "runtime_errors": 31,
-    "compile_errors": 94,
+    "compile_errors": 102,
     "nonterminating": 1
   },
   "scenarios": [
@@ -125,7 +134,7 @@
     {
       "name": "product_comptime_error",
       "expected": [],
-      "compile_error": "multiplication overflow",
+      "compile_error": "multiplication\\ overflow",
       "runtime_error": null
     },
     {
@@ -161,7 +170,7 @@
     {
       "name": "float_comptime_error",
       "expected": [],
-      "compile_error": "addition overflow",
+      "compile_error": "addition\\ overflow",
       "runtime_error": null
     },
     {
@@ -232,37 +241,37 @@
     {
       "name": "conversion_comptime_error",
       "expected": [],
-      "compile_error": "fractional information",
+      "compile_error": "fractional\\ information",
       "runtime_error": null
     },
     {
       "name": "conversion_type_error",
       "expected": [],
-      "compile_error": "TOI requires SINGLEF",
+      "compile_error": "TOI\\ requires\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "dead_branch_types",
       "expected": [],
-      "compile_error": "Incompatible assignment",
+      "compile_error": "Incompatible\\ assignment",
       "runtime_error": null
     },
     {
       "name": "unused_function_types",
       "expected": [],
-      "compile_error": "return type",
+      "compile_error": "return\\ type",
       "runtime_error": null
     },
     {
       "name": "after_return_types",
       "expected": [],
-      "compile_error": "return type",
+      "compile_error": "return\\ type",
       "runtime_error": null
     },
     {
       "name": "unused_template_types",
       "expected": [],
-      "compile_error": "return type",
+      "compile_error": "return\\ type",
       "runtime_error": null
     },
     {
@@ -337,7 +346,7 @@
     {
       "name": "variable_index_mixed_reject",
       "expected": [],
-      "compile_error": "Incompatible operand",
+      "compile_error": "Incompatible\\ operand",
       "runtime_error": null
     },
     {
@@ -363,7 +372,7 @@
     {
       "name": "comptime_index_bad_specialization",
       "expected": [],
-      "compile_error": "return type",
+      "compile_error": "return\\ type",
       "runtime_error": null
     },
     {
@@ -377,7 +386,7 @@
     {
       "name": "object_recursive",
       "expected": [],
-      "compile_error": "Recursive object containment",
+      "compile_error": "Recursive\\ object\\ containment",
       "runtime_error": null
     },
     {
@@ -426,7 +435,7 @@
     {
       "name": "variable_index_comptime_write",
       "expected": [],
-      "compile_error": "compile-time index",
+      "compile_error": "compile\\-time\\ index",
       "runtime_error": null
     },
     {
@@ -494,7 +503,7 @@
     {
       "name": "discarded_return_false_branch",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -508,7 +517,7 @@
     {
       "name": "discarded_return_else_branch",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -522,7 +531,7 @@
     {
       "name": "discarded_return_after_return",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -536,13 +545,13 @@
     {
       "name": "discarded_return_after_returning_if",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_return_empty_loop",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -556,25 +565,25 @@
     {
       "name": "discarded_assignment",
       "expected": [],
-      "compile_error": "Incompatible assignment types: INTEGER := SINGLEF",
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_binary",
       "expected": [],
-      "compile_error": "Incompatible operand types: SINGLEF and INTEGER",
+      "compile_error": "Incompatible\\ operand\\ types:\\ SINGLEF\\ and\\ INTEGER",
       "runtime_error": null
     },
     {
       "name": "discarded_conversion",
       "expected": [],
-      "compile_error": "TOI requires SINGLEF",
+      "compile_error": "TOI\\ requires\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_argument",
       "expected": [],
-      "compile_error": "Incompatible assignment types: INTEGER := SINGLEF",
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -588,25 +597,25 @@
     {
       "name": "discarded_nested_local_singlef",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_local_assignment",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_after_call_effect",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_cached_context",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
@@ -654,13 +663,13 @@
     {
       "name": "discarded_negative_index",
       "expected": [],
-      "compile_error": "does not exist",
+      "compile_error": "does\\ not\\ exist",
       "runtime_error": null
     },
     {
       "name": "discarded_outside_index",
       "expected": [],
-      "compile_error": "does not exist",
+      "compile_error": "does\\ not\\ exist",
       "runtime_error": null
     },
     {
@@ -702,31 +711,159 @@
     {
       "name": "discarded_call_result_singlef",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_call_effect_singlef",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_object_copy_singlef",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_object_argument_singlef",
       "expected": [],
-      "compile_error": "return type: SINGLEF",
+      "compile_error": "return\\ type:\\ SINGLEF",
       "runtime_error": null
     },
     {
       "name": "discarded_unrelated_call_write",
       "expected": [
         0,
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_active_0",
+      "expected": [
+        7
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_active_1",
+      "expected": [],
+      "compile_error": "return\\ type:\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_after_return_0",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_after_return_1",
+      "expected": [],
+      "compile_error": "return\\ type:\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_false_branch_0",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "method_attribute_index_false_branch_1",
+      "expected": [],
+      "compile_error": "return\\ type:\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_ascending",
+      "expected": [],
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_descending",
+      "expected": [],
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_third_iteration",
+      "expected": [],
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_valid",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_final_index",
+      "expected": [],
+      "compile_error": "return\\ type:\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_nested",
+      "expected": [],
+      "compile_error": "Incompatible\\ assignment\\ types:\\ INTEGER\\ :=\\ SINGLEF",
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_snapshots",
+      "expected": [
+        0,
+        3,
+        7,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_stable",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "discarded_loop_runtime_large",
+      "expected": [
+        0
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_method_attribute_index",
+      "expected": [
+        3,
+        7,
+        9,
+        3,
+        9
+      ],
+      "compile_error": null,
+      "runtime_error": null
+    },
+    {
+      "name": "comptime_inherited_attribute_index",
+      "expected": [
+        3,
         7
       ],
       "compile_error": null,
@@ -746,115 +883,115 @@
     {
       "name": "variable_undeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "variable_redeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "already declared",
       "runtime_error": null
     },
     {
       "name": "function_undeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "function_redeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "already declared",
       "runtime_error": null
     },
     {
       "name": "class_undeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "class_redeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "already declared",
       "runtime_error": null
     },
     {
       "name": "method_undeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "does not exist",
       "runtime_error": null
     },
     {
       "name": "method_redeclared",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "already declared",
       "runtime_error": null
     },
     {
       "name": "function_as_destination",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not a variable",
       "runtime_error": null
     },
     {
       "name": "variable_as_function",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not a function or method",
       "runtime_error": null
     },
     {
       "name": "class_as_value",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not a variable",
       "runtime_error": null
     },
     {
       "name": "variable_as_class",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not a class",
       "runtime_error": null
     },
     {
       "name": "member_wrong_use",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not a method",
       "runtime_error": null
     },
     {
       "name": "receiver_wrong_use",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not an object",
       "runtime_error": null
     },
     {
       "name": "later_function_hidden",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "sibling_local_hidden",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "class_later_hidden",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "method_later_hidden",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
       "name": "namespaces_same_scope",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "already declared",
       "runtime_error": null
     },
     {
@@ -1043,61 +1180,61 @@
     {
       "name": "arity_short",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "has 2 arguments; expected 3",
       "runtime_error": null
     },
     {
       "name": "arity_long",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "has 4 arguments; expected 3",
       "runtime_error": null
     },
     {
       "name": "order_short",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "has 2 entries; expected 3",
       "runtime_error": null
     },
     {
       "name": "order_long",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "has 4 entries; expected 3",
       "runtime_error": null
     },
     {
       "name": "order_duplicate",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "repeats position",
       "runtime_error": null
     },
     {
       "name": "order_zero",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "outside 1..3",
       "runtime_error": null
     },
     {
       "name": "order_negative",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "outside 1..3",
       "runtime_error": null
     },
     {
       "name": "order_too_large",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "outside 1..3",
       "runtime_error": null
     },
     {
       "name": "order_float",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "must be INTEGER",
       "runtime_error": null
     },
     {
       "name": "order_missing",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "Missing order",
       "runtime_error": null
     },
     {
@@ -1273,25 +1410,25 @@
     {
       "name": "comptime_runtime_assignment_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not known at compile time",
       "runtime_error": null
     },
     {
       "name": "comptime_unknown_control_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "under unknown control",
       "runtime_error": null
     },
     {
       "name": "comptime_unknown_argument_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not known at compile time",
       "runtime_error": null
     },
     {
       "name": "comptime_branch_rejects_equal_writes",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "under unknown control",
       "runtime_error": null
     },
     {
@@ -1317,7 +1454,7 @@
     {
       "name": "comptime_calls_propagate_guard",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "under unknown control",
       "runtime_error": null
     },
     {
@@ -1425,13 +1562,13 @@
         3.75,
         3
       ],
-      "compile_error": "fractional information",
+      "compile_error": "fractional\\ information",
       "runtime_error": null
     },
     {
       "name": "comptime_uninitialized",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "has no known value",
       "runtime_error": null
     },
     {
@@ -1443,7 +1580,7 @@
     {
       "name": "comptime_division_by_zero",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "Integer\\ division\\ by\\ zero\\ required\\ by\\ comptime\\ assignment",
       "runtime_error": null
     },
     {
@@ -1475,31 +1612,31 @@
     {
       "name": "structure_count_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "incompatible attribute types or order",
       "runtime_error": null
     },
     {
       "name": "structure_type_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "incompatible attribute types or order",
       "runtime_error": null
     },
     {
       "name": "structure_order_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "incompatible attribute types or order",
       "runtime_error": null
     },
     {
       "name": "structure_code_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "requires matching class codes",
       "runtime_error": null
     },
     {
       "name": "structure_qualified_field_type",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "incompatible attribute types or order",
       "runtime_error": null
     },
     {
@@ -1531,19 +1668,19 @@
     {
       "name": "position_negative",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "does not exist",
       "runtime_error": null
     },
     {
       "name": "position_outside",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "does not exist",
       "runtime_error": null
     },
     {
       "name": "position_after_declaration_only",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "does not exist",
       "runtime_error": null
     },
     {
@@ -1586,19 +1723,19 @@
     {
       "name": "distinct_inherited_methods_ambiguous",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "is ambiguous",
       "runtime_error": null
     },
     {
       "name": "distinct_inherited_attributes_ambiguous",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "is ambiguous",
       "runtime_error": null
     },
     {
       "name": "inheritance_cycle",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "Cyclic inheritance",
       "runtime_error": null
     },
     {
@@ -1633,19 +1770,19 @@
     {
       "name": "object_return_header",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "object returns|Object returns",
       "runtime_error": null
     },
     {
       "name": "object_return_value",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "object returns|Object returns",
       "runtime_error": null
     },
     {
       "name": "object_method_return",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "object returns|Object returns",
       "runtime_error": null
     },
     {
@@ -1663,19 +1800,19 @@
     {
       "name": "mixed_operands_deferred",
       "expected": [],
-      "compile_error": "Incompatible operand",
+      "compile_error": "Incompatible\\ operand",
       "runtime_error": null
     },
     {
       "name": "float_assignment_deferred",
       "expected": [],
-      "compile_error": "Incompatible assignment",
+      "compile_error": "Incompatible\\ assignment",
       "runtime_error": null
     },
     {
       "name": "loop_types_deferred",
       "expected": [],
-      "compile_error": "FROM control",
+      "compile_error": "FROM\\ control",
       "runtime_error": null
     },
     {
@@ -1693,7 +1830,7 @@
     {
       "name": "independent_error_recovery",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not declared or not visible",
       "runtime_error": null
     },
     {
@@ -1787,13 +1924,13 @@
     {
       "name": "comptime_negative_index",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "does not exist",
       "runtime_error": null
     },
     {
       "name": "comptime_runtime_index_invalidates_fields",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not known at compile time",
       "runtime_error": null
     },
     {
@@ -1807,7 +1944,7 @@
     {
       "name": "runtime_object_copy_invalidates_fields",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "not known at compile time",
       "runtime_error": null
     },
     {
@@ -1945,7 +2082,7 @@
     {
       "name": "mixed_inherited_order_error",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "incompatible attribute types or order",
       "runtime_error": null
     },
     {
@@ -1972,13 +2109,13 @@
     {
       "name": "parameter_types_deferred",
       "expected": [],
-      "compile_error": "Incompatible assignment",
+      "compile_error": "Incompatible\\ assignment",
       "runtime_error": null
     },
     {
       "name": "return_types_deferred",
       "expected": [],
-      "compile_error": "return type",
+      "compile_error": "return\\ type",
       "runtime_error": null
     },
     {
@@ -2003,7 +2140,7 @@
     {
       "name": "cached_indexed_write_respects_guard",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "under unknown control",
       "runtime_error": null
     },
     {
@@ -2088,7 +2225,7 @@
     {
       "name": "expansion_resource_guard",
       "expected": [],
-      "compile_error": true,
+      "compile_error": "loop evaluation exceeded the resource limit",
       "runtime_error": null
     },
     {
@@ -2155,6 +2292,6 @@
       "runtime_error": null
     }
   ],
-  "node": "v25.8.0",
+  "node": "v26.12.0",
   "wabt": "1.0.39"
 }

@@ -4,6 +4,7 @@ import argparse
 from collections import Counter
 import json
 import hashlib
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
@@ -22,6 +23,7 @@ RUNTIME_ERRORS = {
     'ordinary_recursion_does_not_specialize': ('(i)', []),
 }
 COMPILE_ERRORS = {
+    'comptime_division_by_zero': 'Integer division by zero required by comptime assignment',
     'comptime_float_and_conversion': 'fractional information',
     'mixed_operands_deferred': 'Incompatible operand',
     'float_assignment_deferred': 'Incompatible assignment',
@@ -35,13 +37,28 @@ def run(command, **options):
     return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=15, **options)
 
 
+def verify_compilation(result, expected_error=None):
+    sanitizer = r'(?:Address|Leak|UndefinedBehavior|Memory|Thread)Sanitizer(?::| has encountered)'
+    undefined_behavior = r':\d+(?::\d+)?: runtime error:'
+    assert not re.search(sanitizer + '|' + undefined_behavior, result.stderr), result.stderr
+    assert result.returncode == (1 if expected_error else 0), result.stderr
+    if expected_error:
+        assert isinstance(expected_error, str), 'Expected a diagnostic pattern'
+        assert re.search(expected_error, result.stderr), (expected_error, result.stderr)
+        assert '--- RPN ---' not in result.stdout, 'Partial RPN after a compilation error'
+    else:
+        assert not result.stderr, result.stderr
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=Path)
     parser.add_argument('--compiler', type=Path, default=ROOT / 'compiler')
+    parser.add_argument('--case', default='', help='Only run case names containing this text')
     args = parser.parse_args()
     compiler = args.compiler.resolve()
-    cases = list(CASES)
+    cases = [dict(case, compile_error=re.escape(case['compile_error']) if case.get('compile_error') else None)
+             for case in CASES]
     for original in COURSE:
         case = dict(original)
         if original.get('error'):
@@ -52,10 +69,12 @@ def main():
             elif case['name'] == 'comptime_attribute_dynamic_position':
                 case.update(output=[3], compile_error=None)
             else:
-                case['compile_error'] = True
+                error = COMPILE_ERRORS.get(case['name'])
+                case['compile_error'] = re.escape(error) if error else original['error']
                 cases.append(case)
                 continue
-        case['compile_error'] = COMPILE_ERRORS.get(case['name'])
+        error = COMPILE_ERRORS.get(case['name'])
+        case['compile_error'] = re.escape(error) if error else None
         if case['name'] in RUNTIME_ERRORS:
             case['runtime_error'], case['output'] = RUNTIME_ERRORS[case['name']]
         cases.append(case)
@@ -63,6 +82,8 @@ def main():
                                ('tp3_comptime_copies.txt',[10,16,11,16,3,7,14]),
                                ('tp3_comptime_specialization.txt',[3,7,3])]:
         cases.append(dict(name=filename, source=(ROOT/'tests'/filename).read_text(), output=expected))
+    cases = [case for case in cases if args.case in case['name']]
+    assert cases, f'No cases matching {args.case!r}'
     counts = Counter()
     with tempfile.TemporaryDirectory(prefix='compiler-tp4-') as directory:
         folder = Path(directory)
@@ -72,12 +93,14 @@ def main():
             source.write_text(case['source'])
             compiled = run([str(compiler),'--wasm','-o',str(wat),str(source)])
             expected_error = case.get('compile_error')
+            try:
+                verify_compilation(compiled, expected_error)
+            except AssertionError as error:
+                raise AssertionError((case['name'], str(error))) from error
             if expected_error:
-                assert compiled.returncode == 1 and (expected_error is True or expected_error in compiled.stderr), (case['name'],compiled.stderr)
-                assert not wat.exists() and '--- RPN ---' not in compiled.stdout, case['name']
+                assert not wat.exists(), case['name']
                 counts['compile_errors'] += 1
                 continue
-            assert compiled.returncode == 0, (case['name'],compiled.stderr)
             if case['name'] in ('integer_limits', 'operand_snapshot'):
                 assert '| Use: AUXILIARY' in compiled.stdout, case['name']
             assembled = run(['node','runtime/assemble.mjs',str(wat),str(wasm)])
@@ -103,12 +126,14 @@ def main():
         source.write_text('review\ninteger x;\nbegin x := 1$i; end;')
         before = source.read_bytes()
         result = run([str(compiler),'--wasm','-o',str(source),str(source)])
-        assert result.returncode == 1 and source.read_bytes() == before
+        verify_compilation(result, 'Output path must differ from the source file')
+        assert source.read_bytes() == before
         result = run([str(compiler),'--wasm','-o',str(folder/'missing'/'out.wat'),str(source)])
-        assert result.returncode == 1 and 'Cannot write' in result.stderr
+        verify_compilation(result, 'Cannot write')
     if args.report:
         paths = list((ROOT/'src').glob('*')) + list((ROOT/'include').glob('*'))
         paths += [ROOT/'build.sh'] + list((ROOT/'runtime').glob('*.mjs'))
+        paths += list((ROOT/'tests').glob('*.py')) + [ROOT/'tests/run_all.sh']
         report = dict(date=datetime.now(timezone.utc).isoformat(),
                       compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       sources={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths if p.is_file()},

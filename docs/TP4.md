@@ -68,6 +68,12 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
    contextos de asignación, argumento, operación, TOI y retorno. Recorre ambos
    brazos de controles anidados sin aplicar efectos al entorno verdadero.
    Las copias de objetos conservan los campos en el instante de su lectura.
+   Los índices que son atributos se consultan con el receptor del método.
+   Los ciclos conocidos con efectos comptime se comprueban en cada iteración,
+   restaurando el índice simbólico antes de volver a resolverlo. El análisis
+   termina al salir del ciclo, estabilizarse el entorno o alcanzar el límite
+   de 100000 iteraciones por auditoría; superar ese límite informa un error.
+   Los ciclos sin efectos comptime mantienen el análisis conservador de una vuelta.
    Para resolver valores que provienen de llamadas reutiliza el especializador
    sobre ese entorno aislado; no agrega esas llamadas al cuerpo que se ejecutará.
 5. `layout_init` calcula símbolos, clases, campos, cadenas y marcos. Detecta ciclos

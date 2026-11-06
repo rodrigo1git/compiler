@@ -141,7 +141,7 @@ static void materialize_object(context_t *context, operand_t *operand, int line)
     operand->value.object_snapshot = snapshot;
 }
 
-static bool has_comptime_effects(const rpn_t *input, size_t begin, size_t end) {
+bool specialize_has_comptime_effects(const rpn_t *input, size_t begin, size_t end) {
     for (size_t i = begin; i < end; i++) {
         const rpn_step_t *step = &input->steps[i];
         if (step->kind == RPN_DESTINATION && step->value.symbol->is_comptime) return true;
@@ -275,7 +275,7 @@ static void process_if(context_t *context, control_t control, bool unknown_contr
 
 static void process_loop(context_t *context, control_t control, bool unknown_control) {
     int line = context->input->steps[control.branch].source_line;
-    bool expand = has_comptime_effects(context->input, control.branch + 2, control.body_end);
+    bool expand = specialize_has_comptime_effects(context->input, control.branch + 2, control.body_end);
     size_t condition_output = context->output->count;
     operand_t condition = process_condition(context, control, unknown_control);
     if (condition.value.known && condition.value.number == 0) {
@@ -411,9 +411,7 @@ static void assign_value(context_t *context, destination_t destination, operand_
 static void process_symbol(context_t *context, rpn_step_t step) {
     operand_t operand = {.start = context->output->count, .removable = true};
     const map_node_t *symbol = step.value.symbol;
-    const map_node_t *object = symbol->usage == SYMBOL_ATTRIBUTE ? context->receiver : NULL;
-    operand.value = symbol->usage == SYMBOL_LEXEME ? comptime_read_constant(symbol) :
-        comptime_get(context->environment, symbol, object);
+    operand.value = comptime_read_symbol(context->environment, symbol, context->receiver);
     if (symbol->is_comptime) {
         if (!operand.value.known)
             report_semantic_error(step.source_line, "Comptime '%s' has no known value", symbol->key);
@@ -438,8 +436,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
     operand_t operand = {.start = context->output->count, .removable = true};
     const map_node_t *object = step.receiver;
     const map_node_t *index = step.index;
-    comptime_value_t selected = index->usage == SYMBOL_LEXEME ? comptime_read_constant(index) :
-        comptime_get(context->environment, index, NULL);
+    comptime_value_t selected = comptime_read_symbol(context->environment, index, context->receiver);
     if (index->is_comptime) {
         if (!selected.known)
             report_semantic_error(step.source_line, "Comptime index '%s' has no known value", index->key);

@@ -31,6 +31,12 @@ comptime_value_t comptime_get(const comptime_environment_t *environment, const m
     return (comptime_value_t){0};
 }
 
+comptime_value_t comptime_read_symbol(const comptime_environment_t *environment,
+                                      const map_node_t *symbol, const map_node_t *receiver) {
+    if (symbol->usage == SYMBOL_LEXEME) return comptime_read_constant(symbol);
+    return comptime_get(environment, symbol, symbol->usage == SYMBOL_ATTRIBUTE ? receiver : NULL);
+}
+
 void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
                   const map_node_t *object, comptime_value_t value) {
     for (size_t i = 0; i < environment->count; i++) {

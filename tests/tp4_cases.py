@@ -210,3 +210,86 @@ integer function change(integer p) begin flag := p; ret(p); end;
 integer function read(comptime integer index)
 begin ret(0$i); pout(change(index)[1$i]); ret(object[selected]); end;''',
 'selected := 0$i; flag := 7$i; pout(read(0$i)[1$i]); pout(flag);', [0,7])
+
+for context, body in [
+    ('active', 'ret(object[index]);'),
+    ('after_return', 'ret(0$i); ret(object[index]);'),
+    ('false_branch', 'if(1$i>2$i) ret(object[index]); end_if; ret(0$i);'),
+]:
+    for position in (0, 1):
+        case(f'method_attribute_index_{context}_{position}', PAIR + '''
+class selector other begin
+    comptime integer index;
+    integer read(integer unused) begin ''' + body + ''' end;
+end;
+selector pick;''',
+f'object[0$i] := 7$i; pick[0$i] := {position}$i; pout(pick.read(0$i)[1$i]);',
+[7 if context == 'active' else 0] if position == 0 else [],
+compile_error='return type: SINGLEF' if position else None)
+
+for name, fields, start, stop, increment in [
+    ('ascending', 'integer a; singlef b;', 0, 2, 1),
+    ('descending', 'singlef a; integer b;', 1, -1, 1),
+    ('third_iteration', 'integer a,b; singlef c;', 0, 3, 1),
+    ('valid', 'integer a,b;', 0, 2, 1),
+]:
+    case('discarded_loop_' + name, f'class pair code begin {fields} end; pair object;\n' + f'''
+integer function read(comptime integer unused)
+comptime integer index;
+integer result;
+begin
+    ret(0$i);
+    from index := {start}$i to {stop}$i by {increment}$i repeat begin
+        result := object[index];
+    end;
+end;''', 'pout(read(0$i)[1$i]);', [0] if name == 'valid' else [],
+compile_error=None if name == 'valid' else 'Incompatible assignment types: INTEGER := SINGLEF')
+
+case('discarded_loop_final_index', PAIR + '''integer function read(comptime integer unused)
+comptime integer index;
+begin ret(0$i);
+    from index := 0$i to 1$i by 1$i repeat begin pout(index); end;
+    ret(object[index]);
+end;''', 'pout(read(0$i)[1$i]);', compile_error='return type: SINGLEF')
+
+case('discarded_loop_nested', '''class triple code begin integer a,b; singlef c; end;
+triple object;
+integer function read(comptime integer unused)
+comptime integer i,j,index;
+integer result;
+begin ret(0$i);
+    from i := 0$i to 2$i by 1$i repeat begin
+        from j := 0$i to 2$i by 1$i repeat begin
+            index := i+j;
+            result := object[index];
+        end;
+    end;
+end;''', 'pout(read(0$i)[1$i]);', compile_error='Incompatible assignment types: INTEGER := SINGLEF')
+
+case('discarded_loop_snapshots', '''class selector code begin comptime integer index; end;
+selector original,copy;
+comptime integer index;
+integer function read(comptime integer unused)
+begin ret(0$i);
+    from index := 0$i to 128$i by 1$i repeat begin
+        original[0$i] := index;
+        copy := original;
+    end;
+end;''',
+'original[0$i] := 3$i; copy[0$i] := 7$i; index := 9$i; pout(read(0$i)[1$i]); '
+'pout(original[0$i]); pout(copy[0$i]); pout(index);', [0,3,7,9])
+
+case('discarded_loop_stable', PAIR + '''integer function read(comptime integer unused)
+comptime integer index;
+integer result;
+begin ret(0$i);
+    from index := 0$i to 1$i by 0$i repeat begin result := object[index]; end;
+end;''', 'pout(read(0$i)[1$i]);', [0])
+
+case('discarded_loop_runtime_large', '''integer function read(integer unused)
+integer i,j;
+begin ret(0$i);
+    from i := 0$i to 1000$i by 1$i repeat begin
+        from j := 0$i to 1000$i by 1$i repeat begin pout(j); end;
+    end;
+end;''', 'pout(read(0$i)[1$i]);', [0])

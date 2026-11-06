@@ -18,6 +18,39 @@ def case(name, reference, declarations, body, output=None, error=None, **expecta
         item["output"] = output
     CASES.append(item)
 
+case('comptime_method_attribute_index', 'TP3 temas 22 y 29', '''
+class pair data begin integer first,second; end;
+pair object;
+class selector code begin
+    comptime integer index;
+    integer read(integer unused) begin ret(object[index]); end;
+    integer put(integer value) begin object[index] := value; ret(value); end;
+end;
+selector left,right;
+''', '''
+object[0$i] := 3$i; object[1$i] := 7$i;
+left[0$i] := 0$i; right[0$i] := 1$i;
+pout(left.read(0$i)[1$i]); pout(right.read(0$i)[1$i]);
+pout(right.put(9$i)[1$i]);
+pout(left.read(0$i)[1$i]); pout(right.read(0$i)[1$i]);
+''', [3,7,9,3,9])
+
+case('comptime_inherited_attribute_index', 'TP3 temas 22, 29 y 32', '''
+class pair data begin integer first,second; end;
+pair object;
+class base code begin
+    comptime integer index;
+    integer read(integer unused) begin ret(object[index]); end;
+end;
+class extra other begin integer padding; end;
+class derived child begin extends extra,base; integer tail; end;
+base left; derived right;
+''', '''
+object[0$i] := 3$i; object[1$i] := 7$i;
+left[0$i] := 0$i; right[1$i] := 1$i;
+pout(left.read(0$i)[1$i]); pout(right.read(0$i)[1$i]);
+''', [3,7])
+
 
 case("scope_mangling_example", "TP3 p.2", """
     integer a;

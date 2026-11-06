@@ -39,3 +39,12 @@ lectura de un campo viejo después de una copia de objeto. Se corrigieron usando
 la evaluación de llamadas existente y capturas aisladas para las copias, y se
 agregaron casos válidos e inválidos permanentes. La comprobación manual también
 contrastó los diagnósticos, el WAT y las salidas reales del módulo.
+
+La instrucción «soluciona lo que sabes que esta mal y lo otro hace un informe
+aca en el chat» autorizó corregir dos fallos de una auditoría posterior: índices
+comptime pertenecientes al receptor de un método e incompatibilidades que recién
+aparecían en iteraciones posteriores de ciclos descartados. Se unificó la lectura
+de símbolos, se amplió el recorrido aislado de esos ciclos y se incorporaron
+regresiones. También se corrigió el verificador TP4 para exigir diagnósticos
+concretos y rechazar errores de sanitizadores. Se comprobaron las suites normales,
+sanitizadores, navegador y resultados manuales registrados en VALIDATION.md.

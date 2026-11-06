@@ -1,8 +1,9 @@
 # Validación del backend TP4
 
-Validación final del 4 de noviembre de 2026 sobre la rama code-generation,
-con cambios locales posteriores a 5120c61. Los hashes exactos del binario y
+Validación del 5 de noviembre de 2026 sobre la rama code-generation,
+con cambios locales posteriores a 16af00b. Los hashes exactos del binario y
 fuentes comprobados están en validation.json y validation-sanitized.json.
+Los reportes incluyen también los hashes de los verificadores y casos de prueba.
 El código no fue commiteado ni publicado como parte de esta revisión.
 
 ## Resultados
@@ -10,10 +11,12 @@ El código no fue commiteado ni publicado como parte de esta revisión.
 - Build: Bison sin conflictos shift/reduce o reduce/reduce; GCC con
   -Wall -Wextra -Werror.
 - TP3: 120 comprobaciones del verificador original ampliado.
-- Ejemplos de cátedra TP3: 170 escenarios, 340/340 ejecuciones del compilador.
-- TP4: 265 escenarios. 139 ejecuciones normales, 31 errores runtime esperados,
-  94 rechazos de compilación y un ciclo no terminante comprobado con timeout.
-- Inventario: 301 funciones C documentadas individualmente, con contrato,
+- Ejemplos de cátedra TP3: 172 escenarios, 344/344 ejecuciones del compilador.
+- TP4: 282 escenarios. 148 ejecuciones normales, 31 errores runtime esperados,
+  102 rechazos de compilación y un ciclo no terminante comprobado con timeout.
+- Verificador TP4: siete pruebas propias; los rechazos exigen su diagnóstico
+  esperado y los errores de sanitizadores no se aceptan como errores del fuente.
+- Inventario: 306 funciones C documentadas individualmente, con contrato,
   requisitos y enlace a la definición actual. El verificador comprueba cobertura,
   unicidad y líneas; no decide si la explicación es correcta.
 - Comprobaciones adicionales de protección de la entrada y fallos de escritura.
@@ -22,13 +25,11 @@ El código no fue commiteado ni publicado como parte de esta revisión.
   y LeakSanitizer, detect_leaks=1 y halt_on_error=1, sobre el código final.
 - git diff --check terminó sin errores.
 
-La prueba de navegador no se repitió en esta revisión. La validación anterior
-registró 3, 7, 3 mediante Chromium headless y el selector real del lanzador;
-la prueba permanente está en tests/verify_tp4_browser.py. Ese resultado histórico
-no se contabiliza como una ejecución nueva. Los sanitizadores de esta revisión
-sí se ejecutaron, incluida la detección de fugas.
+La prueba tests/verify_tp4_browser.py se ejecutó en esta revisión: el selector
+real del lanzador produjo 3, 7, 3 mediante Chromium headless. Los sanitizadores
+también se ejecutaron, incluida la detección de fugas.
 
-Herramientas observadas: GCC 16.2.1, Bison 3.8.2, Node 25.8.0, WABT 1.0.39.
+Herramientas observadas: GCC 16.2.1, Bison 3.8.2, Node 26.12.0, WABT 1.0.39.
 
 ## Revisión manual de resultados
 
@@ -36,7 +37,22 @@ Se compilaron fuentes temporales, se inspeccionaron los diagnósticos y el WAT,
 y se ejecutaron los módulos mediante WABT y Node. Las expectativas se contrastaron
 con el programa fuente. El evaluador Python de IR no sustituyó al programa destino.
 
-La última revisión descubrió tres fallos adicionales en el chequeo nuevo:
+Se corrigieron dos fallos reproducidos en la auditoría: la lectura de un atributo
+comptime como índice perdía el receptor del método, y los ciclos descartados sólo
+se revisaban en su primera iteración. Se agregaron 17 escenarios de regresión,
+incluidos receptores distintos, herencia, escrituras, retornos descartados,
+iteraciones posteriores, ciclos anidados y conservación de los valores reales.
+
+| Caso revisado manualmente el 5 de noviembre | Resultado observado |
+| --- | --- |
+| Dos receptores seleccionan campos diferentes y uno modifica el segundo | 3, 7, 9, 3, 9; la escritura mantiene separado el primer campo. |
+| Índice comptime heredado de la segunda base | 3, 7; se usa el receptor real aunque cambie la posición del índice. |
+| Incompatibilidad recién en la segunda o tercera iteración descartada | Error INTEGER := SINGLEF en la línea 10; salida 1 y ningún WAT nuevo. |
+| Índice calculado por dos ciclos descartados anidados | Error INTEGER := SINGLEF en la línea 11, al seleccionar el tercer atributo. |
+| 128 copias de objetos dentro de un ciclo posterior a RET | 0, 3, 7, 9; el análisis conserva original, copia e índice reales. La función ejecutable sólo devuelve 0. |
+| Atributo índice de un método después de RET | Índice 0: devuelve 0. Índice 1: error de retorno SINGLEF con línea; ningún WAT nuevo. |
+
+La revisión anterior del 4 de noviembre descubrió tres fallos en el chequeo:
 una llamada simple perdía su retorno conocido, una escritura no relacionada
 invalidaba el índice y una copia de objeto podía conservar el valor viejo de un
 campo. Los dos primeros rechazaban casos válidos; el tercero podía admitir un

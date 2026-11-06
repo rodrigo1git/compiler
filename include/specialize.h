@@ -3,6 +3,8 @@
 
 #include "comptime_values.h"
 
+bool specialize_has_comptime_effects(const rpn_t *input, size_t begin, size_t end);
+
 void specialize_init(void);
 void specialize_register(map_node_t *symbol, const rpn_t *body);
 bool specialize_program(const rpn_t *program);

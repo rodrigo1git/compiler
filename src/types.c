@@ -192,6 +192,7 @@ typedef struct {
 typedef struct {
     rpn_t body;
     const rpn_t *origin;
+    const map_node_t *function;
     const map_node_t *receiver;
     comptime_environment_t environment;
     type_value_t *stack;
@@ -200,7 +201,13 @@ typedef struct {
     size_t call_count;
     comptime_environment_t *snapshots;
     size_t snapshot_count;
+    size_t remaining_iterations;
 } type_resolution_t;
+
+static void clear_type_snapshots(type_resolution_t *context) {
+    for (size_t i = 0; i < context->snapshot_count; i++) free(context->snapshots[i].items);
+    context->snapshot_count = 0;
+}
 
 static void push_type_value(type_resolution_t *context, type_value_t value) {
     if (value.value.object_type && !value.destination) {
@@ -213,13 +220,12 @@ static void push_type_value(type_resolution_t *context, type_value_t value) {
 
 static void resolve_step(type_resolution_t *context, size_t pc) {
     rpn_step_t *step = &context->body.steps[pc];
+    *step = context->origin->steps[pc];
     type_value_t value = {0};
     switch (step->kind) {
     case RPN_SYMBOL: {
         const map_node_t *symbol = step->value.symbol;
-        value.value = step->value.symbol->usage == SYMBOL_LEXEME ? comptime_read_constant(step->value.symbol) :
-            comptime_get(&context->environment, step->value.symbol,
-                step->value.symbol->usage == SYMBOL_ATTRIBUTE ? context->receiver : NULL);
+        value.value = comptime_read_symbol(&context->environment, symbol, context->receiver);
         value.value.object_type = symbol->type_symbol;
         if (symbol->type_symbol)
             value.value.object = symbol->usage == SYMBOL_ATTRIBUTE ?
@@ -234,8 +240,7 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
         context->stack[context->count++] = value;
         break;
     case RPN_ATTRIBUTE: case RPN_ATTRIBUTE_DESTINATION: {
-        comptime_value_t index = step->index->usage == SYMBOL_LEXEME ? comptime_read_constant(step->index) :
-            comptime_get(&context->environment, step->index, NULL);
+        comptime_value_t index = comptime_read_symbol(&context->environment, step->index, context->receiver);
         if (step->index->is_comptime) {
             if (index.known) step->index = comptime_make_constant(index, step->source_line);
             else report_semantic_error(step->source_line,
@@ -313,6 +318,50 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
 
 static void resolve_range(type_resolution_t *context, size_t begin, size_t end);
 
+static bool check_resolved_range(type_resolution_t *context, size_t begin, size_t end) {
+    rpn_t slice = {.steps = context->body.steps + begin, .count = end - begin};
+    return check_body(&slice, context->function, context->origin, begin);
+}
+
+static bool same_type_environment(const comptime_environment_t *left,
+                                   const comptime_environment_t *right) {
+    if (left->count != right->count) return false;
+    for (size_t i = 0; i < left->count; i++) {
+        comptime_binding_t binding = left->items[i];
+        if (!comptime_values_equal(binding.value, comptime_get(right, binding.symbol, binding.object)))
+            return false;
+    }
+    return true;
+}
+
+static void resolve_loop(type_resolution_t *context, size_t begin, size_t target, size_t body_end) {
+    int errors = global_errors;
+    for (;;) {
+        if (!context->remaining_iterations) {
+            report_semantic_error(context->origin->steps[target].source_line,
+                "Discarded loop type checking exceeded the iteration limit");
+            return;
+        }
+        context->remaining_iterations--;
+        comptime_environment_t before = comptime_copy_environment(&context->environment);
+        resolve_range(context, target + 2, body_end);
+        if (errors == global_errors) check_resolved_range(context, target + 2, body_end);
+        clear_type_snapshots(context);
+        if (errors != global_errors) { free(before.items); return; }
+        resolve_range(context, begin, target);
+        comptime_value_t condition = context->count ? context->stack[--context->count].value : (comptime_value_t){0};
+        if (errors == global_errors) check_resolved_range(context, begin, target + 2);
+        bool stable = same_type_environment(&before, &context->environment);
+        if (!condition.known) {
+            comptime_environment_t joined = comptime_join_environments(&before, &context->environment);
+            free(context->environment.items);
+            context->environment = joined;
+        }
+        free(before.items);
+        if (errors != global_errors || !condition.known || condition.number == 0 || stable) return;
+    }
+}
+
 static size_t resolve_control(type_resolution_t *context, size_t begin, size_t target) {
     const rpn_step_t *branch = &context->body.steps[target];
     size_t false_start = branch->value.target - 1, body_end = false_start, finish = false_start;
@@ -327,6 +376,12 @@ static size_t resolve_control(type_resolution_t *context, size_t begin, size_t t
     }
     resolve_range(context, begin, target);
     comptime_value_t condition = context->count ? context->stack[--context->count].value : (comptime_value_t){0};
+    if (branch->loop && condition.known && condition.number != 0 &&
+        specialize_has_comptime_effects(context->origin, target + 2, body_end)) {
+        if (check_resolved_range(context, begin, target + 2))
+            resolve_loop(context, begin, target, body_end);
+        return finish;
+    }
     comptime_environment_t original = comptime_copy_environment(&context->environment);
     resolve_range(context, target + 2, body_end);
     comptime_environment_t true_environment = context->environment;
@@ -360,7 +415,8 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
                            const comptime_environment_t *environment,
                            const map_node_t *receiver) {
     int errors = global_errors;
-    type_resolution_t context = {.body = *body, .origin = body, .receiver = receiver,
+    type_resolution_t context = {.body = *body, .origin = body, .function = function,
+        .receiver = receiver, .remaining_iterations = 100000,
         .environment = comptime_copy_environment(environment)};
     context.body.steps = calloc(body->count + 1, sizeof(*body->steps));
     context.stack = calloc(body->count + 2, sizeof(*context.stack));
@@ -371,14 +427,11 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
     }
     memcpy(context.body.steps, body->steps, body->count * sizeof(*body->steps));
     resolve_range(&context, begin, end);
-    if (errors == global_errors) {
-        rpn_t slice = {.steps = context.body.steps + begin, .count = end - begin};
-        check_body(&slice, function, body, begin);
-    }
+    if (errors == global_errors) check_resolved_range(&context, begin, end);
     free(context.body.steps);
     free(context.stack);
     for (size_t i = 0; i < context.call_count; i++) free(context.calls[i].arguments.items);
-    for (size_t i = 0; i < context.snapshot_count; i++) free(context.snapshots[i].items);
+    clear_type_snapshots(&context);
     free(context.calls);
     free(context.snapshots);
     free(context.environment.items);

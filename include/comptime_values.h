@@ -32,6 +32,8 @@ bool comptime_tp4_enabled(void);
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right);
 comptime_value_t comptime_get(const comptime_environment_t *environment, const map_node_t *symbol,
                              const map_node_t *object);
+comptime_value_t comptime_read_symbol(const comptime_environment_t *environment,
+                                      const map_node_t *symbol, const map_node_t *receiver);
 void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
                   const map_node_t *object, comptime_value_t value);
 comptime_environment_t comptime_copy_environment(const comptime_environment_t *source);
