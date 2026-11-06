@@ -56,12 +56,17 @@ bool codegen_finalize(void) {
 
 const rpn_t *codegen_source_body(void) { return &program; }
 
-static rpn_t *new_fragment(void) {
-    rpn_t *fragment = malloc(sizeof(*fragment));
-    if (fragment == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate expression fragment\n");
+static void *checked_realloc(void *memory, size_t size) {
+    void *result = realloc(memory, size);
+    if (result == NULL) {
+        fprintf(stderr, "Fatal error: Cannot allocate code generation state\n");
         exit(1);
     }
+    return result;
+}
+
+static rpn_t *new_fragment(void) {
+    rpn_t *fragment = checked_realloc(NULL, sizeof(*fragment));
     rpn_init(fragment);
     return fragment;
 }
@@ -72,11 +77,15 @@ static void emit_fragment(rpn_t *fragment) {
     codegen_free(fragment);
 }
 
+static void append_operator(rpn_t *body, rpn_operator_t operator, int line) {
+    rpn_append_step(body, (rpn_step_t){.kind = RPN_OPERATOR,
+        .value.operator = operator, .source_line = line});
+}
+
 static void append_assignment(rpn_t *value, rpn_step_t destination, int line) {
     destination.source_line = line;
     rpn_append_step(value, destination);
-    rpn_append_operator(value, RPN_ASSIGN);
-    value->steps[value->count - 1].source_line = line;
+    append_operator(value, RPN_ASSIGN, line);
 }
 
 struct codegen_arguments {
@@ -94,15 +103,6 @@ struct codegen_call {
     codegen_arguments_t *arguments;
     int line;
 };
-
-static void *checked_realloc(void *memory, size_t size) {
-    void *result = realloc(memory, size);
-    if (result == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate call information\n");
-        exit(1);
-    }
-    return result;
-}
 
 codegen_arguments_t *codegen_arguments_append(codegen_arguments_t *arguments, rpn_t *value) {
     if (arguments == NULL) {
@@ -161,6 +161,22 @@ void codegen_call_free(codegen_call_t *call) {
     free(call);
 }
 
+/* Return a one-based position, or zero for an invalid/recovered constant. */
+static size_t evaluation_position(const map_node_t *constant, size_t count, int line) {
+    if (constant == NULL) return 0;
+    if (strcmp(constant->value, "INTEGER") != 0) {
+        report_semantic_error(line, "Evaluation order positions must be INTEGER constants");
+        return 0;
+    }
+    long position = strtol(constant->key, NULL, 10);
+    if (position < 1 || (size_t)position > count) {
+        report_semantic_error(line, "Evaluation order position %ld is outside 1..%zu", position, count);
+        return 0;
+    }
+    return (size_t)position;
+}
+
+/* The call and order exist; validate everything needed before emission. */
 static size_t *validate_evaluation_order(const codegen_call_t *call, const codegen_order_t *order) {
     size_t count = call->function->parameters.count;
     if (order->constants.count != count) {
@@ -170,37 +186,25 @@ static size_t *validate_evaluation_order(const codegen_call_t *call, const codeg
     }
     if (call->arguments->count != count) return NULL;
     size_t *positions = checked_realloc(NULL, count * sizeof(*positions));
-    bool specified = true;
+    bool unique = true;
     for (size_t i = 0; i < count; i++) {
-        map_node_t *constant = order->constants.items[i];
-        if (constant == NULL) { specified = false; break; }
-        if (strcmp(constant->value, "INTEGER") != 0) {
-            report_semantic_error(call->line, "Evaluation order positions must be INTEGER constants");
-            specified = false; break;
-        }
-        long position = strtol(constant->key, NULL, 10);
-        if (position < 1 || (size_t)position > count) {
-            report_semantic_error(call->line, "Evaluation order position %ld is outside 1..%zu", position, count);
-            specified = false; break;
-        }
-        positions[i] = (size_t)position - 1;
+        size_t position = evaluation_position(order->constants.items[i], count, call->line);
+        if (position == 0) { free(positions); return NULL; }
+        positions[i] = position - 1;
         for (size_t j = 0; j < i; j++)
             if (positions[j] == positions[i]) {
-                report_semantic_error(call->line, "Evaluation order repeats position %ld", position);
-                specified = false;
+                report_semantic_error(call->line, "Evaluation order repeats position %zu", position);
+                unique = false;
             }
     }
-    if (!specified) {
-        free(positions);
-        return NULL;
-    }
+    for (size_t i = 0; i < count; i++)
+        if (call->arguments->items[i] == NULL) { free(positions); return NULL; }
+    if (!unique) { free(positions); return NULL; }
     return positions;
 }
 
 static rpn_t *emit_call(const codegen_call_t *call, const size_t *positions) {
     size_t count = call->function->parameters.count;
-    for (size_t i = 0; i < count; i++)
-        if (call->arguments->items[i] == NULL) return NULL;
     rpn_t *result = new_fragment();
     /* TP3 pp.5,7: evaluate and copy in the explicit order, retaining formal positions.
        A pending frame keeps nested/recursive calls independent of the caller's frame. */
@@ -211,8 +215,7 @@ static rpn_t *emit_call(const codegen_call_t *call, const size_t *positions) {
         rpn_append_sequence(result, call->arguments->items[position]);
         rpn_append_step(result, (rpn_step_t){.kind = RPN_ARGUMENT_DESTINATION,
             .value.symbol = call->function->parameters.items[position], .source_line = call->line});
-        rpn_append_operator(result, RPN_ASSIGN);
-        result->steps[result->count - 1].source_line = call->line;
+        append_operator(result, RPN_ASSIGN, call->line);
     }
     rpn_append_step(result, (rpn_step_t){.kind = RPN_CALL,
         .value.symbol = call->function, .receiver = call->receiver, .source_line = call->line});
@@ -234,7 +237,7 @@ rpn_t *codegen_call_end(codegen_call_t *call, codegen_order_t *order) {
 }
 
 codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int line) {
-    codegen_attribute_t attribute = {object, index, line};
+    codegen_attribute_t attribute = {.object = object, .index = index, .line = line};
     if (object == NULL || index == NULL) return (codegen_attribute_t){0};
     map_node_t *class_symbol = object->type_symbol;
     if (!class_build_layout(class_symbol, line)) return (codegen_attribute_t){0};
@@ -245,19 +248,14 @@ codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int
                 index->key, class_symbol->key);
             return (codegen_attribute_t){0};
         }
-        if (class_attribute_at(class_symbol, (size_t)position, line) == NULL)
-            return (codegen_attribute_t){0};
+        attribute.member = class_attribute_at(class_symbol, (size_t)position, line);
+        if (attribute.member == NULL) return (codegen_attribute_t){0};
     }
     return attribute;
 }
 
 static rpn_step_t attribute_step(codegen_attribute_t attribute, rpn_step_kind_t kind) {
-    map_node_t *member = NULL;
-    if (strcmp(attribute.index->value, "INTEGER") == 0) {
-        long position = strtol(attribute.index->key, NULL, 10);
-        if (position >= 0) member = class_attribute_at(attribute.object->type_symbol, (size_t)position, attribute.line);
-    }
-    return (rpn_step_t){.kind = kind, .value.symbol = member,
+    return (rpn_step_t){.kind = kind, .value.symbol = attribute.member,
         .receiver = attribute.object, .index = attribute.index, .source_line = attribute.line};
 }
 
@@ -268,25 +266,30 @@ rpn_t *codegen_attribute_value(codegen_attribute_t attribute) {
     return value;
 }
 
+static codegen_attribute_t save_attribute_index(codegen_attribute_t attribute) {
+    char name[64];
+    snprintf(name, sizeof(name), "@index%u", ++index_serial);
+    map_node_t *saved = map_put(symbol_table, name, "ID");
+    saved->usage = SYMBOL_VARIABLE;
+    saved->declared_type = checked_realloc(NULL, sizeof("INTEGER"));
+    strcpy(saved->declared_type, "INTEGER");
+    saved->owner = current_function ? current_function->symbol : NULL;
+    saved->declaration_line = attribute.line;
+    codegen_assignment(saved, codegen_value(attribute.index, attribute.line), attribute.line);
+    attribute.index = saved;
+    attribute.member = NULL;
+    rpn_append_step(current_sequence, attribute_step(attribute, RPN_INDEX_CHECK));
+    return attribute;
+}
+
 void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value) {
-    if (attribute.object == NULL || attribute.index == NULL) {
+    if (attribute.object == NULL || attribute.index == NULL || value == NULL) {
         codegen_free(value);
         return;
     }
-    if (value && attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime) {
-        char name[64];
-        snprintf(name, sizeof(name), "@index%u", ++index_serial);
-        map_node_t *saved = map_put(symbol_table, name, "ID");
-        saved->usage = SYMBOL_VARIABLE;
-        saved->declared_type = strdup("INTEGER");
-        saved->owner = current_function ? current_function->symbol : NULL;
-        saved->declaration_line = attribute.line;
-        codegen_assignment(saved, codegen_value(attribute.index, attribute.line), attribute.line);
-        attribute.index = saved;
-        rpn_append_step(current_sequence, attribute_step(attribute, RPN_INDEX_CHECK));
-    }
-    rpn_step_t destination = attribute_step(attribute, RPN_ATTRIBUTE_DESTINATION);
-    if (value != NULL) append_assignment(value, destination, attribute.line);
+    if (attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime)
+        attribute = save_attribute_index(attribute);
+    append_assignment(value, attribute_step(attribute, RPN_ATTRIBUTE_DESTINATION), attribute.line);
     emit_fragment(value);
 }
 
@@ -306,8 +309,7 @@ rpn_t *codegen_value(map_node_t *symbol, int line) {
 
 rpn_t *codegen_unary(rpn_t *value, rpn_operator_t operator, int line) {
     if (value == NULL) return NULL;
-    rpn_append_operator(value, operator);
-    value->steps[value->count - 1].source_line = line;
+    append_operator(value, operator, line);
     return value;
 }
 
@@ -320,8 +322,7 @@ rpn_t *codegen_binary(rpn_t *left, rpn_t *right,
     }
     rpn_append_sequence(left, right);
     codegen_free(right);
-    rpn_append_operator(left, operator);
-    left->steps[left->count - 1].source_line = line;
+    append_operator(left, operator, line);
     return left;
 }
 
@@ -345,8 +346,7 @@ rpn_t *codegen_assignment_expression(rpn_t *targets, rpn_t *value) {
     /* Assign right to left while retaining a value for the enclosing expression. */
     for (size_t i = targets->count; i > 0; i--) {
         rpn_step_t target = targets->steps[i - 1];
-        rpn_append_operator(value, RPN_DUPLICATE);
-        value->steps[value->count - 1].source_line = target.source_line;
+        append_operator(value, RPN_DUPLICATE, target.source_line);
         append_assignment(value, target, target.source_line);
     }
     codegen_free(targets);
@@ -372,51 +372,8 @@ void codegen_output(rpn_t *value, int line) {
     emit_fragment(codegen_unary(value, RPN_OUTPUT, line));
 }
 
-static bool returns_object(const rpn_t *expression) {
-    const map_node_t **types = calloc(expression->count + 1, sizeof(*types));
-    if (types == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate return category information\n");
-        exit(1);
-    }
-    size_t count = 0;
-    for (size_t i = 0; i < expression->count; i++) {
-        const rpn_step_t *step = &expression->steps[i];
-        switch (step->kind) {
-            case RPN_SYMBOL:
-            case RPN_CALL:
-                types[count++] = step->value.symbol->type_symbol;
-                break;
-            case RPN_ATTRIBUTE:
-                types[count++] = step->value.symbol != NULL ? step->value.symbol->type_symbol : NULL;
-                break;
-            case RPN_DESTINATION:
-            case RPN_ARGUMENT_DESTINATION:
-            case RPN_ATTRIBUTE_DESTINATION:
-                types[count++] = NULL;
-                break;
-            case RPN_OPERATOR:
-                if (step->value.operator == RPN_ASSIGN && count >= 2) count -= 2;
-                else if (step->value.operator == RPN_DUPLICATE && count != 0) {
-                    types[count] = types[count - 1];
-                    count++;
-                } else if (step->value.operator == RPN_TO_INTEGER && count != 0) types[count - 1] = NULL;
-                else if (step->value.operator <= RPN_NOT_EQUAL && count >= 2) types[--count - 1] = NULL;
-                break;
-            default: break;
-        }
-    }
-    bool result = count != 0 && types[count - 1] != NULL;
-    free(types);
-    return result;
-}
-
 void codegen_return(rpn_t *value, int line) {
     if (current_function == NULL) {
-        codegen_free(value);
-        return;
-    }
-    if (value != NULL && returns_object(value)) {
-        report_semantic_error(line, "Object returns are not allowed");
         codegen_free(value);
         return;
     }
@@ -431,11 +388,7 @@ codegen_function_t *codegen_function_begin(map_node_t *symbol, int line) {
         report_semantic_error(line, "Functions and methods must return INTEGER or SINGLEF; object returns are not allowed");
         return NULL;
     }
-    codegen_function_t *function = malloc(sizeof(*function));
-    if (function == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate function code\n");
-        exit(1);
-    }
+    codegen_function_t *function = checked_realloc(NULL, sizeof(*function));
     *function = (codegen_function_t){.symbol = symbol, .active = true,
                                      .parent = current_function};
     rpn_init(&function->body);
@@ -473,8 +426,7 @@ void codegen_function_end(codegen_function_t *function) {
 static size_t append_branch(rpn_operator_t operator, int line) {
     size_t target = rpn_reserve_target(current_sequence);
     current_sequence->steps[target - 1].source_line = line;
-    rpn_append_operator(current_sequence, operator);
-    current_sequence->steps[current_sequence->count - 1].source_line = line;
+    append_operator(current_sequence, operator, line);
     return target;
 }
 
@@ -500,11 +452,7 @@ void codegen_if_end(size_t target) {
 }
 
 static double constant_value(const map_node_t *symbol) {
-    char *text = malloc(strlen(symbol->key) + 1);
-    if (text == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate numeric constant text\n");
-        exit(1);
-    }
+    char *text = checked_realloc(NULL, strlen(symbol->key) + 1);
     strcpy(text, symbol->key);
     for (size_t i = 0; text[i] != '\0'; i++) {
         if (text[i] == 's') text[i] = 'e';

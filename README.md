@@ -69,7 +69,7 @@ The script rebuilds the compiler and shows each input, its output and its exit s
 
 ## Project status
 
-The language supports arithmetic, conditionals, loops, functions, methods, inheritance and compile-time variables. This is a work in progress; the explicit `--wasm` mode adds type checking and WebAssembly generation.
+The language supports arithmetic, conditionals, loops, functions, methods, inheritance and compile-time variables. All output options share type checking and compile-time evaluation; `--wasm` additionally generates WebAssembly.
 
 
 ## TP4: WebAssembly
@@ -81,7 +81,7 @@ npm ci --prefix runtime
 ```
 
 This produces validated WAT/Wasm and runs the actual module with Node (18+).
-The existing default and `--analyze` modes preserve TP3 behavior. Use
+The default output includes RPN; `--analyze` hides RPN without changing checks. Use
 `./compiler --wasm -o output.wat input.txt` to generate WAT alone.
 The browser runner is in `runtime/index.html` and uses the same host imports.
 
@@ -92,4 +92,4 @@ Run the complete regression suites with:
 ```
 
 [TP4 design and requirements](docs/TP4.md), [source walkthroughs](docs/FUNCTIONS.md),
-[validation](docs/VALIDATION.md) and [AI attribution](docs/AI.md).
+[validation](docs/VALIDATION.md), [unified semantics](docs/UNIFICATION.md) and [AI attribution](docs/AI.md).

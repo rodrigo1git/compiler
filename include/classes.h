@@ -26,5 +26,6 @@ map_node_t *class_attribute_at(map_node_t *class_symbol, size_t position, int li
 bool class_check_copy(const map_node_t *destination, const map_node_t *source, int line);
 
 bool class_has_comptime(const map_node_t *class_symbol);
+bool class_check_containment(void);
 
 #endif

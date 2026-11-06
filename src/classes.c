@@ -175,6 +175,33 @@ static bool type_in_path(const type_path_t *path, const map_node_t *type) {
     return false;
 }
 
+static bool check_containment_path(map_node_t *type, const type_path_t *path, symbol_list_t *complete) {
+    if (type == NULL) return true;
+    for (size_t i = 0; i < complete->count; i++)
+        if (complete->items[i] == type) return true;
+    if (type_in_path(path, type)) {
+        report_semantic_error(type->declaration_line,
+            "Recursive object containment in class '%s'", type->key);
+        return false;
+    }
+    type_path_t current = {type, path};
+    for (size_t i = 0; i < type->effective_attributes.count; i++)
+        if (!check_containment_path(type->effective_attributes.items[i]->type_symbol, &current, complete))
+            return false;
+    symbol_list_append(complete, type);
+    return true;
+}
+
+bool class_check_containment(void) {
+    symbol_list_t complete = {0};
+    bool valid = true;
+    for (int i = 0; i < symbol_table->capacity && valid; i++)
+        for (map_node_t *symbol = symbol_table->buckets[i]; symbol && valid; symbol = symbol->next)
+            if (symbol->usage == SYMBOL_CLASS) valid = check_containment_path(symbol, NULL, &complete);
+    free(complete.items);
+    return valid;
+}
+
 static bool class_has_comptime_path(const map_node_t *class_symbol, const type_path_t *path) {
     if (class_symbol == NULL || type_in_path(path, class_symbol)) return false;
     type_path_t current = {class_symbol, path};

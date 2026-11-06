@@ -11,6 +11,7 @@ typedef struct {
     map_node_t *object;
     map_node_t *index;
     int line;
+    map_node_t *member; /* Resolved for a constant index; NULL for a variable index. */
 } codegen_attribute_t;
 
 typedef struct {
@@ -28,7 +29,7 @@ bool codegen_print(FILE *stream);
 bool codegen_finalize(void);
 const rpn_t *codegen_source_body(void);
 
-/* Expression fragments are owned; combining or emitting consumes its inputs. */
+/* NULL fragments propagate parser recovery errors. Combining/emitting consumes inputs. */
 rpn_t *codegen_value(map_node_t *symbol, int line);
 rpn_t *codegen_unary(rpn_t *value, rpn_operator_t operator, int line);
 rpn_t *codegen_binary(rpn_t *left, rpn_t *right, rpn_operator_t operator, int line);

@@ -4,11 +4,6 @@
 #include "../include/comptime_values.h"
 #include "../include/diagnostics.h"
 
-static bool checked_numeric;
-
-void comptime_enable_tp4(bool enabled) { checked_numeric = enabled; }
-bool comptime_tp4_enabled(void) { return checked_numeric; }
-
 static void *resize(void *pointer, size_t size) {
     void *result = realloc(pointer, size);
     if (result == NULL && size != 0) {
@@ -128,61 +123,25 @@ comptime_value_t comptime_read_constant(const map_node_t *symbol) {
 }
 
 comptime_value_t comptime_binary(comptime_value_t left, comptime_value_t right, rpn_operator_t operator) {
-    comptime_value_t result = {0};
-    if (checked_numeric) {
-        result.error = left.error ? left.error : right.error;
-        if (left.known && right.known && left.floating == right.floating) {
-            numeric_result_t number = numeric_binary(left.number, right.number, left.floating, operator);
-            result.known = number.error == NUMERIC_OK;
-            result.error = number.error;
-            result.number = number.number;
-            result.floating = operator < RPN_LESS && left.floating;
-        }
-        return result;
-    }
+    comptime_value_t result = {.error = left.error ? left.error : right.error};
     if (left.known && right.known && left.floating == right.floating) {
-        result.known = true;
-        result.floating = left.floating;
-        switch (operator) {
-            case RPN_ADD: result.number = left.number + right.number; break;
-            case RPN_SUBTRACT: result.number = left.number - right.number; break;
-            case RPN_MULTIPLY: result.number = left.number * right.number; break;
-            case RPN_DIVIDE:
-                if (right.number == 0) result.known = false;
-                else {
-                    result.number = left.number / right.number;
-                    if (!result.floating) result.number = trunc(result.number);
-                }
-                break;
-            case RPN_LESS: result.number = left.number < right.number; result.floating = false; break;
-            case RPN_GREATER: result.number = left.number > right.number; result.floating = false; break;
-            case RPN_LESS_EQUAL: result.number = left.number <= right.number; result.floating = false; break;
-            case RPN_GREATER_EQUAL: result.number = left.number >= right.number; result.floating = false; break;
-            case RPN_EQUAL: result.number = left.number == right.number; result.floating = false; break;
-            case RPN_NOT_EQUAL: result.number = left.number != right.number; result.floating = false; break;
-            default: result.known = false; break;
-        }
-        if (result.floating) result.number = (float)result.number;
-        if (!isfinite(result.number) || (!result.floating &&
-            (result.number < -32768 || result.number > 32767))) result.known = false;
+        numeric_result_t number = numeric_binary(left.number, right.number, left.floating, operator);
+        result.known = number.error == NUMERIC_OK;
+        result.error = number.error;
+        result.number = number.number;
+        result.floating = operator < RPN_LESS && left.floating;
     }
     return result;
 }
 
 comptime_value_t comptime_to_integer(comptime_value_t value) {
     value.constant = NULL;
-    if (checked_numeric && value.known) {
+    if (value.known) {
         numeric_result_t number = numeric_integer(value.number);
         value.number = number.number;
         value.error = number.error;
         value.known = number.error == NUMERIC_OK;
         value.floating = false;
-        return value;
-    }
-    if (value.known) {
-        value.number = trunc(value.number);
-        value.floating = false;
-        if (value.number < -32768 || value.number > 32767) value.known = false;
     }
     return value;
 }

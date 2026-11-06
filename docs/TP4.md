@@ -1,7 +1,7 @@
 # Generación WebAssembly del grupo 24
 
 El compilador conserva su análisis léxico, parser Bison, ámbitos y polaca inversa.
-El modo `--wasm` agrega compatibilidad de tipos y genera WebAssembly mediante
+Todas las opciones realizan los mismos chequeos. `--wasm` genera además WebAssembly mediante
 variables auxiliares. El runtime de JavaScript carga el módulo, muestra sus salidas
 y comunica sus errores; los cálculos y controles se ejecutan en WebAssembly.
 
@@ -37,9 +37,9 @@ node runtime/assemble.mjs /tmp/program.wat /tmp/program.wasm
 node runtime/run.mjs /tmp/program.wasm
 ```
 
-Sin `--wasm`, los modos históricos siguen realizando TP3. `--analyze` evita
-imprimir la polaca; combinado con `--wasm` conserva los chequeos y la generación
-del archivo. WAT se publica mediante un archivo temporal y renombrado al completar
+`--analyze` evita imprimir la polaca; combinado con `--wasm` conserva la generación
+del archivo. Las reglas numéricas, el chequeo de tipos y la especialización son
+comunes a todas las opciones; no existe un recorrido histórico TP3. WAT se publica mediante un archivo temporal y renombrado al completar
 la generación. Un fallo no reemplaza una salida anterior válida; siempre hay que
 comprobar el estado del proceso para identificar el resultado actual.
 
@@ -59,7 +59,7 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
 
 1. `main` interpreta opciones, inicializa y llama a `yyparse`.
 2. Las acciones de `grammar.y` construyen cuerpos fuente en `codegen.c`.
-3. En modo completo, `types_check_sources` valida todos esos cuerpos, incluidos
+3. `types_check_sources` comprueba contención finita de objetos y valida todos esos cuerpos, incluidos
    los no invocados, las ramas constantes y el código posterior a RET.
 4. `specialize_program` resuelve comptime y conserva sus instancias y plantillas.
    Antes de eliminar un brazo, ciclo vacío o cola posterior a RET,
@@ -76,10 +76,10 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
    Los ciclos sin efectos comptime mantienen el análisis conservador de una vuelta.
    Para resolver valores que provienen de llamadas reutiliza el especializador
    sobre ese entorno aislado; no agrega esas llamadas al cuerpo que se ejecutará.
-5. `layout_init` calcula símbolos, clases, campos, cadenas y marcos. Detecta ciclos
-   de contención por valor, incluso en clases sin instancias.
-6. Los cuerpos ejecutables se vuelven a comprobar: aquí se resuelven obligaciones
-   cuyo tipo dependía de un índice comptime pendiente en la plantilla.
+5. `types_check_specializations` comprueba los cuerpos ejecutables en todas las
+   opciones: resuelve obligaciones cuyo tipo dependía de un índice comptime.
+6. Si se solicita destino, `layout_init` calcula símbolos, clases, campos, cadenas
+   y marcos y aplica los límites de memoria del backend.
 7. `wasm_write` planifica reservas y auxiliares y emite el módulo estructurado.
 8. WABT valida y convierte el archivo; Node o navegador ejecuta el módulo real.
 
@@ -173,12 +173,11 @@ emite unreachable por si otro host retornara.
 `f(f(x))` es válido si la llamada interior termina antes de entrar en la exterior.
 Una operación ordinaria que deba provocar un control permanece en el ejecutable.
 Si el resultado es necesario para un valor comptime, se informa durante compilación.
-En TP4, una llamada a una función fuente que ya se está especializando apunta
+Una llamada a una función fuente que ya se está especializando apunta
 al cuerpo activo y conserva resultado desconocido. Su guardia EI termina antes
 que se ejecute ese cuerpo otra vez, aunque el argumento comptime cambie como
 p-1 o p+1. No se crean infinitas instancias para una reentrada ordinaria. Los
-argumentos conservan sus efectos previos a la llamada. Esta regla no se activa
-en TP3, que conserva su evaluación y límites anteriores.
+argumentos conservan sus efectos previos a la llamada. Esta regla se aplica con todas las opciones de salida.
 Los límites de profundidad/expansión del especializador protegen al compilador;
 no sustituyen la guardia de recursión del ejecutable.
 
@@ -222,11 +221,12 @@ eliminada. El evaluador de pruebas TP3 reconoce esos temporales y CHECK_INDEX.
 ./tests/run_all.sh --report /tmp/tp4-report.json
 ```
 
-TP3 conserva sus suites y su evaluador. Se corrigió la aplicación recursiva de
-Object fields y se agregaron comprobaciones de cuerpos simbólicos. TP4 convierte
-y ejecuta el Wasm para comparar resultados independientes, errores, estado de
-salida y ausencia de POUT posteriores. Los casos de TP3 con tipos diferidos,
-recursión o truncamiento tienen expectativas explícitas para la etapa final.
+Las pruebas de polaca usan el evaluador Python únicamente para operaciones que
+representa fielmente. Los controles runtime y las capturas variables se comprueban
+ejecutando Wasm real. Los casos de cátedra tienen una sola expectativa, compartida
+por las pruebas de análisis, polaca y destino. `verify_outputs.py` compara cinco
+selecciones de salida, sus diagnósticos y la polaca; con `--baseline` comprueba
+además que el WAT sea idéntico al del compilador de referencia.
 El reporte incluye hashes del binario y fuentes, versiones y escenarios.
 
 La validación requiere revisar también ejemplos manuales de salida y WAT.

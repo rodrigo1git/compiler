@@ -139,7 +139,9 @@ static bool check_body(const rpn_t *body, const map_node_t *function,
                 stack[count++] = (type_t){TYPE_INTEGER, NULL};
             } else if (op == RPN_DUPLICATE) { stack[count++] = right; stack[count++] = right; }
             else if (op == RPN_RETURN) {
-                if (!function || !types_compatible(type_of_symbol(function), right))
+                if (right.kind == TYPE_OBJECT)
+                    report_semantic_error(line, "Object returns are not allowed");
+                else if (!function || !types_compatible(type_of_symbol(function), right))
                     report_semantic_error(line, "Incompatible return type: %s", type_name(right));
             } else if (op == RPN_OUTPUT) {
                 if (!numeric(right) && right.kind != TYPE_STRING)
@@ -165,10 +167,22 @@ bool types_check_body(const rpn_t *body, const map_node_t *function) {
 
 bool types_check_sources(const rpn_t *main_body) {
     int errors = global_errors;
+    if (!class_check_containment()) return false;
     types_check_body(main_body, NULL);
     for (size_t i = 0; i < specialize_source_count(); i++) {
         map_node_t *symbol;
         const rpn_t *body = specialize_source_body(i, &symbol);
+        types_check_body(body, symbol);
+    }
+    return errors == global_errors;
+}
+
+bool types_check_specializations(void) {
+    int errors = global_errors;
+    types_check_body(specialize_main_body(), NULL);
+    for (size_t i = 0; i < specialize_instance_count(); i++) {
+        map_node_t *symbol;
+        const rpn_t *body = specialize_instance_body(i, &symbol);
         types_check_body(body, symbol);
     }
     return errors == global_errors;

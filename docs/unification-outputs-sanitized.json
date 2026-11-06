@@ -1,0 +1,1630 @@
+{
+  "compiler_sha256": "d7b77434204447f301646a497ac319c7474d766f030a2715d38890b25a423e71",
+  "cases": 324,
+  "compiler_runs": 1944,
+  "passed": 324,
+  "failed": 0,
+  "results": [
+    {
+      "name": "integer_limits",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "integer_wrap",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "integer_wrap_comptime",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "division_truncation",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_valid",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_positive",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_negative",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_minimum",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_from_call",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "product_comptime_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_add_valid",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_overflow_positive",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_overflow_negative",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_from_call",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_comptime_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_rounding",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_exact",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_fraction",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_negative_fraction",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_large",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_small",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_nan",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_infinity",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_condition_effect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_comptime_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "conversion_type_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "dead_branch_types",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "unused_function_types",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "after_return_types",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "unused_template_types",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursion_direct",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursion_indirect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "calls_successive_nested",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "early_returns",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_reentry_receiver",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "inherited_second_base",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_index_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_index_mixed_print",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_index_mixed_reject",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "index_negative",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "index_upper",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_index_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_index_bad_specialization",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_index_unused",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_recursive",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "nested_class_parameter_not_containment",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "operand_snapshot",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "negative_condition",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "destination_index_snapshot",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_index_comptime_read",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_index_comptime_write",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_object_copy",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_object_destination",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "lexical_parent_not_caller",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_calls_nested",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_read_snapshot_versions",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "known_variable_index_invalid_runtime",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "invalid_destination_before_rhs",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_return_false_branch",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_valid_false_branch",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_return_else_branch",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_valid_else_branch",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_return_after_return",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_valid_after_return",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_return_after_returning_if",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_return_empty_loop",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_valid_empty_loop",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_assignment",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_binary",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_conversion",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_argument",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_nested_local_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_nested_local_singlef",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_local_assignment",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_after_call_effect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_cached_context",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursive_comptime_change_decrease",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursive_comptime_change_increase",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursive_comptime_base_case",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "recursive_comptime_indirect_change",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_pure_call_preserves_global_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_negative_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_outside_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_call_result_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_call_effect_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_object_copy_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_object_argument_integer",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_call_result_singlef",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_call_effect_singlef",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_object_copy_singlef",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_object_argument_singlef",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_unrelated_call_write",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_active_0",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_active_1",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_after_return_0",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_after_return_1",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_false_branch_0",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_attribute_index_false_branch_1",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_ascending",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_descending",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_third_iteration",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_valid",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_final_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_nested",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_snapshots",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_stable",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "discarded_loop_runtime_large",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_comptime_argument",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_comptime_signed_zero",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_runtime_signed_zero",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_nested_comptime_argument",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_comptime_attribute_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_comptime_receivers",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_comptime_receivers_reversed",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_comptime_same_receiver_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_comptime_uninitialized_receiver",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_comptime_loop_control_reference",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_comptime_signed_zero_reversed",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_signed_zero_branch_join",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_method_receivers",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_deep_method_receivers",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_inherited_receivers",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_copies",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_local_activations",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_argument_copy",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_discarded_0",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_nested_discarded_1",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_signed_zero_language_equality",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_descending",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_empty",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loops_nested_arguments",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_control_mutation",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_effect_count",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_argument_return",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_runtime_unknown_control",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_unknown_argument",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_runtime_error_preserved",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_assigned_invariant",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_argument_order",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_argument_order_invariant",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_branch_requirement",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_nonterminating_invariant",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_loop_nonterminating_inner_finite",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_discarded_loop_argument_valid",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "correction_discarded_loop_argument_bad_type",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_method_attribute_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_inherited_attribute_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "scope_mangling_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_undeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_redeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "function_undeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "function_redeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "class_undeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "class_redeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_undeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_redeclared",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "function_as_destination",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_as_function",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "class_as_value",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "variable_as_class",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "member_wrong_use",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "receiver_wrong_use",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "later_function_hidden",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "sibling_local_hidden",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "class_later_hidden",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_later_hidden",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "namespaces_same_scope",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "class_and_function_shadowing",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_123",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_123",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_123",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_132",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_132",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_132",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_213",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_213",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_213",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_231",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_231",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_231",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_312",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_312",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_312",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "argument_order_321",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "formal_positions_321",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_formal_positions_321",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "arity_short",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "arity_long",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_short",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_long",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_duplicate",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_zero",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_negative",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_too_large",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_float",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "order_missing",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "parameter_copy_and_defaults",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "nested_and_recursive_calls",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "returns_in_nested_control",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_ascending_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_descending_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_equal",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_ascending_overshoot",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_descending_overshoot",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_body_changes_control",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "nested_loops_and_selection",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "embedded_assignment_values",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_update_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_selection_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_parameter_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_to_runtime_parameter",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_runtime_assignment_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_unknown_control_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_unknown_argument_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_branch_rejects_equal_writes",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_known_branch_updates",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_unknown_branch_reads",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_calls_propagate_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_function_local_state",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_multiple_specializations",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_capture_changes",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_nested_capture",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_recursive_parameters",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_keeps_runtime_calls",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_body_changes_control",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_call_changes_control",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_preserves_embedded_effect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_call_runtime_effect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_float_and_conversion",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_uninitialized",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_integer_overflow",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_division_by_zero",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_empty_loop_under_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structural_copy_renamed_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structural_methods_do_not_count",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structure_count_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structure_type_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structure_order_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structure_code_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structure_qualified_field_type",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "nested_object_copy",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "positional_constant_and_variable",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "positional_runtime_parameter",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "position_negative",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "position_outside",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "position_after_declaration_only",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "diamond_identity_and_order",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structural_effective_attributes",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "inherited_implicit_lookup",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "own_method_precedes_bases",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "distinct_inherited_methods_ambiguous",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "distinct_inherited_attributes_ambiguous",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "inheritance_cycle",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_receiver_independence",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "method_local_class_lexical_parent",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_method_bindings",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_return_header",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_return_value",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_method_return",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "explicit_conversion_example",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "explicit_conversion_operand",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "mixed_operands_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "float_assignment_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "loop_types_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "output_literal_disambiguation",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "independent_error_recovery",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "ordinary_nonterminating_loop_compiles",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "specialization_resource_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "integer_division_consistency",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_float_parameters",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_mixed_formals",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_runtime_recursion",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "ordinary_recursion_does_not_specialize",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_method_lexical_capture",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_attribute_instances",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_attribute_dynamic_position",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_index_substitution",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_negative_index",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_runtime_index_invalidates_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_object_copy_refreshes_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "runtime_object_copy_invalidates_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_runtime_branch_join",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_return_inside_expanded_loop",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "large_parameter_list",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "nested_noncommutative_copy",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "operand_snapshot_before_call",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_operand_snapshot",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_external_mutation_calls",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_loop_external_mutation_calls",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "staged_function_keeps_runtime_global",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_local_does_not_restore_global",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_read_only_known_dead_branch",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_runtime_helper_under_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "own_attribute_and_base_storage",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "mixed_inherited_layout_and_copy",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "mixed_inherited_order_error",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "literal_symbol_category_collision",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "multiline_chain_output",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "parameter_types_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "return_types_deferred",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_indexed_write_effect",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "comptime_indexed_write_in_loop",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "cached_indexed_write_respects_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_copy_propagates_comptime_fields",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_parameter_comptime_snapshot_1",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_parameter_comptime_snapshot_2",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structural_copy_comptime_to_runtime",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "structural_copy_runtime_to_comptime",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_parameter_local_comptime_state",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_parameter_qualifier_source",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "object_parameter_qualifier_formal",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "singlef_compiletime_runtime_rounding",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "expansion_resource_guard",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_negative_step_ascending",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_negative_step_descending",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "from_zero_step_with_body_progress",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_templates.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_comptime_copies.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_comptime_specialization.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_methods.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "rpn_valid.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_calls.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    },
+    {
+      "name": "tp3_control.txt",
+      "passed": true,
+      "baseline_diagnostics_changed": false
+    }
+  ],
+  "baseline_sha256": "a7ec76e61aa3fb7854df0f7ccef9948ebdeeeecc0b485b4c3744a7ae71496053"
+}

@@ -9,29 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 import tempfile
-from tp3_course_cases import CASES as COURSE
-from tp4_cases import CASES
-from correction_cases import CASES as CORRECTIONS
+from compiler_cases import load_cases
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_ERRORS = {
-    'specialization_resource_guard': ('(i)', []),
-    'nested_and_recursive_calls': ('(i)', [6]),
-    'comptime_recursive_parameters': ('(i)', []),
-    'explicit_conversion_example': ('(g)', []),
-    'explicit_conversion_operand': ('(g)', []),
-    'comptime_runtime_recursion': ('(i)', []),
-    'ordinary_recursion_does_not_specialize': ('(i)', []),
-}
-COMPILE_ERRORS = {
-    'comptime_division_by_zero': 'Integer division by zero required by comptime assignment',
-    'comptime_float_and_conversion': 'fractional information',
-    'mixed_operands_deferred': 'Incompatible operand',
-    'float_assignment_deferred': 'Incompatible assignment',
-    'loop_types_deferred': 'FROM control',
-    'parameter_types_deferred': 'Incompatible assignment',
-    'return_types_deferred': 'return type',
-}
 
 
 def run(command, **options):
@@ -58,31 +38,7 @@ def main():
     parser.add_argument('--case', default='', help='Only run case names containing this text')
     args = parser.parse_args()
     compiler = args.compiler.resolve()
-    cases = [dict(case, compile_error=re.escape(case['compile_error']) if case.get('compile_error') else None)
-             for case in CASES + CORRECTIONS]
-    for original in COURSE:
-        case = dict(original)
-        if original.get('error'):
-            if case['name'] in RUNTIME_ERRORS:
-                case['compile_error'] = None
-            elif case['name'] == 'comptime_integer_overflow':
-                case.update(output=[], compile_error=None)
-            elif case['name'] == 'comptime_attribute_dynamic_position':
-                case.update(output=[3], compile_error=None)
-            else:
-                error = COMPILE_ERRORS.get(case['name'])
-                case['compile_error'] = re.escape(error) if error else original['error']
-                cases.append(case)
-                continue
-        error = COMPILE_ERRORS.get(case['name'])
-        case['compile_error'] = re.escape(error) if error else None
-        if case['name'] in RUNTIME_ERRORS:
-            case['runtime_error'], case['output'] = RUNTIME_ERRORS[case['name']]
-        cases.append(case)
-    for filename, expected in [('tp3_templates.txt',[3,4,7,8,6]),
-                               ('tp3_comptime_copies.txt',[10,16,11,16,3,7,14]),
-                               ('tp3_comptime_specialization.txt',[3,7,3])]:
-        cases.append(dict(name=filename, source=(ROOT/'tests'/filename).read_text(), output=expected))
+    cases = load_cases()
     cases = [case for case in cases if args.case in case['name']]
     assert cases, f'No cases matching {args.case!r}'
     counts = Counter()

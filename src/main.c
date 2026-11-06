@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include "../include/comptime_values.h"
 #include "../include/types.h"
 #include "../include/wasm_emit.h"
 #include "../y.tab.h"
@@ -75,14 +74,14 @@ int main(int argc, char *argv[]) {
     // Parse
     init_symbol_table();
     codegen_init();
-    comptime_enable_tp4(wasm);
     set_trace_enabled(trace);
     scope_init();
 
     int parse_result = yyparse();
     finish_error_recovery();
-    if (parse_result == 0 && global_errors == 0 && wasm) types_check_sources(codegen_source_body());
+    if (parse_result == 0 && global_errors == 0) types_check_sources(codegen_source_body());
     if (parse_result == 0 && global_errors == 0) codegen_finalize();
+    if (parse_result == 0 && global_errors == 0) types_check_specializations();
     if (parse_result == 0 && global_errors == 0 && wasm) {
         if (!output_path) {
             default_output = malloc(strlen(input_path) + 5);

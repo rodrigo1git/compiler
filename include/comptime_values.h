@@ -26,9 +26,6 @@ typedef struct {
     size_t count;
 } comptime_environment_t;
 
-void comptime_enable_tp4(bool enabled);
-bool comptime_tp4_enabled(void);
-
 /* Equality for propagation/cache states, preserving signed floating zero.
    This is not the source language's numeric comparison operator. */
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right);

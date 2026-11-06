@@ -183,7 +183,7 @@ case("nested_and_recursive_calls", "TP3 p.5", """
     integer function sum(integer p,integer q) begin ret(p+q); end;
     integer function total(integer p)
     begin if(p>0$i) ret(p+total(p-1$i)[1$i]); end_if; ret(p); end;
-""", "pout(sum(1$i,sum(2$i,3$i)[1$i,2$i])[1$i,2$i]); pout(total(5$i)[1$i]);", [6, 15])
+""", "pout(sum(1$i,sum(2$i,3$i)[1$i,2$i])[1$i,2$i]); pout(total(5$i)[1$i]);", [6], runtime_error='(i)')
 
 case("returns_in_nested_control", "TP3 pp.5-6", """
     integer function f(integer p)
@@ -327,7 +327,7 @@ case("comptime_nested_capture", "TP3 pp.2,5,8", """
 case("comptime_recursive_parameters", "TP3 pp.5,8", """
     integer function f(comptime integer p)
     begin if(p>0$i) ret(p+f(p-1$i)[1$i]); end_if; ret(p); end;
-""", "pout(f(4$i)[1$i]);", [10])
+""", "pout(f(4$i)[1$i]);", [], runtime_error='(i)')
 case("comptime_loop_keeps_runtime_calls", "TP3 pp.5-6,8", """
     integer function identity(integer p) begin ret(p); end;
     comptime integer x;
@@ -359,13 +359,13 @@ case("comptime_call_runtime_effect", "TP3 pp.5,8", """
 """, "x := f(2$i)[1$i]; pout(x);", [2, 5])
 case("comptime_float_and_conversion", "TP3 pp.4,8", "comptime singlef x; comptime integer y;", """
     x := 1.5; x := x+2.25; y := toi(x); pout(x); pout(y);
-""", [3.75, 3])
+""", [3.75, 3], error='fractional information')
 case("comptime_uninitialized", "TP3 p.8", "comptime integer x;", "pout(x);",
      error="has no known value", error_at="pout(x);")
 case("comptime_integer_overflow", "TP3 p.8; topic 3 range", "comptime integer x;",
-     "x := 32767$i+1$i;", error="not known at compile time")
+     "x := 32767$i+1$i;", error=None, output=[], symbols={'x:main': {'Compile-time value': '-32768$i'}})
 case("comptime_division_by_zero", "TP3 p.8", "comptime integer x;",
-     "x := 1$i/0$i;", error="not known at compile time")
+     "x := 1$i/0$i;", error='Integer division by zero required by comptime assignment')
 case("comptime_empty_loop_under_guard", "TP3 pp.6,8", """
     integer function f(integer p)
     comptime integer x;
@@ -528,15 +528,15 @@ for name, declarations, body in [
 
 case("explicit_conversion_example", "TP3 p.4, topic 34", "integer a; singlef x,y;", """
     x := 1.5; y := 2.25; a := toi(x+y); pout(a);
-""", [3], contains=["TOI"])
+""", [], contains=["TOI"], runtime_error='(g)')
 case("explicit_conversion_operand", "TP3 p.4, topic 34 adapted to INTEGER", "integer a,b; singlef x;",
-     "x := 3.75; b := 2$i; a := toi(x)+b; pout(a);", [5], contains=["TOI"])
+     "x := 3.75; b := 2$i; a := toi(x)+b; pout(a);", [], contains=["TOI"], runtime_error='(g)')
 for name, expression in [("mixed_operands_deferred", "z+b"), ("float_assignment_deferred", "x+y")]:
-    case(name, "TP3 p.4, invalid numeric examples deferred to TP4", "integer a,b; singlef x,y,z;",
+    case(name, "TP4: numeric compatibility in every output option", "integer a,b; singlef x,y,z;",
          f"x := 1.0; y := 2.0; z := 3.0; b := 1$i; a := {expression};", execute=False,
-         excludes=["TOI"], boundary="TP4 numeric compatibility")
-case("loop_types_deferred", "TP3 pp.4,6, numeric checks deferred for RPN", "singlef i;",
-     "from i := 1.0 to 2.0 by 1.0 repeat pout(i);;", execute=False, boundary="TP4 loop operand types")
+         excludes=["TOI"], error="Incompatible operand" if name == "mixed_operands_deferred" else "Incompatible assignment")
+case("loop_types_deferred", 'TP3 FROM; final compiler requires INTEGER control', "singlef i;",
+     "from i := 1.0 to 2.0 by 1.0 repeat pout(i);;", execute=False, boundary="TP4 loop operand types", error='FROM control')
 
 case("output_literal_disambiguation", "TP3 pp.1,12", "integer a;", """
     a := 1$i;
@@ -550,10 +550,10 @@ case("independent_error_recovery", "TP3 p.12", "integer a;", """
 """, error="not declared or not visible", diagnostics=["Missing argument in pout", "'absent'"])
 case("ordinary_nonterminating_loop_compiles", "TP3 p.6; runtime/compile-time boundary", "integer i;",
      "from i := 0$i to 1$i by 0$i repeat pout(i);;", execute=False, contains=["BI", "BF"])
-case("specialization_resource_guard", "Documented implementation resource limit", """
+case("specialization_resource_guard", 'TP4 control i: recursion fails at runtime before reentry', """
     integer function f(comptime integer p)
     begin if(p>0$i) ret(f(p-1$i)[1$i]); end_if; ret(p); end;
-""", "pout(f(200$i)[1$i]);", error="recursion resource limit")
+""", "pout(f(200$i)[1$i]);", error=None, output=[], runtime_error='(i)')
 
 case("integer_division_consistency", "TP3 pp.1,8; INTEGER representation", """
     comptime integer value;
@@ -570,10 +570,10 @@ case("comptime_mixed_formals", "TP3 pp.5,8", """
 case("comptime_runtime_recursion", "TP3 pp.5,8", """
     integer function f(comptime integer p,integer n)
     begin if(n>0$i) ret(p+f(p,n-1$i)[1$i,2$i]); end_if; ret(0$i); end;
-""", "pout(f(3$i,5$i)[1$i,2$i]);", [15])
+""", "pout(f(3$i,5$i)[1$i,2$i]);", [], runtime_error='(i)')
 case("ordinary_recursion_does_not_specialize", "TP3 p.5; runtime boundary", """
     integer function f(integer p) begin ret(f(p)[1$i]); end;
-""", "pout(f(1$i)[1$i]);", execute=False)
+""", "pout(f(1$i)[1$i]);", execute=False, output=[], runtime_error='(i)')
 case("comptime_method_lexical_capture", "TP3 pp.2-3,5,8", """
     integer function outer(comptime integer p)
     class local code begin integer read(integer q) begin ret(p+q); end; end;
@@ -593,7 +593,7 @@ case("comptime_attribute_dynamic_position", "TP3 pp.8,10", """
     c object;
     integer function f(integer index) begin ret(object[index]); end;
 """, "object[0$i] := 3$i; object[1$i] := 7$i; pout(f(0$i)[1$i]);",
-     error="position must be known")
+     error=None, output=[3], ir_evaluate=False)
 case("comptime_index_substitution", "TP3 pp.8,10", """
     class c code begin integer first,second; end;
     c object;
@@ -728,10 +728,10 @@ case("literal_symbol_category_collision", "TP3 pp.1,12", """
      ["a:main", "1.5", 3, 3, 1.5], symbols={"a:main": {"Use": "VARIABLE"}, "1.5": {"Type": "SINGLEF"}})
 case("multiline_chain_output", "TP3 pp.1,12; topic 10", "integer a;",
      'a := 1$i; pout("first\nsecond"); pout(a);', ["firstsecond", 1])
-case("parameter_types_deferred", "TP3 pp.4-5", "integer function f(integer p) begin ret(p); end;",
-     "pout(f(1.5)[1$i]);", execute=False, boundary="TP4 parameter compatibility")
-case("return_types_deferred", "TP3 pp.4-5", "integer function f(integer p) begin ret(1.5); end;",
-     "pout(f(1$i)[1$i]);", execute=False, boundary="TP4 numeric return compatibility")
+case("parameter_types_deferred", 'TP4: parameter compatibility', "integer function f(integer p) begin ret(p); end;",
+     "pout(f(1.5)[1$i]);", execute=False, boundary="TP4 parameter compatibility", error='Incompatible assignment')
+case("return_types_deferred", 'TP4: primitive return compatibility', "integer function f(integer p) begin ret(1.5); end;",
+     "pout(f(1$i)[1$i]);", execute=False, boundary="TP4 numeric return compatibility", error='return type')
 
 case("comptime_indexed_write_effect", "TP3 pp.5,8,10", """
     class c code begin comptime integer value; end;

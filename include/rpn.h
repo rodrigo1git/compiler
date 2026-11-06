@@ -62,24 +62,19 @@ typedef struct {
     size_t capacity;
 } rpn_t;
 
-/* Symbols are borrowed and must outlive the RPN that references them. */
 void rpn_init(rpn_t *rpn);
 void rpn_free(rpn_t *rpn);
 
-/* Addresses are one-based. Append operations return zero for invalid input. */
 size_t rpn_append_symbol(rpn_t *rpn, const map_node_t *symbol);
 size_t rpn_append_destination(rpn_t *rpn, const map_node_t *symbol);
 size_t rpn_append_operator(rpn_t *rpn, rpn_operator_t operator);
 size_t rpn_append_step(rpn_t *rpn, rpn_step_t step);
 size_t rpn_reserve_target(rpn_t *rpn);
-/* Copy a separate sequence, relocating its internal jump targets. */
 bool rpn_append_sequence(rpn_t *rpn, const rpn_t *source);
 
-/* A target may point to the first step after the sequence, count + 1. */
 bool rpn_patch_target(rpn_t *rpn, size_t address, size_t target);
 bool rpn_is_complete(const rpn_t *rpn);
 
-/* Incomplete targets are rejected before writing any output. */
 bool rpn_print(FILE *stream, const rpn_t *rpn);
 
 #endif

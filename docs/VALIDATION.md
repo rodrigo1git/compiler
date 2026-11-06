@@ -1,8 +1,9 @@
 # Validación del backend TP4
 
-La intervención más reciente, del 6 de noviembre, está registrada en
-[CORRECTIONS.md](CORRECTIONS.md), con reportes separados y las limitaciones
-actuales de LeakSanitizer y navegador. El texto siguiente conserva la evidencia
+La intervención más reciente, del 6 de noviembre, elimina la compatibilidad
+histórica TP3 y está registrada en [UNIFICATION.md](UNIFICATION.md).
+La corrección previa de H1–H3 está registrada en [CORRECTIONS.md](CORRECTIONS.md).
+Ambas tienen reportes separados y sus límites de validación. El texto siguiente conserva la evidencia
 histórica del 5 de noviembre; sus herramientas y afirmaciones sobre navegador
 y fugas no describen la ejecución del día 6.
 

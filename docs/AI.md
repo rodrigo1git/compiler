@@ -61,3 +61,14 @@ infinitos. Se conservó un cambio concurrente de captura de índices en codegen.
 y se completó su integración retirando referencias a una función eliminada;
 el evaluador TP3 se actualizó para reconocer esa IR. La validación de esta
 intervención se registra separadamente en CORRECTIONS.md.
+
+
+La solicitud de implementar el plan de eliminación de compatibilidad TP3
+autorizó unificar la semántica y simplificar codegen.c. Codex retiró las banderas
+y cálculos históricos, trasladó comprobaciones de tipos al recorrido común,
+centralizó emisión y reservas y conservó la recuperación del parser. Las pruebas
+comparten expectativas y comparan cinco selecciones de salida con el binario
+Wasm anterior, incluyendo igualdad exacta del WAT y ejecución real. Se preservaron
+los cambios previos del usuario en rpn.c y rpn.h. El alcance continúa excluyendo
+la validación de plantillas sin invocar. Cambios, expectativas migradas y
+resultados están registrados en UNIFICATION.md.

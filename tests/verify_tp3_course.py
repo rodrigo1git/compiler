@@ -102,7 +102,7 @@ def verify_result(case, result, analysis):
             assert step not in flattened, (step, flattened)
         for function in case.get("functions", []):
             assert function in sequences, function
-        if case.get("execute", True):
+        if case.get("execute", True) and not case.get("runtime_error") and case.get("ir_evaluate", True):
             evaluator = oracle.Evaluator(result.stdout)
             evaluator.run()
             assert evaluator.output == case.get("output", []), (evaluator.output, case.get("output", []))
@@ -131,7 +131,7 @@ def main():
                 record = {"case": case["name"], "reference": case["reference"],
                           "mode": "analysis" if analysis else "rpn", "passed": False,
                           "expected": "error" if case.get("error") else "success",
-                          "evaluated": not analysis and not case.get("error") and case.get("execute", True)}
+                          "evaluated": not analysis and not case.get("error") and case.get("execute", True) and not case.get("runtime_error") and case.get("ir_evaluate", True)}
                 if "boundary" in case:
                     record["boundary"] = case["boundary"]
                 start = time.monotonic()

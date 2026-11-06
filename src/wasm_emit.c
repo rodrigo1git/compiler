@@ -525,7 +525,6 @@ bool wasm_write(const char *path) {
     prepare_bodies(&e);
     if (e.layout.strings_end + e.bodies[0].size > MEMORY_LIMIT)
         report_semantic_error(1, "Global data exceeds implementation memory limit");
-    for (size_t i = 0; i < e.count; i++) types_check_body(e.bodies[i].code, e.bodies[i].symbol);
     char *temporary = malloc(strlen(path) + 16);
     if (!temporary) exit(1);
     sprintf(temporary, "%s.tmp.XXXXXX", path);

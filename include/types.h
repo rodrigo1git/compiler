@@ -24,4 +24,5 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
                            const comptime_environment_t *environment,
                            const map_node_t *receiver);
 bool types_check_sources(const rpn_t *main_body);
+bool types_check_specializations(void);
 #endif

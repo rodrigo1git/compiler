@@ -534,7 +534,7 @@ static operand_t process_condition(context_t *context, control_t control, bool u
 }
 
 static void check_discarded(context_t *context, size_t begin, size_t end) {
-    if (comptime_tp4_enabled() && begin < end)
+    if (begin < end)
         types_check_discarded(context->input, context->function, begin, end,
                               context->environment, context->receiver);
 }
@@ -755,7 +755,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
             report_semantic_error(step.source_line, "Comptime index '%s' has no known value", index->key);
         else step.index = comptime_make_constant(selected, step.source_line);
     }
-    bool runtime_index = comptime_tp4_enabled() && !index->is_comptime && index->usage != SYMBOL_LEXEME;
+    bool runtime_index = !index->is_comptime && index->usage != SYMBOL_LEXEME;
     map_node_t *attribute = NULL;
     if (runtime_index && selected.known && (selected.number < 0 ||
         selected.number >= object->type_symbol->effective_attributes.count)) selected.known = false;
@@ -766,7 +766,7 @@ static void process_attribute(context_t *context, rpn_step_t step) {
         else attribute = class_attribute_at(object->type_symbol, (size_t)selected.number, step.source_line);
     }
     if (((attribute == NULL && !selected.known) || runtime_index) && class_has_comptime(object->type_symbol)) {
-        if (comptime_tp4_enabled() && step.kind == RPN_ATTRIBUTE) {
+        if (step.kind == RPN_ATTRIBUTE) {
             comptime_value_t receiver = {.object_type = object->type_symbol, .object = object};
             step.capture = comptime_capture_object(receiver, context->environment, &serial, step.source_line);
         } else report_semantic_error(step.source_line,
@@ -823,7 +823,7 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
         report_semantic_error(step.source_line, "Cannot resolve intermediate call");
         return;
     }
-    function_instance_t *instance = comptime_tp4_enabled() ? find_active_instance(pending->source) : NULL;
+    function_instance_t *instance = find_active_instance(pending->source);
     if (!instance && global_errors == pending->errors)
         instance = instantiate(pending->source, context->environment,
             &pending->arguments, pending->receiver,

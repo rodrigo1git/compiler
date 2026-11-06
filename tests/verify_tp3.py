@@ -2,7 +2,7 @@
 """Regression checks from TP2/TP3 and the course's LR -> PI examples.
 
 The small evaluator verifies observable effects of well-typed test programs. It
-is a test oracle for the IR contract, not a substitute for TP4 type checking.
+is a test oracle for supported IR operations; runtime failures are checked in Wasm.
 """
 import copy
 import json
@@ -235,9 +235,7 @@ def main():
         checks += 1
 
     for name, expected in {
-        "tp3_calls.txt": [10, 8, 19, 7, 7, 8, 10, 7, 9, 0, 2.5, 0.0],
         "tp3_methods.txt": [10, 12, 21, 20, 10, 31, 6, 99, 20, 20, 7],
-        "tp3_control.txt": [15, 24, 24, 3, "BF"],
         "tp3_templates.txt": [3, 4, 7, 8, 6],
         "tp3_comptime_copies.txt": [10, 16, 11, 16, 3, 7, 14],
         "tp3_comptime_specialization.txt": [3, 7, 3],
@@ -301,9 +299,10 @@ def main():
                 assert "--- RPN ---" not in result.stdout
                 assert re.search(r"Line \d+:", result.stderr), result.stderr
             checks += 1
-        # TP3 p.4 / Generación slide 66: no numeric compatibility pass in LR -> PI.
+        # Output selection does not disable numeric compatibility checks.
         path.write_text("review\ninteger x;\nbegin x := 1.5 + 1$i; end;")
-        assert compile_file(path).returncode == 0
+        result = compile_file(path)
+        assert result.returncode == 1 and "Incompatible operand" in result.stderr, result.stderr
         checks += 1
     trace = compile_file(ROOT / "tests/tp3_control.txt", "--analyze", "--trace")
     assert trace.returncode == 0 and "[LEX]" in trace.stdout
