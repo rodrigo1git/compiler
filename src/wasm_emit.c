@@ -1,3 +1,4 @@
+#include "../include/memory.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +9,7 @@
 #include "../include/diagnostics.h"
 
 #define MEMORY_LIMIT (16 * 1024 * 1024)
-typedef struct { const rpn_t *code; map_node_t *symbol; size_t size; size_t *scratch; } body_t;
+typedef struct { const rpn_t *code; map_node_t *symbol; size_t size; size_t *scratch; size_t *controls; } body_t;
 typedef struct { type_t type; size_t local, tag; } operand_t;
 typedef struct { const map_node_t *symbol; size_t local; } call_t;
 typedef struct {
@@ -34,11 +35,7 @@ static void write_line(emitter_t *e, const char *format, ...) {
     va_end(args);
     fputc('\n', e->out);
 }
-static void *allocate(size_t count, size_t size) {
-    void *p = calloc(count ? count : 1, size);
-    if (!p) { fprintf(stderr, "Cannot allocate WebAssembly generation state\n"); exit(1); }
-    return p;
-}
+
 static size_t body_id(emitter_t *e) { return layout_id(&e->layout, e->body->symbol); }
 static const char *wasm_type(type_t type) { return type.kind == TYPE_SINGLEF ? "f32" : "i32"; }
 static size_t new_local(emitter_t *e, type_t type, int line) {
@@ -293,22 +290,13 @@ static void emit_operator(emitter_t *e, const rpn_step_t *step) {
 }
 static void emit_range(emitter_t *e, size_t begin, size_t end);
 static size_t emit_control(emitter_t *e, size_t begin, size_t target) {
-    const rpn_t *body = e->body->code;
-    const rpn_step_t *branch = &body->steps[target];
-    size_t false_start = branch->value.target - 1, body_end = false_start, finish = false_start;
-    bool has_else = false;
-    if (false_start >= 2 && body->steps[false_start - 1].kind == RPN_OPERATOR &&
-        body->steps[false_start - 1].value.operator == RPN_BRANCH) {
-        body_end = false_start - 2;
-        if (!branch->loop) {
-            finish = body->steps[body_end].value.target - 1;
-            has_else = true;
-        }
-    }
-    if (branch->loop) write_line(e, "block $exit_%zu\nloop $loop_%zu", target, target);
+    rpn_control_t control = rpn_describe_control(e->body->code, begin, target);
+    size_t false_start = control.false_start, body_end = control.body_end, finish = control.end;
+    bool has_else = control.has_else;
+    if (control.loop) write_line(e, "block $exit_%zu\nloop $loop_%zu", target, target);
     emit_range(e, begin, target);
     operand_t condition = pop(e); get_local(e, condition.local);
-    if (branch->loop) {
+    if (control.loop) {
         write_line(e, "i32.eqz\nbr_if $exit_%zu", target);
         emit_range(e, target + 2, body_end);
         write_line(e, "br $loop_%zu\nend\nend", target);
@@ -352,19 +340,21 @@ static void emit_step(emitter_t *e, size_t pc) {
 }
 static void emit_range(emitter_t *e, size_t begin, size_t end) {
     for (size_t pc = begin; pc < end; pc++) {
-        size_t target = pc;
-        while (target < end && e->body->code->steps[target].control_start != pc + 1) target++;
+        size_t target = e->body->controls[pc] ? e->body->controls[pc] - 1 : end;
         if (target < end) pc = emit_control(e, pc, target) - 1;
         else emit_step(e, pc);
     }
 }
 
-static void write_helpers(emitter_t *e) {
+static void write_memory_helpers(emitter_t *e) {
     write_line(e, "(func $allocate (param $size i32) (param $line i32) (result i32) (local $old i32)\n"
                   "global.get $sp\nlocal.tee $old\nlocal.get $size\ni32.add\ni32.const %d\ni32.gt_u\n"
                   "if\ni32.const 8\nlocal.get $line\ncall $fail\nunreachable\nend\n"
                   "local.get $old\ni32.const 0\nlocal.get $size\nmemory.fill\n"
                   "local.get $old\nlocal.get $size\ni32.add\nglobal.set $sp\nlocal.get $old)", MEMORY_LIMIT);
+}
+
+static void write_object_helpers(emitter_t *e) {
     write_line(e, "(func $object_size (param $object i32) (result i32)");
     for (size_t i = 0; i < e->layout.count; i++) {
         const layout_entry_t *item = &e->layout.items[i];
@@ -404,6 +394,9 @@ static void write_helpers(emitter_t *e) {
         }
         write_line(e, "i32.const 5\nlocal.get $line\ncall $fail\nunreachable)");
     }
+}
+
+static void write_copy_helper(emitter_t *e) {
     write_line(e, "(func $copy_object (param $destination i32) (param $source i32)");
     for (size_t i = 0; i < e->layout.count; i++) {
         const map_node_t *dst = e->layout.items[i].symbol;
@@ -427,7 +420,7 @@ static void write_helpers(emitter_t *e) {
 
 static void prepare_bodies(emitter_t *e) {
     e->count = specialize_instance_count() + 1;
-    e->bodies = allocate(e->count, sizeof(*e->bodies));
+    e->bodies = memory_zero(e->count, sizeof(*e->bodies));
     e->bodies[0].code = specialize_main_body();
     for (size_t i = 1; i < e->count; i++)
         e->bodies[i].code = specialize_instance_body(i - 1, &e->bodies[i].symbol);
@@ -437,8 +430,9 @@ static void prepare_bodies(emitter_t *e) {
             maximum = e->layout.items[i].size;
     for (size_t i = 0; i < e->count; i++) {
         body_t *body = &e->bodies[i];
+        body->controls = rpn_index_controls(body->code);
         body->size = layout_frame_size(&e->layout, body->symbol);
-        body->scratch = allocate(body->code->count, sizeof(*body->scratch));
+        body->scratch = memory_zero(body->code->count, sizeof(*body->scratch));
         for (size_t pc = 0; pc < body->code->count; pc++) {
             const rpn_step_t *step = &body->code->steps[pc];
             type_t type = {TYPE_ERROR, NULL};
@@ -454,18 +448,23 @@ static void prepare_bodies(emitter_t *e) {
             report_semantic_error(body->symbol ? body->symbol->declaration_line : 1, "Function frame exceeds implementation memory limit");
     }
 }
-static void write_body(emitter_t *e, body_t *body) {
+static size_t plan_body(emitter_t *e, body_t *body) {
     e->body = body;
     size_t capacity = body->code->count * 16 + 32;
-    e->stack = allocate(capacity, sizeof(*e->stack));
-    e->calls = allocate(capacity, sizeof(*e->calls));
-    e->local_types = allocate(capacity, sizeof(*e->local_types));
+    e->stack = memory_zero(capacity, sizeof(*e->stack));
+    e->calls = memory_zero(capacity, sizeof(*e->calls));
+    e->local_types = memory_zero(capacity, sizeof(*e->local_types));
     e->planning = true;
     e->locals = e->depth = e->call_depth = 0;
     emit_range(e, 0, body->code->count);
     size_t locals = e->locals;
     if (e->depth || e->call_depth) report_semantic_error(1, "Incomplete WebAssembly translation body");
     e->planning = false;
+    return locals;
+}
+
+static void write_body(emitter_t *e, body_t *body) {
+    size_t locals = plan_body(e, body);
     if (!body->symbol) write_line(e, "(func $main (export \"main\") (local $frame i32) (local $result i32) (local $wide f64)");
     else write_line(e, "(func $fn_%zu (param $frame i32) (result %s) (local $result %s) (local $wide f64)",
         body_id(e), wasm_type(type_of_symbol(body->symbol)), wasm_type(type_of_symbol(body->symbol)));
@@ -515,7 +514,9 @@ static void write_module(emitter_t *e) {
         for (const unsigned char *p = (const unsigned char *)s->key; *p; p++) fprintf(e->out, "\\%02x", *p);
         fputs("\\00\")\n", e->out);
     }
-    write_helpers(e);
+    write_memory_helpers(e);
+    write_object_helpers(e);
+    write_copy_helper(e);
     for (size_t i = 0; i < e->count; i++) write_body(e, &e->bodies[i]);
     write_line(e, ")");
 }
@@ -545,7 +546,7 @@ bool wasm_write(const char *path) {
         unlink(temporary);
         if (!global_errors) report_semantic_error(1, "Cannot write WebAssembly file '%s'", path);
     }
-    for (size_t i = 0; i < e.count; i++) free(e.bodies[i].scratch);
+    for (size_t i = 0; i < e.count; i++) { free(e.bodies[i].scratch); free(e.bodies[i].controls); }
     free(e.bodies); free(temporary); layout_destroy(&e.layout);
     return success;
 }

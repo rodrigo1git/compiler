@@ -168,7 +168,6 @@ typedef struct type_path {
     const struct type_path *parent;
 } type_path_t;
 
-
 static bool type_in_path(const type_path_t *path, const map_node_t *type) {
     for (; path != NULL; path = path->parent)
         if (path->type == type) return true;

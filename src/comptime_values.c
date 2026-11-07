@@ -1,17 +1,9 @@
+#include "../include/memory.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../include/comptime_values.h"
 #include "../include/diagnostics.h"
-
-static void *resize(void *pointer, size_t size) {
-    void *result = realloc(pointer, size);
-    if (result == NULL && size != 0) {
-        fprintf(stderr, "Fatal error: Cannot allocate compile-time evaluation state\n");
-        exit(1);
-    }
-    return result;
-}
 
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right) {
     return left.known == right.known && (!left.known ||
@@ -42,14 +34,14 @@ void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
             return;
         }
     }
-    environment->items = resize(environment->items, (environment->count + 1) * sizeof(*environment->items));
+    environment->items = memory_resize(environment->items, (environment->count + 1) * sizeof(*environment->items));
     environment->items[environment->count++] = (comptime_binding_t){symbol, object, value};
 }
 
 comptime_environment_t comptime_copy_environment(const comptime_environment_t *source) {
     comptime_environment_t result = {0};
     if (source->count != 0) {
-        result.items = resize(NULL, source->count * sizeof(*result.items));
+        result.items = memory_resize(NULL, source->count * sizeof(*result.items));
         memcpy(result.items, source->items, source->count * sizeof(*result.items));
         result.count = source->count;
     }
@@ -110,7 +102,7 @@ const map_node_t *comptime_make_constant(comptime_value_t value, int line) {
 comptime_value_t comptime_read_constant(const map_node_t *symbol) {
     comptime_value_t value = {0};
     if (strcmp(symbol->value, "INTEGER") != 0 && strcmp(symbol->value, "SINGLEF") != 0) return value;
-    char *text = resize(NULL, strlen(symbol->key) + 1);
+    char *text = memory_resize(NULL, strlen(symbol->key) + 1);
     strcpy(text, symbol->key);
     for (char *p = text; *p != '\0'; p++) if (*p == 's') *p = 'e';
     value.number = strtod(text, NULL);
@@ -144,4 +136,38 @@ comptime_value_t comptime_to_integer(comptime_value_t value) {
         value.floating = false;
     }
     return value;
+}
+
+comptime_environment_t comptime_call_environment(const comptime_environment_t *caller,
+    const comptime_environment_t *arguments, const map_node_t *function) {
+    comptime_environment_t environment = comptime_copy_environment(caller);
+    comptime_forget_runtime(&environment);
+    for (size_t i = 0; i < environment.count; i++) {
+        comptime_binding_t *binding = &environment.items[i];
+        if (binding->symbol->owner == function || (binding->object && binding->object->owner == function))
+            binding->value = (comptime_value_t){0};
+    }
+    for (size_t i = 0; i < arguments->count; i++) {
+        comptime_binding_t binding = arguments->items[i];
+        if (binding.symbol->is_comptime)
+            comptime_set(&environment, binding.symbol, binding.object, binding.value);
+    }
+    return environment;
+}
+
+bool comptime_validate_assignment(const map_node_t *symbol, comptime_value_t value,
+                                  bool forbidden, int line) {
+    if (forbidden)
+        report_semantic_error(line, "Cannot modify comptime '%s' under unknown control", symbol->key);
+    else if (value.error)
+        report_semantic_error(line, "%s required by comptime assignment", numeric_error_message(value.error));
+    else if (!value.known)
+        report_semantic_error(line, "Value for comptime '%s' is not known at compile time", symbol->key);
+    else if (symbol->declared_type == NULL ||
+             (value.floating ? strcmp(symbol->declared_type, "SINGLEF") != 0
+                             : strcmp(symbol->declared_type, "INTEGER") != 0))
+        report_semantic_error(line, "Compile-time value for '%s' requires the declared type %s", symbol->key,
+                              symbol->declared_type != NULL ? symbol->declared_type : "numeric");
+    else return comptime_make_constant(value, line) != NULL;
+    return false;
 }

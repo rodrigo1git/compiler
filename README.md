@@ -92,4 +92,6 @@ Run the complete regression suites with:
 ```
 
 [TP4 design and requirements](docs/TP4.md), [source walkthroughs](docs/FUNCTIONS.md),
-[validation](docs/VALIDATION.md), [unified semantics](docs/UNIFICATION.md) and [AI attribution](docs/AI.md).
+[validation](docs/VALIDATION.md), [unified semantics](docs/UNIFICATION.md), [specializer modules](docs/SPECIALIZE_REFACTOR.md) and [AI attribution](docs/AI.md).
+
+[Controles y evaluación compartidos](docs/SHARED_EVALUATION_REFACTOR.md).

@@ -1,7 +1,11 @@
 # Validación del backend TP4
 
-La intervención más reciente, del 6 de noviembre, elimina la compatibilidad
-histórica TP3 y está registrada en [UNIFICATION.md](UNIFICATION.md).
+La intervención más reciente comparte controles RPN y evaluación, corrige la
+captura de índices comptime y reorganiza memoria/backend. Su descripción está en
+[SHARED_EVALUATION_REFACTOR.md](SHARED_EVALUATION_REFACTOR.md) y sus resultados
+normales y ASan/UBSan en [shared-evaluation-validation.json](shared-evaluation-validation.json).
+La separación previa del especializador está en [SPECIALIZE_REFACTOR.md](SPECIALIZE_REFACTOR.md).
+La eliminación previa de compatibilidad histórica TP3 está en [UNIFICATION.md](UNIFICATION.md).
 La corrección previa de H1–H3 está registrada en [CORRECTIONS.md](CORRECTIONS.md).
 Ambas tienen reportes separados y sus límites de validación. El texto siguiente conserva la evidencia
 histórica del 5 de noviembre; sus herramientas y afirmaciones sobre navegador

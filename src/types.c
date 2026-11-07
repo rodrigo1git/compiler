@@ -216,6 +216,7 @@ typedef struct {
     comptime_environment_t *snapshots;
     size_t snapshot_count;
     size_t remaining_iterations;
+    size_t *controls;
 } type_resolution_t;
 
 static void clear_type_snapshots(type_resolution_t *context) {
@@ -259,9 +260,8 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
             else report_semantic_error(step->source_line,
                 "Cannot determine comptime index '%s' when checking discarded source", step->index->key);
         }
-        if (index.known && !index.floating && index.number >= 0 &&
-            index.number < step->receiver->type_symbol->effective_attributes.count) {
-            const map_node_t *field = step->receiver->type_symbol->effective_attributes.items[(size_t)index.number];
+        const map_node_t *field = comptime_select_field(step->receiver->type_symbol, index);
+        if (field) {
             const map_node_t *receiver = comptime_resolve_object(step->receiver, context->receiver);
             comptime_value_t object = {.object = receiver, .object_type = step->receiver->type_symbol};
             value.value = comptime_object_field(object, field, &context->environment);
@@ -287,7 +287,7 @@ static void resolve_step(type_resolution_t *context, size_t pc) {
         type_call_t *call = &context->calls[--context->call_count];
         if (call->errors == global_errors)
             value.value = specialize_evaluate_call(call->symbol, &context->environment,
-                &call->arguments, call->receiver, step->source_line);
+                &call->arguments, call->receiver, false, step->source_line);
         free(call->arguments.items);
         context->stack[context->count++] = value;
         break;
@@ -377,20 +377,12 @@ static void resolve_loop(type_resolution_t *context, size_t begin, size_t target
 }
 
 static size_t resolve_control(type_resolution_t *context, size_t begin, size_t target) {
-    const rpn_step_t *branch = &context->body.steps[target];
-    size_t false_start = branch->value.target - 1, body_end = false_start, finish = false_start;
-    bool has_else = false;
-    if (false_start >= 2 && context->body.steps[false_start - 1].kind == RPN_OPERATOR &&
-        context->body.steps[false_start - 1].value.operator == RPN_BRANCH) {
-        body_end = false_start - 2;
-        if (!branch->loop) {
-            finish = context->body.steps[body_end].value.target - 1;
-            has_else = true;
-        }
-    }
+    rpn_control_t control = rpn_describe_control(&context->body, begin, target);
+    size_t false_start = control.false_start, body_end = control.body_end, finish = control.end;
+    bool has_else = control.has_else;
     resolve_range(context, begin, target);
     comptime_value_t condition = context->count ? context->stack[--context->count].value : (comptime_value_t){0};
-    if (branch->loop && condition.known && condition.number != 0 &&
+    if (control.loop && condition.known && condition.number != 0 &&
         (specialize_has_comptime_effects(context->origin, target + 2, body_end) ||
          specialize_requires_iteration(context->origin, target + 2, body_end,
              &context->environment, context->receiver))) {
@@ -404,7 +396,7 @@ static size_t resolve_control(type_resolution_t *context, size_t begin, size_t t
     context->environment = comptime_copy_environment(&original);
     if (has_else) resolve_range(context, false_start, finish);
     comptime_environment_t result;
-    if (condition.known && (!branch->loop || condition.number == 0))
+    if (condition.known && (!control.loop || condition.number == 0))
         result = comptime_copy_environment(condition.number != 0 ? &true_environment : &context->environment);
     else result = comptime_join_environments(&true_environment, &context->environment);
     free(original.items);
@@ -418,8 +410,7 @@ static void resolve_range(type_resolution_t *context, size_t begin, size_t end) 
     semantic_origin_t previous = set_semantic_origin((semantic_origin_t){context->origin, begin});
     for (size_t pc = begin; pc < end; pc++) {
         set_semantic_origin((semantic_origin_t){context->origin, pc});
-        size_t target = pc;
-        while (target < end && context->body.steps[target].control_start != pc + 1) target++;
+        size_t target = context->controls[pc] ? context->controls[pc] - 1 : end;
         if (target < end) pc = resolve_control(context, pc, target) - 1;
         else resolve_step(context, pc);
     }
@@ -442,8 +433,10 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
         fprintf(stderr, "Cannot allocate source type resolution\n"); exit(1);
     }
     memcpy(context.body.steps, body->steps, body->count * sizeof(*body->steps));
+    context.controls = rpn_index_controls(body);
     resolve_range(&context, begin, end);
     if (errors == global_errors) check_resolved_range(&context, begin, end);
+    free(context.controls);
     free(context.body.steps);
     free(context.stack);
     for (size_t i = 0; i < context.call_count; i++) free(context.calls[i].arguments.items);

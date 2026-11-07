@@ -1,3 +1,4 @@
+#include "../include/memory.h"
 #include <stdlib.h>
 #include <string.h>
 #include "../include/codegen.h"
@@ -56,17 +57,8 @@ bool codegen_finalize(void) {
 
 const rpn_t *codegen_source_body(void) { return &program; }
 
-static void *checked_realloc(void *memory, size_t size) {
-    void *result = realloc(memory, size);
-    if (result == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate code generation state\n");
-        exit(1);
-    }
-    return result;
-}
-
 static rpn_t *new_fragment(void) {
-    rpn_t *fragment = checked_realloc(NULL, sizeof(*fragment));
+    rpn_t *fragment = memory_resize(NULL, sizeof(*fragment));
     rpn_init(fragment);
     return fragment;
 }
@@ -106,10 +98,10 @@ struct codegen_call {
 
 codegen_arguments_t *codegen_arguments_append(codegen_arguments_t *arguments, rpn_t *value) {
     if (arguments == NULL) {
-        arguments = checked_realloc(NULL, sizeof(*arguments));
+        arguments = memory_resize(NULL, sizeof(*arguments));
         *arguments = (codegen_arguments_t){0};
     }
-    arguments->items = checked_realloc(arguments->items,
+    arguments->items = memory_resize(arguments->items,
         (arguments->count + 1) * sizeof(*arguments->items));
     arguments->items[arguments->count++] = value;
     return arguments;
@@ -124,11 +116,11 @@ void codegen_arguments_free(codegen_arguments_t *arguments) {
 
 codegen_order_t *codegen_order_append(codegen_order_t *order, map_node_t *constant) {
     if (order == NULL) {
-        order = checked_realloc(NULL, sizeof(*order));
+        order = memory_resize(NULL, sizeof(*order));
         *order = (codegen_order_t){0};
     }
     /* Preserve malformed constants as positions, so counts do not change on recovery. */
-    order->constants.items = checked_realloc(order->constants.items,
+    order->constants.items = memory_resize(order->constants.items,
         (order->constants.count + 1) * sizeof(*order->constants.items));
     order->constants.items[order->constants.count++] = constant;
     return order;
@@ -149,7 +141,7 @@ static void validate_argument_count(const codegen_call_t *call) {
 
 codegen_call_t *codegen_call_begin(map_node_t *function, map_node_t *receiver,
                                  codegen_arguments_t *arguments, int line) {
-    codegen_call_t *call = checked_realloc(NULL, sizeof(*call));
+    codegen_call_t *call = memory_resize(NULL, sizeof(*call));
     *call = (codegen_call_t){function, receiver, arguments, line};
     validate_argument_count(call);
     return call;
@@ -185,7 +177,7 @@ static size_t *validate_evaluation_order(const codegen_call_t *call, const codeg
         return NULL;
     }
     if (call->arguments->count != count) return NULL;
-    size_t *positions = checked_realloc(NULL, count * sizeof(*positions));
+    size_t *positions = memory_resize(NULL, count * sizeof(*positions));
     bool unique = true;
     for (size_t i = 0; i < count; i++) {
         size_t position = evaluation_position(order->constants.items[i], count, call->line);
@@ -270,8 +262,9 @@ static codegen_attribute_t save_attribute_index(codegen_attribute_t attribute) {
     char name[64];
     snprintf(name, sizeof(name), "@index%u", ++index_serial);
     map_node_t *saved = map_put(symbol_table, name, "ID");
-    saved->usage = SYMBOL_VARIABLE;
-    saved->declared_type = checked_realloc(NULL, sizeof("INTEGER"));
+    saved->usage = attribute.index->is_comptime ? SYMBOL_AUXILIARY : SYMBOL_VARIABLE;
+    saved->is_comptime = attribute.index->is_comptime;
+    saved->declared_type = memory_resize(NULL, sizeof("INTEGER"));
     strcpy(saved->declared_type, "INTEGER");
     saved->owner = current_function ? current_function->symbol : NULL;
     saved->declaration_line = attribute.line;
@@ -287,7 +280,7 @@ void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value) {
         codegen_free(value);
         return;
     }
-    if (attribute.index->usage != SYMBOL_LEXEME && !attribute.index->is_comptime)
+    if (attribute.index->usage != SYMBOL_LEXEME)
         attribute = save_attribute_index(attribute);
     append_assignment(value, attribute_step(attribute, RPN_ATTRIBUTE_DESTINATION), attribute.line);
     emit_fragment(value);
@@ -388,7 +381,7 @@ codegen_function_t *codegen_function_begin(map_node_t *symbol, int line) {
         report_semantic_error(line, "Functions and methods must return INTEGER or SINGLEF; object returns are not allowed");
         return NULL;
     }
-    codegen_function_t *function = checked_realloc(NULL, sizeof(*function));
+    codegen_function_t *function = memory_resize(NULL, sizeof(*function));
     *function = (codegen_function_t){.symbol = symbol, .active = true,
                                      .parent = current_function};
     rpn_init(&function->body);
@@ -452,7 +445,7 @@ void codegen_if_end(size_t target) {
 }
 
 static double constant_value(const map_node_t *symbol) {
-    char *text = checked_realloc(NULL, strlen(symbol->key) + 1);
+    char *text = memory_resize(NULL, strlen(symbol->key) + 1);
     strcpy(text, symbol->key);
     for (size_t i = 0; text[i] != '\0'; i++) {
         if (text[i] == 's') text[i] = 'e';

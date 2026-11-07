@@ -62,6 +62,20 @@ typedef struct {
     size_t capacity;
 } rpn_t;
 
+typedef struct {
+    size_t start;
+    size_t branch;
+    size_t false_start;
+    size_t body_end;
+    size_t end;
+    bool loop;
+    bool has_else;
+} rpn_control_t;
+
+/* Build after completing a body; caller owns the returned position index. */
+size_t *rpn_index_controls(const rpn_t *body);
+rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t branch);
+
 void rpn_init(rpn_t *rpn);
 void rpn_free(rpn_t *rpn);
 

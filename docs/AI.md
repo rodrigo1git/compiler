@@ -72,3 +72,24 @@ Wasm anterior, incluyendo igualdad exacta del WAT y ejecución real. Se preserva
 los cambios previos del usuario en rpn.c y rpn.h. El alcance continúa excluyendo
 la validación de plantillas sin invocar. Cambios, expectativas migradas y
 resultados están registrados en UNIFICATION.md.
+
+
+La solicitud «Aplica ese refactor» autorizó separar specialize.c en coordinador,
+análisis de efectos, instancias, exploración y transformación. Codex mantuvo la
+interfaz pública, agrupó el estado de la sesión en una estructura privada y
+compartió la aplicación de efectos. Dividió las asignaciones y operadores del
+explorador, sus controles y la resolución de atributos. Se compararon diagnósticos,
+polaca y WAT con el binario anterior y se ejecutaron las suites normales y
+ASan/UBSan. La organización final y sus evidencias están en SPECIALIZE_REFACTOR.md.
+No se modificaron las expectativas de los casos ni la política sobre plantillas
+sin invocar.
+
+## Controles compartidos y captura de destinos
+
+Herramienta: OpenAI Codex. Instrucción del usuario: «implementa el plan pero antes
+hace una copia por las dudas». El plan autorizado comprende captura anticipada
+de índices, controles RPN compartidos, operaciones de evaluación compartidas,
+validación sin publicar instancias, división de helpers del backend y reservas
+de memoria comunes. La caché conserva su criterio previo. Se agregó la copia
+completa `../compiler_backup_20261106_222453`, las regresiones y la documentación
+en SHARED_EVALUATION_REFACTOR.md.

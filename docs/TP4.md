@@ -74,14 +74,23 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
    termina al salir del ciclo, estabilizarse el entorno o alcanzar el límite
    de 100000 iteraciones por auditoría; superar ese límite informa un error.
    Los ciclos sin efectos comptime mantienen el análisis conservador de una vuelta.
-   Para resolver valores que provienen de llamadas reutiliza el especializador
-   sobre ese entorno aislado; no agrega esas llamadas al cuerpo que se ejecutará.
+   Para resolver valores que provienen de llamadas utiliza la evaluación abstracta
+   sobre ese entorno aislado, sin registrar instancias ejecutables. Véase
+   [evaluación compartida](SHARED_EVALUATION_REFACTOR.md).
 5. `types_check_specializations` comprueba los cuerpos ejecutables en todas las
    opciones: resuelve obligaciones cuyo tipo dependía de un índice comptime.
 6. Si se solicita destino, `layout_init` calcula símbolos, clases, campos, cadenas
    y marcos y aplica los límites de memoria del backend.
 7. `wasm_write` planifica reservas y auxiliares y emite el módulo estructurado.
 8. WABT valida y convierte el archivo; Node o navegador ejecuta el módulo real.
+
+El especializador se organiza en cinco módulos: `specialize.c` coordina y
+conserva su interfaz pública; `specialize_effects.c` analiza escrituras;
+`specialize_instances.c` administra activaciones y caché;
+`specialize_transform.c` transforma la polaca y `specialize_probe.c` explora
+requisitos por iteración. Comparten una sesión explícita y una cabecera privada.
+La aplicación de efectos se reutiliza sobre entornos reales y exploratorios.
+La organización y su validación están en [SPECIALIZE_REFACTOR.md](SPECIALIZE_REFACTOR.md).
 
 No hay conversiones implícitas. Operaciones binarias y asignaciones requieren
 compatibilidad; argumentos se comprueban contra sus formales y RET contra el

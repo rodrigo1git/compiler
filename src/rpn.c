@@ -166,3 +166,37 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
     }
     return !ferror(stream);
 }
+
+static bool is_operator(const rpn_step_t *step, rpn_operator_t operator) {
+    return step->kind == RPN_OPERATOR && step->value.operator == operator;
+}
+
+rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t branch) {
+    size_t false_start = input->steps[branch].value.target - 1;
+    rpn_control_t control = {.start = start,
+                            .branch = branch,
+                            .false_start = false_start,
+                            .body_end = false_start,
+                            .end = false_start};
+    if (false_start >= 2 && is_operator(&input->steps[false_start - 1], RPN_BRANCH) &&
+        input->steps[false_start - 2].kind == RPN_TARGET) {
+        size_t destination = input->steps[false_start - 2].value.target - 1;
+        if (destination == start) {
+            control.loop = true;
+            control.body_end = false_start - 2;
+        } else if (destination > false_start) {
+            control.has_else = true;
+            control.body_end = false_start - 2;
+            control.end = destination;
+        }
+    }
+    return control;
+}
+
+size_t *rpn_index_controls(const rpn_t *body) {
+    size_t *index = calloc(body->count + 1, sizeof(*index));
+    if (!index) { fprintf(stderr, "Cannot allocate RPN control index\n"); exit(1); }
+    for (size_t i = 0; i < body->count; i++)
+        if (body->steps[i].control_start) index[body->steps[i].control_start - 1] = i + 1;
+    return index;
+}

@@ -254,3 +254,39 @@ integer function read(comptime integer index) begin ret(object[index]); end;
 integer function use(integer ignored) integer i; begin ret(0$i);
 from i := 0$i to 2$i by 1$i repeat begin pout(read(i)[1$i]); end; end;''',
      'pout(use(0$i)[1$i]);', compile_error='return type: SINGLEF')
+
+# Freeze every destination index before evaluating a side-effecting RHS.
+for qualifier in ('', 'comptime '):
+    case('destination_capture_' + ('comptime' if qualifier else 'runtime'), qualifier + '''integer index;
+class pair code begin integer a,b; end; pair object;
+integer function change(integer p) begin index := 1$i; ret(9$i); end;''',
+         'index := 0$i; object[0$i] := 2$i; object[1$i] := 3$i; '
+         'object[index] := change(0$i)[1$i]; pout(object[0$i]); pout(object[1$i]);', [9, 3])
+case('destination_capture_comptime_field', '''comptime integer index;
+class pair code begin comptime integer a,b; end; pair object;
+integer function change(integer p) begin index := 1$i; ret(9$i); end;''',
+     'index := 0$i; object[0$i] := 2$i; object[1$i] := 3$i; '
+     'object[index] := change(0$i)[1$i]; pout(object[0$i]); pout(object[1$i]);', [9, 3])
+case('destination_capture_unknown_branch', '''comptime integer index;
+class pair code begin integer a,b; end; pair object;
+integer function use(integer p) begin if(p>0$i) object[index] := 9$i; end_if; ret(0$i); end;''',
+     'index := 0$i; pout(use(1$i)[1$i]); pout(object[0$i]);', [0, 9])
+case('validation_call_return', '''integer function helper(comptime integer p) begin ret(p+1$i); end;
+integer function use(integer p) begin ret(0$i); pout(helper(2$i)[1$i]); end;''',
+     'pout(use(0$i)[1$i]);', [0])
+
+CASES[-1]['absent_functions'] = ['helper:main']
+
+case('validation_unknown_comptime_field', """class box code begin comptime integer a; end; box object;
+integer function helper(integer p) begin ret(object[0$i]); end;
+integer function use(integer p) begin ret(0$i); pout(helper(p)[1$i]); end;""",
+     'pout(use(0$i)[1$i]);', compile_error="has no known value")
+case('validation_unknown_control_write', """comptime integer x;
+integer function helper(integer p) begin if(p>0$i) x := 2$i; end_if; ret(0$i); end;
+integer function use(integer p) begin ret(0$i); pout(helper(p)[1$i]); end;""",
+     'x := 1$i; pout(use(0$i)[1$i]);', compile_error="under unknown control")
+
+case('validation_unknown_comptime_capture', """class box code begin comptime integer a; integer b; end; box object;
+integer function helper(integer p) begin ret(object[p]); end;
+integer function use(integer p) begin ret(0$i); pout(helper(p)[1$i]); end;""",
+     'pout(use(0$i)[1$i]);', compile_error="has no known value")

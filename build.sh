@@ -38,6 +38,7 @@ echo "Generating parser..."
 echo "Compiling C source files..."
 gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/main.c \
+    src/memory.c \
     src/types.c \
     src/numeric.c \
     src/layout.c \
@@ -52,6 +53,10 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/rpn.c \
     src/codegen.c \
     src/specialize.c \
+    src/specialize_effects.c \
+    src/specialize_instances.c \
+    src/specialize_transform.c \
+    src/specialize_probe.c \
     src/comptime_values.c \
     src/comptime_objects.c \
     y.tab.c \

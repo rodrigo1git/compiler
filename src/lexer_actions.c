@@ -58,8 +58,6 @@ void free_lexeme_buffer(void) {
 extern FILE *source_file;
 extern YYSTYPE yylval;
 
-
-
 sem_act_t sem_act_mat[N_STATES][N_COLS] = {
     //              L               i                      s                      D                 _                        .                 $                 +-                /                 op*()             =                 <>                !:                "                 nl                ws                other
     {  sa_init,        sa_init,          sa_init,          sa_init,          sa_error,         sa_init,          sa_error,         sa_token_consume, sa_init,          sa_token_consume, sa_init,          sa_init,          sa_init,          sa_init_chain,           sa_ignore,        sa_ignore,        sa_error        }, // 0

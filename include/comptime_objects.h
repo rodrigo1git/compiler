@@ -26,4 +26,5 @@ map_node_t *comptime_capture_object(comptime_value_t value, const comptime_envir
 void comptime_copy_object_fields(const comptime_copy_t *copy, const map_node_t *object,
                                  const map_node_t *type, comptime_value_t source, int line);
 
+const map_node_t *comptime_select_field(const map_node_t *type, comptime_value_t index);
 #endif

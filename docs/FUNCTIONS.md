@@ -35,7 +35,11 @@ El módulo resultante se valida con assemble.mjs y se ejecuta mediante host.mjs.
 | grammar.y | Reglas Bison y acciones que llaman a scope/codegen; guardas y destructores. |
 | rpn.c | Almacena, concatena, reubica, completa y muestra instrucciones; conserva metadatos de control. |
 | codegen.c | Construye los cuerpos fuente y expone el principal; prepara copias y orden de argumentos. |
-| specialize.c | Recorre instrucciones con valores conocidos, instancia funciones y conserva efectos. Expone cuerpos fuente y ejecutables. |
+| specialize.c | Coordina la sesión y conserva la API pública, registro de fuentes, consultas e impresión. |
+| specialize_effects.c | Resume escrituras/dependencias y aplica efectos a entornos reales o privados. |
+| specialize_instances.c | Prepara activaciones, administra la caché y crea/libera instancias ejecutables. |
+| specialize_transform.c | Recorre polaca con pila y llamadas privadas; transforma expresiones y controles. |
+| specialize_probe.c | Explora requisitos por iteración en entornos privados sin publicar código ni diagnósticos. |
 | comptime_values.c | Entornos conocidos/desconocidos; puente entre valores numéricos y constantes de TS. |
 | comptime_objects.c | Identidades de campos anidados, capturas y copia de conocimiento por objeto. |
 | numeric.c | Resultado numérico y error explícito con la política numérica única; no emite Wasm. |
@@ -49,7 +53,7 @@ El módulo resultante se valida con assemble.mjs y se ejecuta mediante host.mjs.
 
 codegen_arguments_append retiene cada expresión en su posición formal original.
 codegen_call_end emite FRAME, evaluación/copia ARG según la permutación y CALL.
-specialize conserva esa secuencia y elige la instancia concreta.
+specialize_transform conserva esa secuencia y specialize_instances elige la instancia concreta.
 
 begin_call del backend reserva un marco pendiente y su enlace léxico. Cada ARG
 es un destino dentro de ese marco. call_function llama al cuerpo, guarda el
@@ -107,7 +111,7 @@ la generación falla. El host se ejecuta fuera del compilador C.
 
 ## Inventario individual
 
-Este inventario cubre **319 funciones C propias**, públicas y static, de
+Este inventario cubre **328 funciones C propias**, públicas y static, de
 src/*.c y los tres ayudantes escritos en grammar.y. Excluye funciones generadas
 por Bison y funciones de bibliotecas. Los enlaces apuntan al archivo y línea de
 esta versión. Las fichas de infraestructura se vinculan al requisito que apoyan;
@@ -154,80 +158,80 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | [class_complete](../src/classes.c#L122) | Finaliza el esquema y compara con otras clases completas de igual código, informando estructuras incompatibles. | T24 |
 | [class_attribute_at](../src/classes.c#L134) | Obtiene el atributo de una posición válida y aplica la comprobación de ambigüedad de nombres heredados. | T29 T32 |
 | [class_check_copy](../src/classes.c#L158) | Compara los códigos de clases de origen/destino; devuelve admisibilidad e informa código incompatible. No copia objetos. | T24 |
-| [type_in_path](../src/classes.c#L172) | Consulta si una clase pertenece al camino de contención activo; no modifica símbolos. | T22 T24 |
-| [class_has_comptime_path](../src/classes.c#L205) | Recorre atributos efectivos con el camino de tipos activo; devuelve existencia de campos comptime sin reservar memoria de objetos. | T22 T24 |
-| [class_has_comptime](../src/classes.c#L215) | Recibe una clase y devuelve si ella o un campo objeto contienen atributos comptime; inicia el recorrido protegido contra ciclos. | T22 T24 |
-| [check_containment_path](../src/classes.c#L178) | Recorre sólo atributos objeto y detecta una clase repetida en el camino de contención por valor. Memoriza clases ya comprobadas para evitar repetir recorridos compartidos. | G08 T24 |
-| [class_check_containment](../src/classes.c#L195) | Comprueba contención finita para todas las clases declaradas, incluso sin instancias. No confunde parámetros de métodos con atributos contenidos. | G08 T24 |
+| [type_in_path](../src/classes.c#L171) | Consulta si una clase pertenece al camino de contención activo; no modifica símbolos. | T22 T24 |
+| [class_has_comptime_path](../src/classes.c#L204) | Recorre atributos efectivos con el camino de tipos activo; devuelve existencia de campos comptime sin reservar memoria de objetos. | T22 T24 |
+| [class_has_comptime](../src/classes.c#L214) | Recibe una clase y devuelve si ella o un campo objeto contienen atributos comptime; inicia el recorrido protegido contra ciclos. | T22 T24 |
+| [check_containment_path](../src/classes.c#L177) | Recorre sólo atributos objeto y detecta una clase repetida en el camino de contención por valor. Memoriza clases ya comprobadas para evitar repetir recorridos compartidos. | G08 T24 |
+| [class_check_containment](../src/classes.c#L194) | Comprueba contención finita para todas las clases declaradas, incluso sin instancias. No confunde parámetros de métodos con atributos contenidos. | G08 T24 |
 
 ### codegen.c
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
 
-| [codegen_init](../src/codegen.c#L25) | Inicializa la polaca principal, el registro de funciones y el especializador. Deja el principal como cuerpo actual. | G05 T22 |
-| [codegen_destroy](../src/codegen.c#L35) | Destruye especializaciones y cuerpos fuente, conservando prestados los símbolos hasta que main libere la TS. | G05 G10 |
-| [codegen_print](../src/codegen.c#L49) | Delega la impresión de Polaca especializada en specialize_print. | G05 G07 |
-| [codegen_finalize](../src/codegen.c#L53) | Ejecuta la especialización del programa después del parseo. | G05 T22 |
-| [codegen_source_body](../src/codegen.c#L57) | Devuelve un puntero prestado al cuerpo principal fuente, antes de especializar; permite revisar todos sus tipos. | G05 G08 |
-| [new_fragment](../src/codegen.c#L68) | Reserva e inicializa un fragmento de Polaca propietario de su array de pasos. | G05 |
-| [emit_fragment](../src/codegen.c#L74) | Recibe un fragmento propio; lo concatena en el cuerpo actual y lo destruye. NULL no produce instrucciones. | G05 |
-| [append_assignment](../src/codegen.c#L85) | Añade destino y ASSIGN al fragmento recibido, con su línea; modifica el fragmento sin emitirlo todavía. | G05 T18 |
-| [checked_realloc](../src/codegen.c#L59) | Reserva o redimensiona memoria de generación; informa un error fatal si falla. Centraliza las reservas de fragmentos, llamadas, funciones y texto numérico. | G10 |
-| [codegen_arguments_append](../src/codegen.c#L107) | Conserva un fragmento de expresión como siguiente argumento, manteniendo su posición original. | G06 T19 |
-| [codegen_arguments_free](../src/codegen.c#L118) | Libera todos los fragmentos de argumentos y su contenedor. | G06 G10 |
-| [codegen_order_append](../src/codegen.c#L125) | Guarda la siguiente constante del orden, incluyendo una posición inválida nula para no falsear cantidades durante recuperación. | T19 |
-| [codegen_order_free](../src/codegen.c#L137) | Libera el array y contenedor del orden, sin liberar sus símbolos. | T19 G10 |
-| [validate_argument_count](../src/codegen.c#L143) | Consulta argumentos y formales de una llamada; informa cantidades diferentes sin cambiar el orden de evaluación. | G06 T19 |
-| [codegen_call_begin](../src/codegen.c#L150) | Guarda función, receptor, argumentos y línea; verifica cantidad de reales contra formales. | G06 T19 |
-| [codegen_call_free](../src/codegen.c#L158) | Libera el contexto de llamada y los fragmentos que todavía posee. | G06 G10 |
-| [validate_evaluation_order](../src/codegen.c#L180) | Comprueba cantidades, posiciones, unicidad y existencia de los fragmentos de argumentos antes de emitir. Devuelve posiciones desde cero o NULL y libera reservas fallidas. | G06 T19 |
-| [emit_call](../src/codegen.c#L206) | Recibe llamada y posiciones ya validadas; emite FRAME, evaluación y copia a formales en el orden explícito, y CALL. Los marcos pendientes preservan llamadas anidadas. | G05 G06 T19 |
-| [codegen_call_end](../src/codegen.c#L225) | Valida orden INTEGER completo y único de 1..N; emite FRAME, fragmentos y copias ARG en ese orden, y CALL conservando asociación formal. | G06 T19 |
-| [codegen_attribute](../src/codegen.c#L239) | Valida objeto, índice y esquema; conserva el atributo resuelto si el índice es constante. Un acceso inválido se representa mediante una estructura vacía. | T24 T29 T32 |
-| [attribute_step](../src/codegen.c#L257) | Construye el paso de lectura, destino o chequeo usando el atributo previamente resuelto; mantiene receptor, índice y línea originales. | G05 T29 |
-| [codegen_attribute_value](../src/codegen.c#L262) | Construye un paso de lectura posicional, conservando receptor e índice; referencia el campo concreto si puede identificarlo. | G05 T29 |
-| [codegen_attribute_assignment](../src/codegen.c#L285) | Rechaza operandos inválidos al entrar, conserva el índice ordinario antes del RHS y emite la asignación. Consume el fragmento en éxito y recuperación. | G05 T18 T29 |
-| [codegen_free](../src/codegen.c#L296) | Destruye un fragmento temporal y su contenedor; admite NULL. | G05 G10 |
-| [codegen_value](../src/codegen.c#L302) | Construye un fragmento con una referencia a símbolo y su línea de origen. | G02 G05 |
-| [codegen_unary](../src/codegen.c#L310) | Añade un operador unario y línea al fragmento recibido, devolviendo el mismo fragmento modificado. | G05 T34 |
-| [codegen_binary](../src/codegen.c#L316) | Concatena izquierdo y derecho, consume el derecho y agrega la operación; conserva el orden de evaluación. | G05 |
-| [codegen_target](../src/codegen.c#L329) | Acumula un destino de la asignación interna en la lista temporal de destinos. | T18 |
-| [codegen_assignment_expression](../src/codegen.c#L340) | Recorre destinos de derecha a izquierda y emite DUP, destino y asignación, dejando el valor disponible para la expresión exterior. | G05 T18 |
-| [codegen_assignment](../src/codegen.c#L356) | Comprueba códigos de copia directa y consume el RHS al añadir destino y ASSIGN; no decide todas las compatibilidades numéricas. | G05 T24 |
-| [codegen_output](../src/codegen.c#L371) | Añade POUT al valor y lo incorpora al cuerpo actual, consumiendo el fragmento. | G05 G09 |
+| [codegen_init](../src/codegen.c#L26) | Inicializa la polaca principal, el registro de funciones y el especializador. Deja el principal como cuerpo actual. | G05 T22 |
+| [codegen_destroy](../src/codegen.c#L36) | Destruye especializaciones y cuerpos fuente, conservando prestados los símbolos hasta que main libere la TS. | G05 G10 |
+| [codegen_print](../src/codegen.c#L50) | Delega la impresión de Polaca especializada en specialize_print. | G05 G07 |
+| [codegen_finalize](../src/codegen.c#L54) | Ejecuta la especialización del programa después del parseo. | G05 T22 |
+| [codegen_source_body](../src/codegen.c#L58) | Devuelve un puntero prestado al cuerpo principal fuente, antes de especializar; permite revisar todos sus tipos. | G05 G08 |
+| [new_fragment](../src/codegen.c#L60) | Reserva e inicializa un fragmento de Polaca propietario de su array de pasos. | G05 |
+| [emit_fragment](../src/codegen.c#L66) | Recibe un fragmento propio; lo concatena en el cuerpo actual y lo destruye. NULL no produce instrucciones. | G05 |
+| [append_assignment](../src/codegen.c#L77) | Añade destino y ASSIGN al fragmento recibido, con su línea; modifica el fragmento sin emitirlo todavía. | G05 T18 |
 
-| [codegen_return](../src/codegen.c#L375) | Comprueba el contexto, consume la expresión y agrega RET. La prohibición de retornar objetos y la compatibilidad pertenecen al chequeo común de tipos. | G05 G06 G08 |
-| [codegen_function_begin](../src/codegen.c#L383) | Exige retorno primitivo, crea cuerpo independiente, lo registra para especializar y cambia el contexto conservando el padre. | G05 G06 T22 |
-| [codegen_function_abort](../src/codegen.c#L404) | Restaura el cuerpo de la función exterior o del principal cuando se cierra o descarta una guarda; no libera el cuerpo retenido. | G03 G05 |
-| [codegen_function_end](../src/codegen.c#L415) | Añade RET de cero del tipo declarado para caída al final y restaura el cuerpo exterior. | G05 G06 |
-| [append_branch](../src/codegen.c#L426) | Reserva un destino y emite BF o BI con línea, devolviendo la dirección a completar. | G05 |
-| [codegen_if_begin](../src/codegen.c#L433) | Emite condición y BF con destino pendiente, registrando dónde comienza la condición. | G05 |
-| [codegen_if_else](../src/codegen.c#L443) | Añade BI para saltar el ELSE y completa la salida falsa hacia el inicio de esa rama. | G05 |
-| [codegen_if_end](../src/codegen.c#L450) | Completa el salto pendiente con el primer paso posterior a la selección. | G05 |
-| [constant_value](../src/codegen.c#L454) | Convierte temporalmente el texto de una constante para comparar los límites FROM; no valida los tipos de su cabecera. | T14 |
-| [codegen_for_begin](../src/codegen.c#L465) | Inicializa el control, elige comparación estricta y actualización por los límites y prepara el salto de salida. | G05 T14 |
-| [codegen_for_end](../src/codegen.c#L487) | Emite actualización sobre el control actual, salto a la condición y completa la salida del ciclo. | G05 T14 |
-| [append_operator](../src/codegen.c#L80) | Agrega un operador con su línea fuente en un solo paso; evita modificar por separado el último elemento del fragmento. | G05 G07 |
-| [evaluation_position](../src/codegen.c#L165) | Valida tipo INTEGER y rango de una posición de evaluación. Devuelve posición desde uno o cero ante constante recuperada/errónea, conservando los diagnósticos. | T19 |
-| [save_attribute_index](../src/codegen.c#L269) | Conserva el índice ordinario en un temporal del cuerpo actual y emite CHECK_INDEX antes de los efectos de la expresión derecha. Devuelve el acceso actualizado. | G05 T18 T29 |
+| [codegen_arguments_append](../src/codegen.c#L99) | Conserva un fragmento de expresión como siguiente argumento, manteniendo su posición original. | G06 T19 |
+| [codegen_arguments_free](../src/codegen.c#L110) | Libera todos los fragmentos de argumentos y su contenedor. | G06 G10 |
+| [codegen_order_append](../src/codegen.c#L117) | Guarda la siguiente constante del orden, incluyendo una posición inválida nula para no falsear cantidades durante recuperación. | T19 |
+| [codegen_order_free](../src/codegen.c#L129) | Libera el array y contenedor del orden, sin liberar sus símbolos. | T19 G10 |
+| [validate_argument_count](../src/codegen.c#L135) | Consulta argumentos y formales de una llamada; informa cantidades diferentes sin cambiar el orden de evaluación. | G06 T19 |
+| [codegen_call_begin](../src/codegen.c#L142) | Guarda función, receptor, argumentos y línea; verifica cantidad de reales contra formales. | G06 T19 |
+| [codegen_call_free](../src/codegen.c#L150) | Libera el contexto de llamada y los fragmentos que todavía posee. | G06 G10 |
+| [validate_evaluation_order](../src/codegen.c#L172) | Comprueba cantidades, posiciones, unicidad y existencia de los fragmentos de argumentos antes de emitir. Devuelve posiciones desde cero o NULL y libera reservas fallidas. | G06 T19 |
+| [emit_call](../src/codegen.c#L198) | Recibe llamada y posiciones ya validadas; emite FRAME, evaluación y copia a formales en el orden explícito, y CALL. Los marcos pendientes preservan llamadas anidadas. | G05 G06 T19 |
+| [codegen_call_end](../src/codegen.c#L217) | Valida orden INTEGER completo y único de 1..N; emite FRAME, fragmentos y copias ARG en ese orden, y CALL conservando asociación formal. | G06 T19 |
+| [codegen_attribute](../src/codegen.c#L231) | Valida objeto, índice y esquema; conserva el atributo resuelto si el índice es constante. Un acceso inválido se representa mediante una estructura vacía. | T24 T29 T32 |
+| [attribute_step](../src/codegen.c#L249) | Construye el paso de lectura, destino o chequeo usando el atributo previamente resuelto; mantiene receptor, índice y línea originales. | G05 T29 |
+| [codegen_attribute_value](../src/codegen.c#L254) | Construye un paso de lectura posicional, conservando receptor e índice; referencia el campo concreto si puede identificarlo. | G05 T29 |
+| [codegen_attribute_assignment](../src/codegen.c#L278) | Rechaza operandos inválidos al entrar, conserva el índice ordinario antes del RHS y emite la asignación. Consume el fragmento en éxito y recuperación. | G05 T18 T29 |
+| [codegen_free](../src/codegen.c#L289) | Destruye un fragmento temporal y su contenedor; admite NULL. | G05 G10 |
+| [codegen_value](../src/codegen.c#L295) | Construye un fragmento con una referencia a símbolo y su línea de origen. | G02 G05 |
+| [codegen_unary](../src/codegen.c#L303) | Añade un operador unario y línea al fragmento recibido, devolviendo el mismo fragmento modificado. | G05 T34 |
+| [codegen_binary](../src/codegen.c#L309) | Concatena izquierdo y derecho, consume el derecho y agrega la operación; conserva el orden de evaluación. | G05 |
+| [codegen_target](../src/codegen.c#L322) | Acumula un destino de la asignación interna en la lista temporal de destinos. | T18 |
+| [codegen_assignment_expression](../src/codegen.c#L333) | Recorre destinos de derecha a izquierda y emite DUP, destino y asignación, dejando el valor disponible para la expresión exterior. | G05 T18 |
+| [codegen_assignment](../src/codegen.c#L349) | Comprueba códigos de copia directa y consume el RHS al añadir destino y ASSIGN; no decide todas las compatibilidades numéricas. | G05 T24 |
+| [codegen_output](../src/codegen.c#L364) | Añade POUT al valor y lo incorpora al cuerpo actual, consumiendo el fragmento. | G05 G09 |
+
+| [codegen_return](../src/codegen.c#L368) | Comprueba el contexto, consume la expresión y agrega RET. La prohibición de retornar objetos y la compatibilidad pertenecen al chequeo común de tipos. | G05 G06 G08 |
+| [codegen_function_begin](../src/codegen.c#L376) | Exige retorno primitivo, crea cuerpo independiente, lo registra para especializar y cambia el contexto conservando el padre. | G05 G06 T22 |
+| [codegen_function_abort](../src/codegen.c#L397) | Restaura el cuerpo de la función exterior o del principal cuando se cierra o descarta una guarda; no libera el cuerpo retenido. | G03 G05 |
+| [codegen_function_end](../src/codegen.c#L408) | Añade RET de cero del tipo declarado para caída al final y restaura el cuerpo exterior. | G05 G06 |
+| [append_branch](../src/codegen.c#L419) | Reserva un destino y emite BF o BI con línea, devolviendo la dirección a completar. | G05 |
+| [codegen_if_begin](../src/codegen.c#L426) | Emite condición y BF con destino pendiente, registrando dónde comienza la condición. | G05 |
+| [codegen_if_else](../src/codegen.c#L436) | Añade BI para saltar el ELSE y completa la salida falsa hacia el inicio de esa rama. | G05 |
+| [codegen_if_end](../src/codegen.c#L443) | Completa el salto pendiente con el primer paso posterior a la selección. | G05 |
+| [constant_value](../src/codegen.c#L447) | Convierte temporalmente el texto de una constante para comparar los límites FROM; no valida los tipos de su cabecera. | T14 |
+| [codegen_for_begin](../src/codegen.c#L458) | Inicializa el control, elige comparación estricta y actualización por los límites y prepara el salto de salida. | G05 T14 |
+| [codegen_for_end](../src/codegen.c#L480) | Emite actualización sobre el control actual, salto a la condición y completa la salida del ciclo. | G05 T14 |
+| [append_operator](../src/codegen.c#L72) | Agrega un operador con su línea fuente en un solo paso; evita modificar por separado el último elemento del fragmento. | G05 G07 |
+| [evaluation_position](../src/codegen.c#L157) | Valida tipo INTEGER y rango de una posición de evaluación. Devuelve posición desde uno o cero ante constante recuperada/errónea, conservando los diagnósticos. | T19 |
+| [save_attribute_index](../src/codegen.c#L261) | Conserva el índice ordinario en un temporal del cuerpo actual y emite CHECK_INDEX antes de los efectos de la expresión derecha. Devuelve el acceso actualizado. | G05 T18 T29 |
 
 ### comptime_objects.c
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [resize](../src/comptime_objects.c#L22) | Reserva o redimensiona memoria de evaluación con comprobación de fallo; es infraestructura interna. | T22 |
-| [comptime_object_location](../src/comptime_objects.c#L31) | Devuelve una identidad estable para el par objeto padre/campo; crea una ubicación lógica si todavía no existe. | T22 T24 |
-| [comptime_object_root](../src/comptime_objects.c#L46) | Sube las ubicaciones de campos hasta el objeto raíz para relacionar escrituras y dependencias. | T22 T24 |
-| [type_in_path](../src/comptime_objects.c#L60) | Indica si un tipo ya pertenece al camino activo de un recorrido recursivo. | T22 T24 |
-| [comptime_object_field](../src/comptime_objects.c#L66) | Obtiene el valor de un campo desde una captura o entorno y conserva la identidad/captura de un campo objeto anidado. | T22 T24 |
-| [capture_object](../src/comptime_objects.c#L88) | Crea una captura inmutable de los campos comptime, incluyendo objetos hijos; diagnostica valores desconocidos o una captura recursiva no finita. | G06 T22 T24 |
-| [comptime_capture_object](../src/comptime_objects.c#L132) | Inicia la captura recursiva de campos comptime del valor recibido. Devuelve símbolo de captura poseído por TS y usa el contador compartido de identidades. | G02 T19 T22 T24 |
-| [copy_object_fields](../src/comptime_objects.c#L137) | Copia conocimiento por posiciones efectivas y campos anidados; verifica determinabilidad y permisos de escrituras comptime, distinguiendo copias de argumentos. | G06 T22 T24 |
-| [comptime_copy_object_fields](../src/comptime_objects.c#L174) | Recibe contextos origen/destino, objeto y tipo; inicia la copia de conocimiento por posición, diferenciando argumentos y control desconocido. | G06 T22 T24 |
-| [comptime_objects_init](../src/comptime_objects.c#L179) | Inicializa el registro de identidades lógicas de campos; no reserva objetos del ejecutable. | T22 T24 |
-| [comptime_objects_destroy](../src/comptime_objects.c#L183) | Libera las ubicaciones lógicas y sus nombres una vez que dejaron de usarse por entornos/cuerpos. | G10 T22 |
-| [comptime_resolve_object](../src/comptime_objects.c#L55) | Resuelve un atributo objeto mediante la ubicación (receptor concreto, declaración); conserva variables y parámetros y permite receptor implícito. No cambia los símbolos de la IR. | T22 T24 |
+
+| [comptime_object_location](../src/comptime_objects.c#L23) | Devuelve una identidad estable para el par objeto padre/campo; crea una ubicación lógica si todavía no existe. | T22 T24 |
+| [comptime_object_root](../src/comptime_objects.c#L38) | Sube las ubicaciones de campos hasta el objeto raíz para relacionar escrituras y dependencias. | T22 T24 |
+| [type_in_path](../src/comptime_objects.c#L52) | Indica si un tipo ya pertenece al camino activo de un recorrido recursivo. | T22 T24 |
+| [comptime_object_field](../src/comptime_objects.c#L58) | Obtiene el valor de un campo desde una captura o entorno y conserva la identidad/captura de un campo objeto anidado. | T22 T24 |
+| [capture_object](../src/comptime_objects.c#L80) | Crea una captura inmutable de los campos comptime, incluyendo objetos hijos; diagnostica valores desconocidos o una captura recursiva no finita. | G06 T22 T24 |
+| [comptime_capture_object](../src/comptime_objects.c#L124) | Inicia la captura recursiva de campos comptime del valor recibido. Devuelve símbolo de captura poseído por TS y usa el contador compartido de identidades. | G02 T19 T22 T24 |
+| [copy_object_fields](../src/comptime_objects.c#L129) | Copia conocimiento por posiciones efectivas y campos anidados; verifica determinabilidad y permisos de escrituras comptime, distinguiendo copias de argumentos. | G06 T22 T24 |
+| [comptime_copy_object_fields](../src/comptime_objects.c#L166) | Recibe contextos origen/destino, objeto y tipo; inicia la copia de conocimiento por posición, diferenciando argumentos y control desconocido. | G06 T22 T24 |
+| [comptime_objects_init](../src/comptime_objects.c#L171) | Inicializa el registro de identidades lógicas de campos; no reserva objetos del ejecutable. | T22 T24 |
+| [comptime_objects_destroy](../src/comptime_objects.c#L175) | Libera las ubicaciones lógicas y sus nombres una vez que dejaron de usarse por entornos/cuerpos. | G10 T22 |
+| [comptime_resolve_object](../src/comptime_objects.c#L47) | Resuelve un atributo objeto mediante la ubicación (receptor concreto, declaración); conserva variables y parámetros y permite receptor implícito. No cambia los símbolos de la IR. | T22 T24 |
 
 ### comptime_values.c
 
@@ -235,18 +239,18 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | --- | --- | --- |
 
 
-| [resize](../src/comptime_values.c#L7) | Reserva o redimensiona memoria de evaluación con comprobación de fallo; es infraestructura interna. | T22 |
-| [comptime_values_equal](../src/comptime_values.c#L16) | Compara estados de propagación y caché: distingue +0 y −0 SINGLEF, mantiene separados infinitos de distinto signo y no unifica NaN. No implementa el operador == del lenguaje. | T03 T07 T22 |
-| [comptime_get](../src/comptime_values.c#L23) | Busca la asociación de símbolo y objeto en el entorno; devuelve valor desconocido si no está registrada. | T22 |
-| [comptime_read_symbol](../src/comptime_values.c#L31) | Lee una constante o consulta un símbolo en el entorno; los atributos se buscan junto con el receptor del método y las variables sin receptor. Devuelve valor desconocido si no hay asociación. | G06 G08 T22 T29 |
-| [comptime_set](../src/comptime_values.c#L37) | Actualiza o agrega una asociación símbolo/objeto/valor en el entorno. | T22 |
-| [comptime_copy_environment](../src/comptime_values.c#L49) | Copia el array de asociaciones del entorno; las identidades de símbolos y capturas siguen prestadas. | T22 |
-| [comptime_forget_runtime](../src/comptime_values.c#L59) | Vuelve desconocidas las asociaciones ordinarias, conservando las declaradas comptime. | T22 |
-| [comptime_join_environments](../src/comptime_values.c#L65) | Combina caminos conservando sólo los valores numéricos conocidos iguales en ambos; el resto pasa a desconocido. | T22 |
-| [comptime_make_constant](../src/comptime_values.c#L82) | Comprueba representabilidad, escribe el literal del tipo adecuado e interna la constante; reutiliza su referencia si ya está disponible. | G02 T03 T07 T22 |
-| [comptime_read_constant](../src/comptime_values.c#L110) | Interpreta un símbolo INTEGER/SINGLEF como valor conocido y redondea a float cuando corresponde. | T03 T07 T22 |
-| [comptime_binary](../src/comptime_values.c#L125) | Evalúa operandos conocidos del mismo tipo mediante numeric_binary, con una única política numérica; devuelve conocimiento, categoría y error, sin emitir código. | T03 T07 T22 EC ED |
-| [comptime_to_integer](../src/comptime_values.c#L137) | Convierte un valor conocido mediante numeric_integer; conserva errores de rango o pérdida de fracción y elimina su referencia a constante original. | T22 T34 EG |
+
+| [comptime_values_equal](../src/comptime_values.c#L8) | Compara estados de propagación y caché: distingue +0 y −0 SINGLEF, mantiene separados infinitos de distinto signo y no unifica NaN. No implementa el operador == del lenguaje. | T03 T07 T22 |
+| [comptime_get](../src/comptime_values.c#L15) | Busca la asociación de símbolo y objeto en el entorno; devuelve valor desconocido si no está registrada. | T22 |
+| [comptime_read_symbol](../src/comptime_values.c#L23) | Lee una constante o consulta un símbolo en el entorno; los atributos se buscan junto con el receptor del método y las variables sin receptor. Devuelve valor desconocido si no hay asociación. | G06 G08 T22 T29 |
+| [comptime_set](../src/comptime_values.c#L29) | Actualiza o agrega una asociación símbolo/objeto/valor en el entorno. | T22 |
+| [comptime_copy_environment](../src/comptime_values.c#L41) | Copia el array de asociaciones del entorno; las identidades de símbolos y capturas siguen prestadas. | T22 |
+| [comptime_forget_runtime](../src/comptime_values.c#L51) | Vuelve desconocidas las asociaciones ordinarias, conservando las declaradas comptime. | T22 |
+| [comptime_join_environments](../src/comptime_values.c#L57) | Combina caminos conservando sólo los valores numéricos conocidos iguales en ambos; el resto pasa a desconocido. | T22 |
+| [comptime_make_constant](../src/comptime_values.c#L74) | Comprueba representabilidad, escribe el literal del tipo adecuado e interna la constante; reutiliza su referencia si ya está disponible. | G02 T03 T07 T22 |
+| [comptime_read_constant](../src/comptime_values.c#L102) | Interpreta un símbolo INTEGER/SINGLEF como valor conocido y redondea a float cuando corresponde. | T03 T07 T22 |
+| [comptime_binary](../src/comptime_values.c#L117) | Evalúa operandos conocidos del mismo tipo mediante numeric_binary, con una única política numérica; devuelve conocimiento, categoría y error, sin emitir código. | T03 T07 T22 EC ED |
+| [comptime_to_integer](../src/comptime_values.c#L129) | Convierte un valor conocido mediante numeric_integer; conserva errores de rango o pérdida de fracción y elimina su referencia a constante original. | T22 T34 EG |
 
 ### diagnostics.c
 
@@ -321,25 +325,25 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | [append_to_lexeme](../src/lexer_actions.c#L37) | Añade un carácter y el terminador nulo, aumentando capacidad cuando hace falta. | G01 |
 | [reset_lexeme_buffer](../src/lexer_actions.c#L43) | Deja el lexema vacío, conservando la reserva reutilizable. | G01 |
 | [free_lexeme_buffer](../src/lexer_actions.c#L49) | Libera el búfer y reinicia puntero, capacidad y longitud. | G10 |
-| [check_reserved_words](../src/lexer_actions.c#L81) | Devuelve el token reservado para una palabra ya normalizada a minúsculas, o −1 si no es reservada. | G01 G03 |
-| [sa_init](../src/lexer_actions.c#L104) | Comienza un lexema con el carácter actual y devuelve la indicación interna de continuar. | G01 |
-| [sa_append](../src/lexer_actions.c#L110) | Agrega el carácter excepto CR/LF; permite que el texto de cadenas multilínea quede sin saltos. | G01 T10 |
-| [sa_token_consume](../src/lexer_actions.c#L117) | Devuelve directamente el token del carácter actual, consumiéndolo. | G01 |
-| [sa_token_buffered](../src/lexer_actions.c#L123) | Devuelve el token del carácter ya guardado; la transición permite devolver el carácter de anticipación. | G01 |
-| [sa_ignore](../src/lexer_actions.c#L131) | No altera el lexema ni devuelve token; se usa para blancos y comentarios. | G01 T15 |
-| [sa_identifier](../src/lexer_actions.c#L135) | Distingue reservadas sin importar mayúsculas; rechaza mayúsculas en identificadores, trunca a 22 con warning e interna el identificador válido. | G01 G02 |
-| [sa_int_const](../src/lexer_actions.c#L166) | Completa y valida $i y la magnitud; registra INTEGER y marca 32768 provisional para resolver su signo en el parser. | G02 T03 |
-| [sa_float_const](../src/lexer_actions.c#L185) | Convierte una copia del texto reemplazando s por e, valida formato y rango SINGLEF y registra la constante sin alterar el lexema fuente. | G02 T07 |
-| [sa_init_chain](../src/lexer_actions.c#L211) | Vacía el búfer al abrir una cadena para no almacenar su comilla inicial como contenido. | T10 |
-| [sa_chain](../src/lexer_actions.c#L216) | Registra el contenido de una cadena cerrada como CHAIN y devuelve su token. | G02 T10 |
-| [sa_multi_char_op](../src/lexer_actions.c#L221) | Completa y reconoce :=, >=, <=, == o !=; una combinación no admitida produce error léxico. | G01 |
-| [sa_dot_or_float_error](../src/lexer_actions.c#L232) | Distingue un punto aislado de un intento de flotante sin parte decimal; devuelve punto o error. | G01 T07 |
-| [sa_float_decimal_error](../src/lexer_actions.c#L239) | Diagnostica un exponente que aparece sin punto y parte decimal obligatorios. | T07 G07 |
-| [sa_integer_literal_error](../src/lexer_actions.c#L246) | Distingue sufijo entero mal escrito y sufijo ausente; informa el error y devuelve YYerror. | T03 G07 |
-| [sa_float_exponent_error](../src/lexer_actions.c#L258) | Diagnostica exponente SINGLEF incompleto o mal formado. | T07 G07 |
-| [display_character](../src/lexer_actions.c#L266) | Devuelve una representación legible del carácter, incluidos blancos y controles, para usarla en mensajes. | G07 |
-| [sa_error](../src/lexer_actions.c#L280) | Informa el carácter inválido y devuelve YYerror para iniciar recuperación. | G01 G07 |
-| [sa_operator_error](../src/lexer_actions.c#L286) | Diagnostica un operador incompleto que requería el segundo carácter =. | G01 G07 |
+| [check_reserved_words](../src/lexer_actions.c#L79) | Devuelve el token reservado para una palabra ya normalizada a minúsculas, o −1 si no es reservada. | G01 G03 |
+| [sa_init](../src/lexer_actions.c#L102) | Comienza un lexema con el carácter actual y devuelve la indicación interna de continuar. | G01 |
+| [sa_append](../src/lexer_actions.c#L108) | Agrega el carácter excepto CR/LF; permite que el texto de cadenas multilínea quede sin saltos. | G01 T10 |
+| [sa_token_consume](../src/lexer_actions.c#L115) | Devuelve directamente el token del carácter actual, consumiéndolo. | G01 |
+| [sa_token_buffered](../src/lexer_actions.c#L121) | Devuelve el token del carácter ya guardado; la transición permite devolver el carácter de anticipación. | G01 |
+| [sa_ignore](../src/lexer_actions.c#L129) | No altera el lexema ni devuelve token; se usa para blancos y comentarios. | G01 T15 |
+| [sa_identifier](../src/lexer_actions.c#L133) | Distingue reservadas sin importar mayúsculas; rechaza mayúsculas en identificadores, trunca a 22 con warning e interna el identificador válido. | G01 G02 |
+| [sa_int_const](../src/lexer_actions.c#L164) | Completa y valida $i y la magnitud; registra INTEGER y marca 32768 provisional para resolver su signo en el parser. | G02 T03 |
+| [sa_float_const](../src/lexer_actions.c#L183) | Convierte una copia del texto reemplazando s por e, valida formato y rango SINGLEF y registra la constante sin alterar el lexema fuente. | G02 T07 |
+| [sa_init_chain](../src/lexer_actions.c#L209) | Vacía el búfer al abrir una cadena para no almacenar su comilla inicial como contenido. | T10 |
+| [sa_chain](../src/lexer_actions.c#L214) | Registra el contenido de una cadena cerrada como CHAIN y devuelve su token. | G02 T10 |
+| [sa_multi_char_op](../src/lexer_actions.c#L219) | Completa y reconoce :=, >=, <=, == o !=; una combinación no admitida produce error léxico. | G01 |
+| [sa_dot_or_float_error](../src/lexer_actions.c#L230) | Distingue un punto aislado de un intento de flotante sin parte decimal; devuelve punto o error. | G01 T07 |
+| [sa_float_decimal_error](../src/lexer_actions.c#L237) | Diagnostica un exponente que aparece sin punto y parte decimal obligatorios. | T07 G07 |
+| [sa_integer_literal_error](../src/lexer_actions.c#L244) | Distingue sufijo entero mal escrito y sufijo ausente; informa el error y devuelve YYerror. | T03 G07 |
+| [sa_float_exponent_error](../src/lexer_actions.c#L256) | Diagnostica exponente SINGLEF incompleto o mal formado. | T07 G07 |
+| [display_character](../src/lexer_actions.c#L264) | Devuelve una representación legible del carácter, incluidos blancos y controles, para usarla en mensajes. | G07 |
+| [sa_error](../src/lexer_actions.c#L278) | Informa el carácter inválido y devuelve YYerror para iniciar recuperación. | G01 G07 |
+| [sa_operator_error](../src/lexer_actions.c#L284) | Diagnostica un operador incompleto que requería el segundo carácter =. | G01 G07 |
 
 ### main.c
 
@@ -377,91 +381,121 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [allocate](../src/scope.c#L33) | Reserva memoria inicializada para estructuras de ámbitos y termina con diagnóstico interno si falla. | G04 |
-| [qualified_name](../src/scope.c#L42) | Construye un nombre nuevo con la forma nombre:ámbito; quien lo recibe debe liberar ese texto. | G04 |
-| [push_scope](../src/scope.c#L48) | Crea un ámbito con ruta, clase y padre, lo conserva en la lista de asignados y lo convierte en actual. | G04 |
-| [scope_init](../src/scope.c#L66) | Activa identificadores calificados e inicia el ámbito global main. | G02 G04 |
-| [scope_destroy](../src/scope.c#L72) | Libera todos los ámbitos y sus rutas al terminar su uso. | G04 G10 |
-| [scope_lookup_local](../src/scope.c#L82) | Busca un nombre únicamente en el ámbito indicado construyendo su nombre calificado temporal. | G04 |
-| [declare](../src/scope.c#L89) | Rechaza una redeclaración local o crea el símbolo con tipo, uso, propietario y línea; lo agrega a los metadatos del dueño. | G02 G04 |
-| [scope_program](../src/scope.c#L122) | Declara el nombre del programa con uso PROGRAM. | G02 G04 |
-| [scope_begin](../src/scope.c#L126) | Declara función, método o clase y abre su cuerpo; ante declaración rechazada usa un ámbito aislado de recuperación. | G03 G04 G06 |
-| [scope_end](../src/scope.c#L141) | Restaura el ámbito padre y desactiva los ámbitos abiertos hasta la guarda indicada; también sirve al descarte por Bison. | G03 G04 |
-| [scope_symbol](../src/scope.c#L154) | Devuelve el símbolo asociado a un ámbito o NULL si no hay uno válido. | G04 |
-| [scope_in_function](../src/scope.c#L158) | Determina si RET está en una función o método activo, sin atravesar indebidamente un contexto de clase. | G03 G06 |
-| [scope_resolve](../src/scope.c#L166) | Busca desde el ámbito actual hacia padres, incluyendo miembros heredados cuando corresponde; comprueba categoría y diagnostica inexistencia o mal uso. | G04 T32 |
-| [scope_named_type](../src/scope.c#L197) | Resuelve un nombre como clase y devuelve la descripción de tipo que usarán las declaraciones. | G02 G04 |
-| [scope_names_create](../src/scope.c#L202) | Crea la lista temporal de identificadores de una declaración y añade el primero con su línea. | G03 G04 |
-| [scope_names_append](../src/scope.c#L207) | Añade identificador y línea al final de la lista temporal, preservando orden. | G03 G04 |
-| [scope_names_free](../src/scope.c#L217) | Libera la lista temporal sin liberar los símbolos léxicos prestados. | G03 G10 |
-| [scope_declare_names](../src/scope.c#L228) | Recibe lista propia de nombres, tipo y marca comptime; declara variables o atributos según contexto y consume la lista. | G02 G04 T22 |
-| [scope_parameter](../src/scope.c#L238) | Recibe nombre, tipo, marca comptime y línea; declara formal, conserva orden y devuelve referencia prestada o NULL. | G02 G06 T22 |
-| [scope_base](../src/scope.c#L244) | Resuelve la base visible, registra su referencia e invalida el esquema efectivo previo. | G04 T32 |
-| [scope_object](../src/scope.c#L249) | Resuelve una variable o atributo y exige que tenga tipo de clase; devuelve el objeto o diagnostica el receptor incorrecto. | G04 T29 |
+
+| [qualified_name](../src/scope.c#L34) | Construye un nombre nuevo con la forma nombre:ámbito; quien lo recibe debe liberar ese texto. | G04 |
+| [push_scope](../src/scope.c#L40) | Crea un ámbito con ruta, clase y padre, lo conserva en la lista de asignados y lo convierte en actual. | G04 |
+| [scope_init](../src/scope.c#L58) | Activa identificadores calificados e inicia el ámbito global main. | G02 G04 |
+| [scope_destroy](../src/scope.c#L64) | Libera todos los ámbitos y sus rutas al terminar su uso. | G04 G10 |
+| [scope_lookup_local](../src/scope.c#L74) | Busca un nombre únicamente en el ámbito indicado construyendo su nombre calificado temporal. | G04 |
+| [declare](../src/scope.c#L81) | Rechaza una redeclaración local o crea el símbolo con tipo, uso, propietario y línea; lo agrega a los metadatos del dueño. | G02 G04 |
+| [scope_program](../src/scope.c#L114) | Declara el nombre del programa con uso PROGRAM. | G02 G04 |
+| [scope_begin](../src/scope.c#L118) | Declara función, método o clase y abre su cuerpo; ante declaración rechazada usa un ámbito aislado de recuperación. | G03 G04 G06 |
+| [scope_end](../src/scope.c#L133) | Restaura el ámbito padre y desactiva los ámbitos abiertos hasta la guarda indicada; también sirve al descarte por Bison. | G03 G04 |
+| [scope_symbol](../src/scope.c#L146) | Devuelve el símbolo asociado a un ámbito o NULL si no hay uno válido. | G04 |
+| [scope_in_function](../src/scope.c#L150) | Determina si RET está en una función o método activo, sin atravesar indebidamente un contexto de clase. | G03 G06 |
+| [scope_resolve](../src/scope.c#L158) | Busca desde el ámbito actual hacia padres, incluyendo miembros heredados cuando corresponde; comprueba categoría y diagnostica inexistencia o mal uso. | G04 T32 |
+| [scope_named_type](../src/scope.c#L189) | Resuelve un nombre como clase y devuelve la descripción de tipo que usarán las declaraciones. | G02 G04 |
+| [scope_names_create](../src/scope.c#L194) | Crea la lista temporal de identificadores de una declaración y añade el primero con su línea. | G03 G04 |
+| [scope_names_append](../src/scope.c#L199) | Añade identificador y línea al final de la lista temporal, preservando orden. | G03 G04 |
+| [scope_names_free](../src/scope.c#L209) | Libera la lista temporal sin liberar los símbolos léxicos prestados. | G03 G10 |
+| [scope_declare_names](../src/scope.c#L220) | Recibe lista propia de nombres, tipo y marca comptime; declara variables o atributos según contexto y consume la lista. | G02 G04 T22 |
+| [scope_parameter](../src/scope.c#L230) | Recibe nombre, tipo, marca comptime y línea; declara formal, conserva orden y devuelve referencia prestada o NULL. | G02 G06 T22 |
+| [scope_base](../src/scope.c#L236) | Resuelve la base visible, registra su referencia e invalida el esquema efectivo previo. | G04 T32 |
+| [scope_object](../src/scope.c#L241) | Resuelve una variable o atributo y exige que tenga tipo de clase; devuelve el objeto o diagnostica el receptor incorrecto. | G04 T29 |
 
 ### specialize.c
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [resize](../src/specialize.c#L75) | Reserva o redimensiona memoria de evaluación con comprobación de fallo; es infraestructura interna. | T22 |
-| [forget_call_writes](../src/specialize.c#L93) | Invalida conocimiento de variables y objetos que una llamada puede modificar, usando su resumen de escrituras. | G06 T22 |
-| [push](../src/specialize.c#L106) | Añade un valor a la pila temporal de evaluación, aumentando el array. | T22 |
-| [pop](../src/specialize.c#L111) | Retira el último valor; una pila vacía genera diagnóstico de expresión intermedia inválida. | G05 T22 |
-| [emit](../src/specialize.c#L117) | Añade un paso al cuerpo de salida de la transformación. | G05 T22 |
-| [discard](../src/specialize.c#L121) | Elimina un fragmento descartable al final de la salida o emite DROP cuando deben preservarse sus efectos. | T18 T22 |
-| [find_template](../src/specialize.c#L127) | Busca la declaración fuente de una función, normalizando antes una referencia a instancia especializada. | G06 T22 |
-| [is_operator](../src/specialize.c#L134) | Comprueba que un paso sea exactamente el operador solicitado. | G05 T22 |
-| [materialize_object](../src/specialize.c#L138) | Emite MATERIALIZE con la captura obtenida y asocia esa captura al valor temporal. | G05 T22 T24 |
-| [specialize_has_comptime_effects](../src/specialize.c#L145) | Detecta escrituras comptime, copias de objetos afectados y llamadas con efectos externos de compilación. Se combina con el análisis independiente de requisitos por iteración. | G08 T14 T22 |
-| [apply_effects](../src/specialize.c#L168) | Invalida conocimiento afectado por una llamada y propaga sus efectos conocidos al entorno del llamador, ajustando el receptor. | G06 T22 |
-| [record_return](../src/specialize.c#L189) | Acumula el valor de retorno; conserva uno conocido sólo si los retornos observados coinciden. | G06 T22 |
-| [describe_control](../src/specialize.c#L205) | Recibe cuerpo y posición de salto; devuelve límites de condición, brazos o ciclo a partir de destinos existentes, sin transformar pasos. | G05 T14 |
-| [process_condition](../src/specialize.c#L531) | Transforma el rango de condición y retira su valor de la pila temporal; conserva sus efectos emitidos. | G05 T22 |
-| [check_discarded](../src/specialize.c#L536) | Audita un rango que se eliminará con una copia del entorno y el receptor actual; conserva aisladas asignaciones y efectos de llamadas en todas las opciones de salida. | G08 T22 |
-| [process_if](../src/specialize.c#L542) | Evalúa la condición; audita el brazo descartado cuando es conocida, o conserva ambos brazos y une entornos. Mantiene comprobaciones dependientes antes de eliminar código. | G05 G08 T22 |
-| [process_loop](../src/specialize.c#L584) | Evalúa la condición, audita cuerpos descartados y expande ciclos por escrituras comptime o argumentos que necesitan valores de cada iteración. Mantiene el control externo desconocido, conserva ciclos invariantes runtime y detiene expansiones con errores o presupuesto agotado. | G05 G08 T14 T22 |
-| [transform_control](../src/specialize.c#L636) | Procesa IF o ciclo: selecciona ramas conocidas, expande ciclos por efectos o requisitos comptime, o conserva bifurcaciones; combina entornos. | G05 T14 T22 |
-| [evaluate_binary](../src/specialize.c#L643) | Calcula conocimiento del resultado si ambos operandos conocidos tienen tipo compatible; emite igualmente la operación runtime y conserva sus límites. | T03 T07 T22 |
-| [assign_comptime](../src/specialize.c#L654) | Valida control conocido, valor, tipo y error numérico; registra la asociación comptime en entorno o argumentos pendientes, sin escribir una variable runtime. | T22 EC ED EG |
-| [assign_value](../src/specialize.c#L684) | Procesa destinos ordinarios, formales y atributos: vincula comptime o emite la escritura runtime y actualiza/invalida el conocimiento correspondiente. | G06 T18 T22 T24 |
-| [process_symbol](../src/specialize.c#L724) | Consulta constante/entorno, sustituye lecturas comptime y conserva identidad de objetos; emite operando y captura cuando corresponde. | G05 T22 T24 |
-| [process_attribute](../src/specialize.c#L748) | Resuelve índice, campo y valor usando la identidad del receptor concreto, incluidos objetos anidados. Conserva el receptor original en la IR, accesos variables y capturas; prepara destinos y diagnostica índices comptime desconocidos. | T22 T29 T32 |
-| [begin_call](../src/specialize.c#L804) | Crea un registro propio de llamada pendiente con receptor concreto, argumentos y origen FRAME; resuelve receptores anidados para el entorno y conserva el símbolo original emitido. | G06 T19 |
-| [find_active_instance](../src/specialize.c#L813) | Busca una instancia de la misma declaración fuente que todavía se está expandiendo; devuelve una referencia prestada o NULL. | G06 T22 EI |
-| [process_call](../src/specialize.c#L819) | Elige instancia y emite CALL. Una reentrada a una fuente activa usa esa instancia con retorno desconocido; conserva la guardia runtime y evita especialización infinita. Libera la llamada pendiente. | G06 T19 T22 EI |
-| [process_operator](../src/specialize.c#L850) | Despacha aritmética, conversiones, asignaciones, DUP/DROP, salida y retorno; actualiza pila, conocimiento y detención, conservando efectos runtime. | G05 T18 T22 |
-| [transform_range](../src/specialize.c#L888) | Recorre pasos y controles con origen diagnóstico; delega operaciones y audita el resto del rango antes de detenerse por RET. | G05 G07 G08 T22 |
-| [transform](../src/specialize.c#L941) | Prepara un contexto para un cuerpo, identifica controles, transforma el rango completo y libera pilas y llamadas pendientes. | G05 T22 |
-| [matches_environment](../src/specialize.c#L966) | Decide si una instancia contextual puede reutilizarse comparando receptor, entrada bajo control desconocido y asociaciones comptime. | G06 T22 |
-| [prepare_call_environment](../src/specialize.c#L983) | Copia el entorno del llamador, invalida valores ordinarios/locales y vincula parámetros/campos comptime de argumentos. Devuelve entorno propio. | G06 T19 T22 |
-| [find_instance](../src/specialize.c#L1012) | Busca una instancia de la declaración compatible con entorno, receptor y contexto de entrada; devuelve referencia prestada o NULL. | G06 T22 |
-| [create_instance](../src/specialize.c#L1021) | Reserva instancia activa y cuerpo, copia el entorno inicial y crea símbolo especializado si depende de contexto; enlaza la instancia al registro propietario. | G02 G05 T22 |
-| [record_instance_bindings](../src/specialize.c#L1052) | Registra valores comptime finales locales en metadatos de instancia; usa referencias a constantes poseídas por TS. | G02 T22 |
-| [instantiate](../src/specialize.c#L1067) | Prepara entorno de activación y formales comptime; reutiliza o crea instancia, transforma su cuerpo y registra efectos, retorno y valores finales. | G06 T22 |
-| [specialize_init](../src/specialize.c#L1093) | Reinicia plantillas, instancias, identidades, presupuesto de evaluación, profundidad y cuerpo principal de salida. | G05 T22 |
-| [specialize_register](../src/specialize.c#L1106) | Registra una función fuente con referencia prestada a su cuerpo retenido. | G05 G06 T22 |
-| [record_runtime_write](../src/specialize.c#L1114) | Añade una escritura no local ordinaria al resumen de efectos de la función, evitando duplicados. | G06 T22 |
-| [analyze_function_effects](../src/specialize.c#L1122) | Recorre el cuerpo fuente para clasificar dependencias comptime, efectos externos, atributos y escrituras runtime. | G06 T22 |
-| [propagate_function_effects](../src/specialize.c#L1159) | Propaga resúmenes por las llamadas hasta alcanzar punto fijo; no ejecuta ninguna función del usuario. | G06 T22 |
-| [specialize_program](../src/specialize.c#L1187) | Clasifica dependencias y efectos, los propaga por llamadas, transforma el principal y genera funciones ordinarias no usadas; registra valores finales. | G05 G06 T22 |
-| [specialize_print](../src/specialize.c#L1211) | Imprime principal, instancias ejecutables y plantillas contextuales, incluidas las no invocadas; comprueba saltos completos mediante rpn_print. | G05 G07 T22 |
-| [specialize_destroy](../src/specialize.c#L1227) | Libera ubicaciones lógicas, cuerpos transformados, entornos, instancias, registros de plantillas y diagnósticos retenidos. | G10 T22 |
-| [specialize_evaluate_call](../src/specialize.c#L1247) | Consulta o genera una especialización con los argumentos recibidos; devuelve su valor abstracto y aplica efectos al entorno suministrado por el analizador de tipos. Una fuente activa devuelve desconocido sin expandir recursión. Puede registrar cuerpos y símbolos, pero no agrega una llamada al cuerpo ejecutable original. | G06 G08 T22 EI |
-| [specialize_source_count](../src/specialize.c#L1258) | Cuenta declaraciones registradas; no crea cuerpos ni modifica el registro. | G05 G08 |
-| [specialize_source_body](../src/specialize.c#L1263) | Devuelve cuerpo fuente prestado por índice y su símbolo mediante parámetro de salida; NULL si no existe. | G05 G08 |
-| [specialize_instance_count](../src/specialize.c#L1270) | Cuenta instancias concretas del registro; no especializa nuevas llamadas. | G05 G09 |
-| [specialize_instance_body](../src/specialize.c#L1275) | Devuelve cuerpo concreto prestado por índice y símbolo de instancia; NULL si no existe. | G05 G09 |
-| [specialize_main_body](../src/specialize.c#L1282) | Devuelve referencia prestada al principal transformado, válido hasta specialize_destroy. | G05 G09 |
-| [probe_push](../src/specialize.c#L257) | Añade un operando al análisis exploratorio; copia el entorno de campos de objetos para preservar el orden de evaluación. | T18 T19 T22 |
-| [probe_pop](../src/specialize.c#L264) | Retira un operando exploratorio; devuelve un valor desconocido si no hay operandos. | T22 |
-| [probe_destroy](../src/specialize.c#L268) | Libera pila, capturas de entornos, llamadas pendientes y entorno privado de la exploración. | G10 T22 |
-| [probe_copy_object](../src/specialize.c#L280) | Copia campos por posición en el estado exploratorio, incluidos objetos anidados; marca requisitos comptime desconocidos sin diagnósticos ni capturas en TS. Limita profundidad y trabajo. | T19 T22 T24 |
-| [probe_invoke](../src/specialize.c#L303) | Comprueba argumentos comptime y analiza el cuerpo fuente en un entorno privado, con formales ordinarios desconocidos. Devuelve conocimiento y efectos abstractos sin crear instancias ni emitir código. | G06 T19 T22 |
-| [probe_step](../src/specialize.c#L354) | Interpreta un paso abstracto respetando pila, orden de argumentos, asignaciones y retornos; ignora impresiones y no ejecuta efectos runtime. | G05 T18 T19 T22 |
-| [probe_condition](../src/specialize.c#L451) | Analiza la expresión de una condición sobre el estado privado y retira su valor de la pila. | T14 T22 |
-| [probe_control](../src/specialize.c#L458) | Une ramas desconocidas; intenta conservar ciclos runtime y recorre iteraciones conocidas cuando sus argumentos requieren precisión. Mantiene aislado el intento descartado. | T14 T22 |
-| [probe_range](../src/specialize.c#L503) | Recorre un rango estructurado del cuerpo fuente con un presupuesto de trabajo compartido; se detiene ante retorno o requisito desconocido. | G05 T14 T22 |
-| [specialize_requires_iteration](../src/specialize.c#L519) | Olvida valores ordinarios en una copia del entorno y comprueba si el cuerpo necesita conocimiento por iteración para satisfacer requisitos comptime; no emite IR, instancias ni diagnósticos. | G08 T14 T22 |
+
+| [sp_find_template](../src/specialize.c#L9) | Busca la declaración fuente de una función, normalizando antes una referencia a instancia especializada. | G06 T22 |
+
+
+| [specialize_init](../src/specialize.c#L16) | Inicializa la sesión privada con registros vacíos, presupuesto y profundidad; reinicia ubicaciones lógicas y orígenes diagnósticos. Conserva la API pública. | G05 T22 |
+| [specialize_register](../src/specialize.c#L23) | Registra una función fuente con referencia prestada a su cuerpo retenido. | G05 G06 T22 |
+| [specialize_program](../src/specialize.c#L31) | Coordina análisis de efectos, transformación del principal e instanciación de funciones ordinarias no usadas; registra valores comptime finales en TS. El estado pertenece a la sesión. | G05 G06 T22 |
+| [specialize_print](../src/specialize.c#L51) | Imprime principal, instancias ejecutables y plantillas contextuales, incluidas las no invocadas; comprueba saltos completos mediante rpn_print. | G05 G07 T22 |
+| [specialize_evaluate_call](../src/specialize.c#L69) | Consulta o genera una especialización con los argumentos recibidos; devuelve su valor abstracto y aplica efectos al entorno suministrado por el analizador de tipos. Una fuente activa devuelve desconocido sin expandir recursión. Puede registrar cuerpos y símbolos, pero no agrega una llamada al cuerpo ejecutable original. | G06 G08 T22 EI |
+| [specialize_source_count](../src/specialize.c#L90) | Cuenta declaraciones registradas; no crea cuerpos ni modifica el registro. | G05 G08 |
+| [specialize_source_body](../src/specialize.c#L96) | Devuelve cuerpo fuente prestado por índice y su símbolo mediante parámetro de salida; NULL si no existe. | G05 G08 |
+| [specialize_instance_count](../src/specialize.c#L104) | Cuenta instancias concretas del registro; no especializa nuevas llamadas. | G05 G09 |
+| [specialize_instance_body](../src/specialize.c#L110) | Devuelve cuerpo concreto prestado por índice y símbolo de instancia; NULL si no existe. | G05 G09 |
+| [specialize_main_body](../src/specialize.c#L118) | Devuelve referencia prestada al principal transformado, válido hasta specialize_destroy. | G05 G09 |
+| [specialize_has_comptime_effects](../src/specialize.c#L122) | Delega al análisis de efectos sobre la sesión actual; conserva la consulta pública usada por el chequeo de rangos descartados. | G08 T14 T22 |
+| [specialize_requires_iteration](../src/specialize.c#L126) | Delega al explorador sobre una copia privada del entorno, sin emitir IR, instancias ni diagnósticos exploratorios. Conserva la consulta pública. | G08 T14 T22 |
+| [specialize_destroy](../src/specialize.c#L131) | Libera identidades, principal, instancias y plantillas mediante sus propietarios, limpia orígenes y reinicia la sesión. No libera cuerpos fuente ni símbolos prestados. | G10 T22 |
+
+### specialize_effects.c
+
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [sp_forget_call_writes](../src/specialize_effects.c#L5) | Invalida conocimiento de variables y objetos que una llamada puede modificar, usando su resumen de escrituras. | G06 T22 |
+| [sp_apply_effects](../src/specialize_effects.c#L19) | Invalida escrituras y copia efectos desde un entorno posterior al llamador suministrado, remapeando el receptor cuando corresponde. La misma regla sirve al transformador y al explorador privado. | G06 T22 T24 |
+| [sp_has_comptime_effects](../src/specialize_effects.c#L41) | Detecta escrituras comptime, copias de objetos afectados y llamadas con efectos externos de compilación. Se combina con el análisis independiente de requisitos por iteración. | G08 T14 T22 |
+| [record_runtime_write](../src/specialize_effects.c#L61) | Añade una escritura no local ordinaria al resumen de efectos de la función, evitando duplicados. | G06 T22 |
+| [analyze_function_effects](../src/specialize_effects.c#L69) | Recorre el cuerpo fuente para clasificar dependencias comptime, efectos externos, atributos y escrituras runtime. | G06 T22 |
+| [propagate_function_effects](../src/specialize_effects.c#L104) | Propaga resúmenes por las llamadas hasta alcanzar punto fijo; no ejecuta ninguna función del usuario. | G06 T22 |
+| [sp_analyze_effects](../src/specialize_effects.c#L132) | Calcula resúmenes locales y los propaga por llamadas hasta punto fijo; marca las declaraciones contextuales antes de transformar sus cuerpos. | G06 T22 |
+
+### specialize_instances.c
+
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [sp_find_active_instance](../src/specialize_instances.c#L7) | Busca una instancia de la misma declaración fuente que todavía se está expandiendo; devuelve una referencia prestada o NULL. | G06 T22 EI |
+| [matches_environment](../src/specialize_instances.c#L14) | Decide si una instancia contextual puede reutilizarse comparando receptor, entrada bajo control desconocido y asociaciones comptime. | G06 T22 |
+| [prepare_call_environment](../src/specialize_instances.c#L35) | Copia el entorno del llamador, invalida valores ordinarios/locales y vincula parámetros/campos comptime de argumentos. Devuelve entorno propio. | G06 T19 T22 |
+| [find_instance](../src/specialize_instances.c#L51) | Busca una instancia de la declaración compatible con entorno, receptor y contexto de entrada; devuelve referencia prestada o NULL. | G06 T22 |
+| [create_instance](../src/specialize_instances.c#L61) | Reserva instancia activa y cuerpo, copia el entorno inicial y crea símbolo especializado si depende de contexto; enlaza la instancia al registro propietario. | G02 G05 T22 |
+| [record_instance_bindings](../src/specialize_instances.c#L95) | Registra valores comptime finales locales en metadatos de instancia; usa referencias a constantes poseídas por TS. | G02 T22 |
+| [sp_instantiate](../src/specialize_instances.c#L110) | Prepara entorno de activación y formales comptime; reutiliza o crea instancia, transforma su cuerpo y registra efectos, retorno y valores finales. | G06 T22 |
+| [sp_destroy_instances](../src/specialize_instances.c#L136) | Libera cuerpos, entornos iniciales/finales y nodos de todas las instancias de la sesión; reinicia su lista y cola, sin liberar símbolos de TS ni fuentes prestadas. | G10 T22 |
+
+### specialize_probe.c
+
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [probe_push](../src/specialize_probe.c#L56) | Añade un operando al análisis exploratorio; copia el entorno de campos de objetos para preservar el orden de evaluación. | T18 T19 T22 |
+| [probe_pop](../src/specialize_probe.c#L63) | Retira un operando exploratorio; devuelve un valor desconocido si no hay operandos. | T22 |
+| [probe_destroy](../src/specialize_probe.c#L67) | Libera pila, capturas de entornos, llamadas pendientes y entorno privado de la exploración. | G10 T22 |
+| [probe_copy_object](../src/specialize_probe.c#L80) | Copia campos por posición en el estado exploratorio, incluidos objetos anidados; marca requisitos comptime desconocidos sin diagnósticos ni capturas en TS. Limita profundidad y trabajo. | T19 T22 T24 |
+| [probe_invoke](../src/specialize_probe.c#L119) | Comprueba argumentos comptime y analiza el cuerpo fuente en un entorno privado, con formales ordinarios desconocidos. Devuelve conocimiento y efectos abstractos sin crear instancias ni emitir código. | G06 T19 T22 |
+| [probe_assign](../src/specialize_probe.c#L148) | Actualiza argumentos pendientes o el entorno privado según el destino; copia campos de objetos desde la captura del operando. El llamador libera los operandos. | T18 T19 T22 T24 |
+| [probe_operator](../src/specialize_probe.c#L175) | Consume operandos para aritmética, asignación, conversión, DUP, retorno y descarte de efectos runtime; libera sus capturas y conserva el conocimiento abstracto. | G05 T18 T22 |
+| [probe_step](../src/specialize_probe.c#L204) | Despacha símbolos, destinos, atributos y llamadas del análisis privado; delega operadores y no emite instrucciones ni crea instancias ejecutables. | G05 T19 T22 |
+| [probe_condition](../src/specialize_probe.c#L276) | Analiza la expresión de una condición sobre el estado privado y retira su valor de la pila. | T14 T22 |
+| [probe_loop](../src/specialize_probe.c#L283) | Prueba un cuerpo con conocimiento ordinario olvidado en una copia aislada; recorre iteraciones conocidas si son necesarias y respeta el presupuesto compartido. | T14 T22 |
+| [probe_if](../src/specialize_probe.c#L319) | Selecciona un brazo conocido o analiza ambos sobre entornos privados y combina su conocimiento y detención. Conserva los retornos abstractos. | G08 T22 |
+| [probe_control](../src/specialize_probe.c#L342) | Evalúa la condición y delega a probe_loop o probe_if; no mezcla la decisión de expansión con la unión de ramas. | T14 T22 |
+| [probe_range](../src/specialize_probe.c#L348) | Recorre un rango estructurado del cuerpo fuente con un presupuesto de trabajo compartido; se detiene ante retorno o requisito desconocido. | G05 T14 T22 |
+| [sp_requires_iteration](../src/specialize_probe.c#L362) | Olvida valores ordinarios en una copia del entorno y comprueba si el cuerpo necesita conocimiento por iteración para satisfacer requisitos comptime; no emite IR, instancias ni diagnósticos. | G08 T14 T22 |
+
+### specialize_transform.c
+
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [push](../src/specialize_transform.c#L55) | Añade un valor a la pila temporal de evaluación, aumentando el array. | T22 |
+| [pop](../src/specialize_transform.c#L60) | Retira el último valor; una pila vacía genera diagnóstico de expresión intermedia inválida. | G05 T22 |
+| [emit](../src/specialize_transform.c#L66) | Añade un paso al cuerpo de salida de la transformación. | G05 T22 |
+| [discard](../src/specialize_transform.c#L70) | Elimina un fragmento descartable al final de la salida o emite DROP cuando deben preservarse sus efectos. | T18 T22 |
+| [materialize_object](../src/specialize_transform.c#L75) | Emite MATERIALIZE con la captura obtenida y asocia esa captura al valor temporal. | G05 T22 T24 |
+| [record_return](../src/specialize_transform.c#L83) | Acumula el valor de retorno; conserva uno conocido sólo si los retornos observados coinciden. | G06 T22 |
+| [process_condition](../src/specialize_transform.c#L89) | Transforma el rango de condición y retira su valor de la pila temporal; conserva sus efectos emitidos. | G05 T22 |
+| [check_discarded](../src/specialize_transform.c#L94) | Audita un rango que se eliminará con una copia del entorno y el receptor actual; conserva aisladas asignaciones y efectos de llamadas en todas las opciones de salida. | G08 T22 |
+| [process_if](../src/specialize_transform.c#L100) | Evalúa la condición; audita el brazo descartado cuando es conocida, o conserva ambos brazos y une entornos. Mantiene comprobaciones dependientes antes de eliminar código. | G05 G08 T22 |
+| [process_loop](../src/specialize_transform.c#L142) | Evalúa la condición, audita cuerpos descartados y expande ciclos por escrituras comptime o argumentos que necesitan valores de cada iteración. Mantiene el control externo desconocido, conserva ciclos invariantes runtime y detiene expansiones con errores o presupuesto agotado. | G05 G08 T14 T22 |
+| [transform_control](../src/specialize_transform.c#L197) | Procesa IF o ciclo: selecciona ramas conocidas, expande ciclos por efectos o requisitos comptime, o conserva bifurcaciones; combina entornos. | G05 T14 T22 |
+| [evaluate_binary](../src/specialize_transform.c#L204) | Calcula conocimiento del resultado si ambos operandos conocidos tienen tipo compatible; emite igualmente la operación runtime y conserva sus límites. | T03 T07 T22 |
+| [assign_comptime](../src/specialize_transform.c#L215) | Valida control conocido, valor, tipo y error numérico; registra la asociación comptime en entorno o argumentos pendientes, sin escribir una variable runtime. | T22 EC ED EG |
+| [assign_value](../src/specialize_transform.c#L234) | Procesa destinos ordinarios, formales y atributos: vincula comptime o emite la escritura runtime y actualiza/invalida el conocimiento correspondiente. | G06 T18 T22 T24 |
+| [process_symbol](../src/specialize_transform.c#L282) | Consulta constante/entorno, sustituye lecturas comptime y conserva identidad de objetos; emite operando y captura cuando corresponde. | G05 T22 T24 |
+| [resolve_attribute](../src/specialize_transform.c#L312) | Resuelve receptor concreto, índice y campo; actualiza el índice o captura de la instrucción y registra diagnósticos necesarios. Conserva su receptor original para el backend. | G07 T22 T24 T29 |
+| [process_attribute](../src/specialize_transform.c#L345) | Usa el acceso ya resuelto para preparar un destino o emitir una lectura; conserva objetos/capturas y sustituye campos comptime conocidos. | G05 T22 T24 T29 |
+| [begin_call](../src/specialize_transform.c#L382) | Crea un registro propio de llamada pendiente con receptor concreto, argumentos y origen FRAME; resuelve receptores anidados para el entorno y conserva el símbolo original emitido. | G06 T19 |
+| [process_call](../src/specialize_transform.c#L393) | Elige instancia y emite CALL. Una reentrada a una fuente activa usa esa instancia con retorno desconocido; conserva la guardia runtime y evita especialización infinita. Libera la llamada pendiente. | G06 T19 T22 EI |
+| [process_operator](../src/specialize_transform.c#L425) | Despacha aritmética, conversiones, asignaciones, DUP/DROP, salida y retorno; actualiza pila, conocimiento y detención, conservando efectos runtime. | G05 T18 T22 |
+| [transform_range](../src/specialize_transform.c#L463) | Recorre pasos y controles con origen diagnóstico; delega operaciones y audita el resto del rango antes de detenerse por RET. | G05 G07 G08 T22 |
+| [sp_transform](../src/specialize_transform.c#L518) | Recibe la sesión explícita y crea un contexto privado de recorrido, con pila, controles y llamadas pendientes. Transforma el cuerpo, devuelve conocimiento de retorno y libera temporales. | G05 T22 |
+
 
 ### symbol_table.c
 
@@ -500,56 +534,56 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | [check_body](../src/types.c#L88) | Recorre un cuerpo o slice con pila de tipos y origen fuente; comprueba asignaciones, ARG, RET, operadores y controles. Restaura el origen diagnóstico anterior y libera su pila. | G05 G07 G08 |
 | [types_check_body](../src/types.c#L164) | Inicia la comprobación de un cuerpo completo usando sus pasos como origen diagnóstico; devuelve si aparecieron errores nuevos. | G08 |
 | [types_check_sources](../src/types.c#L168) | Comprueba contención finita y tipos de principal y declaraciones fuente. Posponen índices comptime pendientes sin inventar argumentos para plantillas sin invocar. | G08 T22 T24 |
-| [clear_type_snapshots](../src/types.c#L221) | Libera las capturas de objetos consumidas y reinicia su contador; se llama al terminar una iteración con pila vacía o al destruir el contexto. | G08 G10 T24 |
-| [push_type_value](../src/types.c#L226) | Agrega un operando de análisis; para lecturas de objetos conserva una copia del entorno en ese instante. El contexto posee las capturas hasta consumirlas y liberar el grupo. | G08 T19 T22 T24 |
-| [resolve_step](../src/types.c#L235) | Propaga valores, llamadas, asignaciones y copias de objetos en el entorno aislado de tipos. Resuelve índices comptime y consulta el especializador para retornos y efectos; no emite instrucciones en el cuerpo ejecutable original. | G06 G08 T19 T22 T24 T29 |
+| [clear_type_snapshots](../src/types.c#L222) | Libera las capturas de objetos consumidas y reinicia su contador; se llama al terminar una iteración con pila vacía o al destruir el contexto. | G08 G10 T24 |
+| [push_type_value](../src/types.c#L227) | Agrega un operando de análisis; para lecturas de objetos conserva una copia del entorno en ese instante. El contexto posee las capturas hasta consumirlas y liberar el grupo. | G08 T19 T22 T24 |
+| [resolve_step](../src/types.c#L236) | Propaga valores, llamadas, asignaciones y copias de objetos en el entorno aislado de tipos. Resuelve índices comptime y consulta el especializador para retornos y efectos; no emite instrucciones en el cuerpo ejecutable original. | G06 G08 T19 T22 T24 T29 |
 | [check_resolved_range](../src/types.c#L335) | Comprueba los tipos de un rango cuyos índices ya fueron resueltos, conservando la función y el paso fuente para los diagnósticos. El rango debe contener instrucciones completas. | G07 G08 T22 |
 | [same_type_environment](../src/types.c#L340) | Compara asociaciones de ambos entornos para detectar estabilidad del conocimiento numérico entre iteraciones; no modifica los valores. | G08 T14 T22 |
 | [resolve_loop](../src/types.c#L351) | Resuelve y comprueba cada iteración conocida de un ciclo con efectos o requisitos comptime en el entorno aislado. Conserva el estado final, combina conocimiento si el control se vuelve desconocido y termina ante error, condición falsa, estabilidad o límite de 100000 iteraciones por auditoría. | G07 G08 T14 T22 |
 | [resolve_control](../src/types.c#L379) | Revisa ambas alternativas con copias del entorno y selecciona o une el conocimiento posterior. Los ciclos conocidos con efectos o requisitos comptime se revisan por iteración; los demás conservan el análisis conservador de una vuelta. | G08 T14 T22 |
-| [resolve_range](../src/types.c#L417) | Recorre controles y pasos del rango fuente conservando su origen de diagnóstico; resuelve índices antes de comprobar tipos. | G07 G08 T22 |
-| [types_check_discarded](../src/types.c#L429) | Recibe rango, función, entorno y receptor; copia pasos y entorno, comprueba índices/tipos incluidos tras RET y libera pilas, llamadas y capturas temporales. Conserva aislados los efectos sobre valores. | G07 G08 T22 T29 |
+| [resolve_range](../src/types.c#L409) | Recorre controles y pasos del rango fuente conservando su origen de diagnóstico; resuelve índices antes de comprobar tipos. | G07 G08 T22 |
+| [types_check_discarded](../src/types.c#L420) | Recibe rango, función, entorno y receptor; copia pasos y entorno, comprueba índices/tipos incluidos tras RET y libera pilas, llamadas y capturas temporales. Conserva aislados los efectos sobre valores. | G07 G08 T22 T29 |
 | [types_check_specializations](../src/types.c#L180) | Comprueba tipos del principal especializado y de todas las instancias ejecutables; resuelve obligaciones dependientes de comptime antes de seleccionar la salida. | G08 T22 |
 
 ### wasm_emit.c
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [write_line](../src/wasm_emit.c#L29) | Escribe una línea WAT formateada; durante planificación no produce salida. No ejecuta instrucciones del programa. | G09 |
-| [allocate](../src/wasm_emit.c#L37) | Reserva memoria C inicializada para planes/pilas del traductor; falla fatalmente si no puede reservar. El llamador posee el bloque. | G09 G10 |
-| [body_id](../src/wasm_emit.c#L42) | Consulta el ID del cuerpo actual en layout; devuelve cero para el principal. | G09 |
-| [wasm_type](../src/wasm_emit.c#L43) | Devuelve literal prestado f32 para SINGLEF e i32 para otras representaciones admitidas por el traductor. | G08 G09 |
-| [new_local](../src/wasm_emit.c#L44) | Reserva ID de auxiliar; en planificación registra tipo y símbolo AUXILIARY en TS. Devuelve ID, sin emitir su asignación. | G02 G09 |
-| [save_local](../src/wasm_emit.c#L59) | Crea auxiliar y emite local.set para guardar el valor calculado; devuelve ID del auxiliar, no el valor del programa. | G09 |
-| [get_local](../src/wasm_emit.c#L64) | Emite local.get del auxiliar indicado; devuelve void y no lee una variable del compilador. | G09 |
-| [pop](../src/wasm_emit.c#L65) | Retira referencia a operando del traductor; informa pila inválida si está vacía. No retira valores del ejecutable. | G05 G09 |
-| [push](../src/wasm_emit.c#L69) | Añade descriptor de operando al array temporal de traducción; no emite instrucciones. | G05 G09 |
-| [fail_if](../src/wasm_emit.c#L70) | Emite condición de fallo ya calculada, llamada a runtimeFail con código/línea y unreachable. No decide la condición de tipos. | G07 G09 EC ED EG EI |
-| [integer_type](../src/wasm_emit.c#L73) | Construye y devuelve descripción estática INTEGER sin reserva de memoria. | G08 G09 |
-| [frame_address](../src/wasm_emit.c#L74) | Emite recorrido de enlaces léxicos desde el marco actual hasta el dueño pedido; informa una relación léxica imposible. | G04 G06 G09 |
-| [receiver_address](../src/wasm_emit.c#L84) | Encuentra la función método exterior y emite carga del receptor de su marco; informa receptor ausente. | G06 G09 T32 |
-| [symbol_address](../src/wasm_emit.c#L91) | Emite dirección de símbolo por marco o identidad de atributo sobre receptor; consulta layout y no reconstruye ámbitos desde texto. | G04 G09 T29 T32 |
-| [object_type](../src/wasm_emit.c#L100) | Consulta si un tipo o todos sus candidatos son objetos; no modifica metadatos. | G08 G09 T24 |
-| [snapshot](../src/wasm_emit.c#L107) | Emite copia temporal de objeto en la reserva preplanificada del paso; devuelve auxiliar de la nueva dirección. | G06 G09 T19 T24 |
-| [read_symbol](../src/wasm_emit.c#L114) | Emite literal o lectura de símbolo, guarda su valor en auxiliar y copia objetos para conservar el instante de evaluación; devuelve descriptor de operando. | G09 T19 T24 |
-| [attribute](../src/wasm_emit.c#L135) | Emite índice/dirección y lectura o destino; aplica captura, conserva valor/categoría y copia objetos cuando corresponde. Añade descriptor a la pila del traductor. | G09 T22 T29 |
-| [find_body](../src/wasm_emit.c#L164) | Busca cuerpo concreto por identidad; devuelve referencia prestada o informa ausencia de destino ejecutable. | G05 G09 |
-| [initialize_frame](../src/wasm_emit.c#L169) | Emite inicialización de headers para objetos locales y formales del marco pendiente; no reserva marcos durante la compilación C. | G06 G09 T24 |
-| [begin_call](../src/wasm_emit.c#L179) | Emite reserva/inicialización del marco pendiente, enlace léxico y receptor; apila símbolo y auxiliar del marco. | G06 G09 T19 |
-| [call_function](../src/wasm_emit.c#L194) | Emite llamada al cuerpo concreto, guarda retorno en auxiliar y restaura sp del llamador; retira el marco pendiente del traductor. | G06 G09 T19 |
-| [materialize](../src/wasm_emit.c#L203) | Emite escrituras de constantes capturadas y recorre capturas hijas sobre la copia de objeto; conserva el original. | G09 T19 T22 T24 |
-| [binary](../src/wasm_emit.c#L226) | Retira dos operandos, emite operación y auxiliar tipado; incluye controles c/d y normalización int16 antes de devolver descriptor a la pila. | G08 G09 EC ED |
-| [convert_integer](../src/wasm_emit.c#L256) | Emite comprobaciones de finitud, rango y fracción antes de la conversión; produce auxiliar INTEGER o fallo del módulo. | G09 T34 EG |
-| [output](../src/wasm_emit.c#L267) | Emite import de impresión por tipo; para selección heterogénea usa categoría y valor ya capturados sin releer el objeto. | G09 T10 T29 |
-| [emit_operator](../src/wasm_emit.c#L278) | Despacha operadores de IR, asignación, retorno, duplicación y descarte; RET guarda resultado y salta al epílogo compartido. | G05 G09 T18 EI |
-| [emit_control](../src/wasm_emit.c#L295) | Traduce región IF/FROM a control estructurado con etiquetas locales y destinos validados; devuelve primer paso posterior a la región. | G05 G09 T14 |
-| [emit_step](../src/wasm_emit.c#L323) | Traduce un paso ordinario y sus metadatos, incluido CHECK_INDEX antes del RHS; modifica estado de traducción y escribe WAT. | G05 G09 T29 |
-| [emit_range](../src/wasm_emit.c#L353) | Recorre pasos, localiza regiones por control_start y delega control o instrucción. No introduce un despachador runtime de PC. | G05 G09 |
-| [write_helpers](../src/wasm_emit.c#L362) | Escribe funciones Wasm para reserva, tamaños, headers, campos, índices y copias por posición. Las condiciones ejecutan en el módulo. | G06 G09 T24 T29 T32 |
-| [prepare_bodies](../src/wasm_emit.c#L428) | Retiene referencias a principal/instancias y calcula tamaños de marcos/reservas temporales antes de emitir; informa límites de memoria. | G05 G09 |
-| [write_body](../src/wasm_emit.c#L457) | Planifica auxiliares, declara locales y escribe entrada, cuerpo y epílogo; emite indicador de recursión por fuente y libera pilas C del cuerpo. | G02 G09 EI |
-| [write_module](../src/wasm_emit.c#L498) | Escribe imports, memoria, datos, indicadores y todos los cuerpos concretos; las plantillas simbólicas no se emiten como funciones ejecutables. | G05 G09 |
-| [wasm_write](../src/wasm_emit.c#L522) | Recibe una ruta tras el chequeo común de tipos; planifica layout y auxiliares y publica WAT por archivo temporal y rename. Libera recursos en éxito y fallo. | G07 G09 G10 |
+| [write_line](../src/wasm_emit.c#L30) | Escribe una línea WAT formateada; durante planificación no produce salida. No ejecuta instrucciones del programa. | G09 |
+
+| [body_id](../src/wasm_emit.c#L39) | Consulta el ID del cuerpo actual en layout; devuelve cero para el principal. | G09 |
+| [wasm_type](../src/wasm_emit.c#L40) | Devuelve literal prestado f32 para SINGLEF e i32 para otras representaciones admitidas por el traductor. | G08 G09 |
+| [new_local](../src/wasm_emit.c#L41) | Reserva ID de auxiliar; en planificación registra tipo y símbolo AUXILIARY en TS. Devuelve ID, sin emitir su asignación. | G02 G09 |
+| [save_local](../src/wasm_emit.c#L56) | Crea auxiliar y emite local.set para guardar el valor calculado; devuelve ID del auxiliar, no el valor del programa. | G09 |
+| [get_local](../src/wasm_emit.c#L61) | Emite local.get del auxiliar indicado; devuelve void y no lee una variable del compilador. | G09 |
+| [pop](../src/wasm_emit.c#L62) | Retira referencia a operando del traductor; informa pila inválida si está vacía. No retira valores del ejecutable. | G05 G09 |
+| [push](../src/wasm_emit.c#L66) | Añade descriptor de operando al array temporal de traducción; no emite instrucciones. | G05 G09 |
+| [fail_if](../src/wasm_emit.c#L67) | Emite condición de fallo ya calculada, llamada a runtimeFail con código/línea y unreachable. No decide la condición de tipos. | G07 G09 EC ED EG EI |
+| [integer_type](../src/wasm_emit.c#L70) | Construye y devuelve descripción estática INTEGER sin reserva de memoria. | G08 G09 |
+| [frame_address](../src/wasm_emit.c#L71) | Emite recorrido de enlaces léxicos desde el marco actual hasta el dueño pedido; informa una relación léxica imposible. | G04 G06 G09 |
+| [receiver_address](../src/wasm_emit.c#L81) | Encuentra la función método exterior y emite carga del receptor de su marco; informa receptor ausente. | G06 G09 T32 |
+| [symbol_address](../src/wasm_emit.c#L88) | Emite dirección de símbolo por marco o identidad de atributo sobre receptor; consulta layout y no reconstruye ámbitos desde texto. | G04 G09 T29 T32 |
+| [object_type](../src/wasm_emit.c#L97) | Consulta si un tipo o todos sus candidatos son objetos; no modifica metadatos. | G08 G09 T24 |
+| [snapshot](../src/wasm_emit.c#L104) | Emite copia temporal de objeto en la reserva preplanificada del paso; devuelve auxiliar de la nueva dirección. | G06 G09 T19 T24 |
+| [read_symbol](../src/wasm_emit.c#L111) | Emite literal o lectura de símbolo, guarda su valor en auxiliar y copia objetos para conservar el instante de evaluación; devuelve descriptor de operando. | G09 T19 T24 |
+| [attribute](../src/wasm_emit.c#L132) | Emite índice/dirección y lectura o destino; aplica captura, conserva valor/categoría y copia objetos cuando corresponde. Añade descriptor a la pila del traductor. | G09 T22 T29 |
+| [find_body](../src/wasm_emit.c#L161) | Busca cuerpo concreto por identidad; devuelve referencia prestada o informa ausencia de destino ejecutable. | G05 G09 |
+| [initialize_frame](../src/wasm_emit.c#L166) | Emite inicialización de headers para objetos locales y formales del marco pendiente; no reserva marcos durante la compilación C. | G06 G09 T24 |
+| [begin_call](../src/wasm_emit.c#L176) | Emite reserva/inicialización del marco pendiente, enlace léxico y receptor; apila símbolo y auxiliar del marco. | G06 G09 T19 |
+| [call_function](../src/wasm_emit.c#L191) | Emite llamada al cuerpo concreto, guarda retorno en auxiliar y restaura sp del llamador; retira el marco pendiente del traductor. | G06 G09 T19 |
+| [materialize](../src/wasm_emit.c#L200) | Emite escrituras de constantes capturadas y recorre capturas hijas sobre la copia de objeto; conserva el original. | G09 T19 T22 T24 |
+| [binary](../src/wasm_emit.c#L223) | Retira dos operandos, emite operación y auxiliar tipado; incluye controles c/d y normalización int16 antes de devolver descriptor a la pila. | G08 G09 EC ED |
+| [convert_integer](../src/wasm_emit.c#L253) | Emite comprobaciones de finitud, rango y fracción antes de la conversión; produce auxiliar INTEGER o fallo del módulo. | G09 T34 EG |
+| [output](../src/wasm_emit.c#L264) | Emite import de impresión por tipo; para selección heterogénea usa categoría y valor ya capturados sin releer el objeto. | G09 T10 T29 |
+| [emit_operator](../src/wasm_emit.c#L275) | Despacha operadores de IR, asignación, retorno, duplicación y descarte; RET guarda resultado y salta al epílogo compartido. | G05 G09 T18 EI |
+| [emit_control](../src/wasm_emit.c#L292) | Traduce región IF/FROM a control estructurado con etiquetas locales y destinos validados; devuelve primer paso posterior a la región. | G05 G09 T14 |
+| [emit_step](../src/wasm_emit.c#L311) | Traduce un paso ordinario y sus metadatos, incluido CHECK_INDEX antes del RHS; modifica estado de traducción y escribe WAT. | G05 G09 T29 |
+| [emit_range](../src/wasm_emit.c#L341) | Recorre pasos, localiza regiones por control_start y delega control o instrucción. No introduce un despachador runtime de PC. | G05 G09 |
+
+| [prepare_bodies](../src/wasm_emit.c#L421) | Retiene referencias a principal/instancias y calcula tamaños de marcos/reservas temporales antes de emitir; informa límites de memoria. | G05 G09 |
+| [write_body](../src/wasm_emit.c#L466) | Planifica auxiliares, declara locales y escribe entrada, cuerpo y epílogo; emite indicador de recursión por fuente y libera pilas C del cuerpo. | G02 G09 EI |
+| [write_module](../src/wasm_emit.c#L497) | Escribe imports, memoria, datos, indicadores y todos los cuerpos concretos; las plantillas simbólicas no se emiten como funciones ejecutables. | G05 G09 |
+| [wasm_write](../src/wasm_emit.c#L523) | Recibe una ruta tras el chequeo común de tipos; planifica layout y auxiliares y publica WAT por archivo temporal y rename. Libera recursos en éxito y fallo. | G07 G09 G10 |
 
 ## Funciones del soporte JavaScript
 
@@ -580,3 +614,22 @@ verify_tp4_browser.py prueba el selector del navegador si hay Chromium.
 verify_function_docs.py enumera definiciones C, verifica cobertura única y líneas
 vigentes de este inventario. Esta última prueba no demuestra la exactitud del
 texto: las descripciones se revisan contra los cuerpos de las funciones.
+
+## Operaciones compartidas y backend reorganizado
+
+| Función | Responsabilidad | Etapa |
+| --- | --- | --- |
+| [comptime_select_field](../src/comptime_objects.c#L184) | Devuelve el atributo seleccionado por un índice entero conocido dentro de rango; de otro modo NULL. | Evaluación |
+| [comptime_call_environment](../src/comptime_values.c#L141) | Copia el entorno del llamador, olvida valores ordinarios y reinicia locales antes de incorporar argumentos. | Evaluación |
+| [comptime_validate_assignment](../src/comptime_values.c#L158) | Comprueba control, conocimiento y tipo de un valor comptime sin modificar el entorno ni crear instancias. | Semántica |
+| [memory_resize](../src/memory.c#L5) | Reserva o amplía memoria; tamaño cero reserva un byte y un fallo termina la compilación. | Memoria |
+| [memory_zero](../src/memory.c#L11) | Reserva memoria inicializada a cero con manejo común de errores. | Memoria |
+| [is_operator](../src/rpn.c#L170) | Comprueba categoría y operador de un paso sin interpretar otros miembros de la unión. | Polaca |
+| [rpn_describe_control](../src/rpn.c#L174) | Interpreta destinos de Polaca para describir condición, cuerpo, else y final de IF/FROM. | Polaca |
+| [rpn_index_controls](../src/rpn.c#L196) | Construye un índice por posición de inicio para consultar controles sin búsquedas repetidas. | Polaca |
+| [sp_evaluate_call](../src/specialize_probe.c#L377) | Valida tipos y evalúa una llamada sobre un entorno privado, propagando valores y efectos sin registrar instancias ejecutables. | Evaluación |
+| [plan_body](../src/wasm_emit.c#L451) | Reserva pilas y planifica los locales Wasm antes de emitir el cuerpo. | Backend |
+| [write_copy_helper](../src/wasm_emit.c#L399) | Emite copias estructurales entre clases compatibles conservando los esquemas de destino. | Backend |
+| [write_memory_helpers](../src/wasm_emit.c#L349) | Emite el helper Wasm de reserva y limpieza de marcos. | Backend |
+| [write_object_helpers](../src/wasm_emit.c#L357) | Emite inicialización de objetos, tamaños y búsqueda de atributos según el esquema real. | Backend |
+| [probe_validate_object](../src/specialize_probe.c#L110) | Comprueba campos comptime capturados por una lectura sobre un entorno privado, sin emitir snapshots ni instancias. | Evaluación |

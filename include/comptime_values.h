@@ -45,4 +45,8 @@ comptime_value_t comptime_binary(comptime_value_t left, comptime_value_t right, 
 
 comptime_value_t comptime_to_integer(comptime_value_t value);
 
+comptime_environment_t comptime_call_environment(const comptime_environment_t *caller,
+    const comptime_environment_t *arguments, const map_node_t *function);
+bool comptime_validate_assignment(const map_node_t *symbol, comptime_value_t value,
+                                  bool forbidden, int line);
 #endif

@@ -1,3 +1,4 @@
+#include "../include/memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,25 +31,16 @@ static scope_t *current_scope;
 static scope_t *allocated_scopes;
 static unsigned int anonymous_scopes;
 
-static void *allocate(size_t size) {
-    void *memory = calloc(1, size);
-    if (memory == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate scope information\n");
-        exit(1);
-    }
-    return memory;
-}
-
 static char *qualified_name(const char *name, const char *scope) {
-    char *qualified = allocate(strlen(name) + strlen(scope) + 2);
+    char *qualified = memory_zero(1, strlen(name) + strlen(scope) + 2);
     sprintf(qualified, "%s:%s", name, scope);
     return qualified;
 }
 
 static scope_t *push_scope(const char *name, symbol_usage_t kind) {
-    scope_t *frame = allocate(sizeof(*frame));
+    scope_t *frame = memory_zero(1, sizeof(*frame));
     if (current_scope == NULL) {
-        frame->path = allocate(strlen(name) + 1);
+        frame->path = memory_zero(1, strlen(name) + 1);
         strcpy(frame->path, name);
     } else {
         frame->path = qualified_name(current_scope->path, name);
@@ -105,7 +97,7 @@ static map_node_t *declare(map_node_t *name, symbol_usage_t usage,
     symbol->owner = current_scope->symbol;
     symbol->type_symbol = type.class_symbol;
     if (type.name != NULL) {
-        symbol->declared_type = allocate(strlen(type.name) + 1);
+        symbol->declared_type = memory_zero(1, strlen(type.name) + 1);
         strcpy(symbol->declared_type, type.name);
     }
     if (symbol->owner != NULL && usage == SYMBOL_ATTRIBUTE) {
@@ -200,12 +192,12 @@ scope_type_t scope_named_type(map_node_t *name, int line) {
 }
 
 scope_names_t *scope_names_create(map_node_t *name, int line) {
-    scope_names_t *names = allocate(sizeof(*names));
+    scope_names_t *names = memory_zero(1, sizeof(*names));
     return scope_names_append(names, name, line);
 }
 
 scope_names_t *scope_names_append(scope_names_t *names, map_node_t *name, int line) {
-    scope_name_t *entry = allocate(sizeof(*entry));
+    scope_name_t *entry = memory_zero(1, sizeof(*entry));
     entry->symbol = name;
     entry->line = line;
     if (names->last != NULL) names->last->next = entry;

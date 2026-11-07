@@ -40,6 +40,8 @@ def main():
                     wat.unlink(missing_ok=True)
                     result = compile_source(compiler, source, options)
                     verify_compilation(result, case.get('compile_error'))
+                    for symbol in case.get('absent_functions', []):
+                        assert f'--- FUNCTION {symbol}' not in result.stdout, 'Validation published an executable instance'
                     assert wat.exists() == ('--wasm' in options and result.returncode == 0)
                     if result.returncode == 0:
                         assert ('--- RPN ---' in result.stdout) == ('--analyze' not in options)

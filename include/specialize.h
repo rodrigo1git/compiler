@@ -15,7 +15,7 @@ bool specialize_print(FILE *stream);
 void specialize_destroy(void);
 comptime_value_t specialize_evaluate_call(const map_node_t *symbol,
     comptime_environment_t *environment, const comptime_environment_t *arguments,
-    const map_node_t *receiver, int line);
+    const map_node_t *receiver, bool unknown_entry, int line);
 size_t specialize_source_count(void);
 const rpn_t *specialize_source_body(size_t index, map_node_t **symbol);
 size_t specialize_instance_count(void);

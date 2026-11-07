@@ -1,3 +1,4 @@
+#include "../include/memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,23 +20,14 @@ typedef struct type_path {
 
 static object_location_t *object_locations;
 
-static void *resize(void *pointer, size_t size) {
-    void *result = realloc(pointer, size);
-    if (result == NULL && size != 0) {
-        fprintf(stderr, "Fatal error: Cannot allocate compile-time evaluation state\n");
-        exit(1);
-    }
-    return result;
-}
-
 const map_node_t *comptime_object_location(const map_node_t *parent, const map_node_t *field) {
     if (parent == NULL || field == NULL) return NULL;
     for (object_location_t *item = object_locations; item != NULL; item = item->next)
         if (item->parent == parent && item->field == field) return &item->symbol;
-    object_location_t *item = resize(NULL, sizeof(*item));
+    object_location_t *item = memory_resize(NULL, sizeof(*item));
     *item = (object_location_t){.parent = parent, .field = field, .next = object_locations};
     size_t length = strlen(parent->key) + strlen(field->key) + 3;
-    item->symbol.key = resize(NULL, length);
+    item->symbol.key = memory_resize(NULL, length);
     snprintf(item->symbol.key, length, "%s[%s]", parent->key, field->key);
     item->symbol.owner = parent->owner;
     item->symbol.type_symbol = field->type_symbol;
@@ -100,7 +92,7 @@ static map_node_t *capture_object(comptime_value_t value, const comptime_environ
     map_node_t *snapshot = map_put(symbol_table, name, "ID");
     snapshot->usage = SYMBOL_OBJECT_VALUE;
     snapshot->type_symbol = (map_node_t *)value.object_type;
-    snapshot->declared_type = resize(NULL, strlen(value.object_type->key) + 1);
+    snapshot->declared_type = memory_resize(NULL, strlen(value.object_type->key) + 1);
     strcpy(snapshot->declared_type, value.object_type->key);
     snapshot->declaration_line = line;
     for (size_t i = 0; i < value.object_type->effective_attributes.count; i++) {
@@ -140,7 +132,7 @@ static void copy_object_fields(const comptime_copy_t *copy, const map_node_t *ob
     if (type == NULL || type_in_path(path, type)) return;
     type_path_t current = {type, path};
     size_t count = type->effective_attributes.count;
-    comptime_value_t *fields = resize(NULL, count * sizeof(*fields));
+    comptime_value_t *fields = memory_resize(NULL, count * sizeof(*fields));
     for (size_t i = 0; i < count; i++) {
         fields[i] = (comptime_value_t){0};
         if (source.object_type != NULL && i < source.object_type->effective_attributes.count)
@@ -187,4 +179,10 @@ void comptime_objects_destroy(void) {
         free(object_locations);
         object_locations = next;
     }
+}
+
+const map_node_t *comptime_select_field(const map_node_t *type, comptime_value_t index) {
+    if (!type || !index.known || index.floating || index.number < 0 ||
+        index.number >= type->effective_attributes.count) return NULL;
+    return type->effective_attributes.items[(size_t)index.number];
 }
