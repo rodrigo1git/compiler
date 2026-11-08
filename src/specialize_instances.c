@@ -36,8 +36,8 @@ static comptime_environment_t prepare_call_environment(const function_template_t
                                                        const comptime_environment_t *caller,
                                                        const comptime_environment_t *arguments, int line) {
     comptime_environment_t environment = comptime_call_environment(caller, arguments, source->symbol);
-    for (size_t i = 0; i < source->symbol->parameters.count; i++) {
-        map_node_t *parameter = source->symbol->parameters.items[i];
+    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
+        map_node_t *parameter = source->symbol->function_info->parameters.items[i];
         if (!parameter->is_comptime) continue;
         comptime_value_t argument = comptime_get(arguments, parameter, NULL);
         if (!argument.known)
@@ -75,16 +75,16 @@ static function_instance_t *create_instance(specialize_state_t *state, function_
         snprintf(name, length, "%s$ct%u", source->symbol->key, ++state->serial);
         instance->symbol = map_put(symbol_table, name, "ID");
         free(name);
-        instance->symbol->usage = source->symbol->usage;
-        instance->symbol->source_function = source->symbol;
+        symbol_set_usage(instance->symbol, source->symbol->usage);
+        instance->symbol->function_info->source_function = source->symbol;
         instance->symbol->declared_type = strdup(source->symbol->declared_type);
         if (instance->symbol->declared_type == NULL) {
             fprintf(stderr, "Fatal error: Cannot allocate specialization type\n");
             exit(1);
         }
         instance->symbol->declaration_line = source->symbol->declaration_line;
-        for (size_t i = 0; i < source->symbol->parameters.count; i++)
-            symbol_list_append(&instance->symbol->parameters, source->symbol->parameters.items[i]);
+        for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++)
+            symbol_list_append(&instance->symbol->function_info->parameters, source->symbol->function_info->parameters.items[i]);
     }
     if (state->last_instance == NULL) state->instances = instance;
     else state->last_instance->next = instance;
@@ -101,8 +101,9 @@ static void record_instance_bindings(function_instance_t *instance) {
             continue;
         const map_node_t *constant = comptime_make_constant(binding.value, binding.symbol->declaration_line);
         if (constant == NULL) continue;
-        symbol_list_append(&instance->symbol->comptime_bindings, (map_node_t *)binding.symbol);
-        symbol_list_append(&instance->symbol->comptime_values, (map_node_t *)constant);
+        symbol_capture_info_t *capture = symbol_ensure_captures(instance->symbol);
+        symbol_list_append(&capture->comptime_bindings, (map_node_t *)binding.symbol);
+        symbol_list_append(&capture->comptime_values, (map_node_t *)constant);
         if (!source->contextual) ((map_node_t *)binding.symbol)->comptime_value = (map_node_t *)constant;
     }
 }

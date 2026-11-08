@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "../include/symbol_table.h"
+#include "../include/memory.h"
 
 hash_map_t* symbol_table = NULL;
 
@@ -16,20 +18,59 @@ void symbol_list_append(symbol_list_t *list, map_node_t *symbol) {
     list->items[list->count++] = symbol;
 }
 
-static void free_symbol(map_node_t *symbol) {
+void symbol_set_usage(map_node_t *symbol, symbol_usage_t usage) {
+    assert(symbol != NULL);
+    assert(symbol->usage == SYMBOL_LEXEME || symbol->usage == usage);
+    if (usage == SYMBOL_CLASS) {
+        assert(symbol->function_info == NULL);
+        if (symbol->class_info == NULL)
+            symbol->class_info = memory_zero(1, sizeof(*symbol->class_info));
+    } else if (usage == SYMBOL_FUNCTION || usage == SYMBOL_METHOD) {
+        assert(symbol->class_info == NULL);
+        if (symbol->function_info == NULL)
+            symbol->function_info = memory_zero(1, sizeof(*symbol->function_info));
+    }
+    symbol->usage = usage;
+}
+
+symbol_capture_info_t *symbol_ensure_captures(map_node_t *symbol) {
+    assert(symbol != NULL);
+    assert(symbol->usage == SYMBOL_FUNCTION || symbol->usage == SYMBOL_METHOD ||
+           symbol->usage == SYMBOL_OBJECT_VALUE);
+    if (symbol->capture_info == NULL)
+        symbol->capture_info = memory_zero(1, sizeof(*symbol->capture_info));
+    return symbol->capture_info;
+}
+
+void symbol_clear(map_node_t *symbol) {
+    if (symbol == NULL) return;
     free(symbol->key);
     free(symbol->value);
     free(symbol->declared_type);
-    free(symbol->class_code);
-    free(symbol->parameters.items);
-    free(symbol->attributes.items);
-    free(symbol->methods.items);
-    free(symbol->bases.items);
-    free(symbol->effective_attributes.items);
-    free(symbol->comptime_bindings.items);
-    free(symbol->comptime_values.items);
-    free(symbol->object_fields.items);
-    free(symbol->object_values.items);
+    if (symbol->function_info != NULL) {
+        free(symbol->function_info->parameters.items);
+        free(symbol->function_info);
+    }
+    if (symbol->class_info != NULL) {
+        free(symbol->class_info->class_code);
+        free(symbol->class_info->attributes.items);
+        free(symbol->class_info->methods.items);
+        free(symbol->class_info->bases.items);
+        free(symbol->class_info->effective_attributes.items);
+        free(symbol->class_info);
+    }
+    if (symbol->capture_info != NULL) {
+        free(symbol->capture_info->comptime_bindings.items);
+        free(symbol->capture_info->comptime_values.items);
+        free(symbol->capture_info->object_fields.items);
+        free(symbol->capture_info->object_values.items);
+        free(symbol->capture_info);
+    }
+    *symbol = (map_node_t){0};
+}
+
+static void free_symbol(map_node_t *symbol) {
+    symbol_clear(symbol);
     free(symbol);
 }
 
@@ -140,6 +181,9 @@ void map_print(hash_map_t* map) {
                 };
                 printf("Lexeme: %s | Type: %s", current->key, current->value);
                 if (current->usage != SYMBOL_LEXEME) {
+                    const symbol_class_info_t *class_info = current->class_info;
+                    const symbol_function_info_t *function_info = current->function_info;
+                    const symbol_capture_info_t *capture_info = current->capture_info;
                     printf(" | Use: %s", usage_names[current->usage]);
                     if (current->declared_type != NULL)
                         printf(" | Declared type: %s", current->declared_type);
@@ -147,36 +191,37 @@ void map_print(hash_map_t* map) {
                     if (current->is_comptime) printf(" | Comptime: yes");
                     if (current->comptime_value != NULL)
                         printf(" | Compile-time value: %s", current->comptime_value->key);
-                    if (current->source_function != NULL)
-                        printf(" | Source function: %s", current->source_function->key);
-                    if (current->comptime_template) printf(" | Compile-time template: yes");
-                    if (current->comptime_bindings.count != 0) {
+                    if (function_info != NULL && function_info->source_function != NULL)
+                        printf(" | Source function: %s", function_info->source_function->key);
+                    if (function_info != NULL && function_info->comptime_template)
+                        printf(" | Compile-time template: yes");
+                    if (capture_info != NULL && capture_info->comptime_bindings.count != 0) {
                         printf(" | Compile-time bindings: [");
-                        for (size_t j = 0; j < current->comptime_bindings.count; j++) {
+                        for (size_t j = 0; j < capture_info->comptime_bindings.count; j++) {
                             if (j != 0) printf(", ");
-                            printf("%s=%s", current->comptime_bindings.items[j]->key,
-                                current->comptime_values.items[j]->key);
+                            printf("%s=%s", capture_info->comptime_bindings.items[j]->key,
+                                capture_info->comptime_values.items[j]->key);
                         }
                         printf("]");
                     }
-                    if (current->object_fields.count != 0) {
+                    if (capture_info != NULL && capture_info->object_fields.count != 0) {
                         printf(" | Object fields: [");
-                        for (size_t j = 0; j < current->object_fields.count; j++) {
+                        for (size_t j = 0; j < capture_info->object_fields.count; j++) {
                             if (j != 0) printf(", ");
-                            printf("%s=%s", current->object_fields.items[j]->key,
-                                current->object_values.items[j]->key);
+                            printf("%s=%s", capture_info->object_fields.items[j]->key,
+                                capture_info->object_values.items[j]->key);
                         }
                         printf("]");
                     }
-                    if (current->class_code != NULL)
-                        printf(" | Class code: %s", current->class_code);
+                    if (class_info != NULL && class_info->class_code != NULL)
+                        printf(" | Class code: %s", class_info->class_code);
                     if (current->usage == SYMBOL_FUNCTION || current->usage == SYMBOL_METHOD)
-                        print_list("Parameters", &current->parameters);
+                        print_list("Parameters", &function_info->parameters);
                     if (current->usage == SYMBOL_CLASS) {
-                        print_list("Attributes", &current->attributes);
-                        print_list("Effective attributes", &current->effective_attributes);
-                        print_list("Methods", &current->methods);
-                        print_list("Bases", &current->bases);
+                        print_list("Attributes", &class_info->attributes);
+                        print_list("Effective attributes", &class_info->effective_attributes);
+                        print_list("Methods", &class_info->methods);
+                        print_list("Bases", &class_info->bases);
                     }
                 }
                 putchar('\n');

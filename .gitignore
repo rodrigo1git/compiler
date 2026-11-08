@@ -2,6 +2,7 @@
 compiler
 y.output
 __pycache__/
+teoria/
 
 # Bison/Flex generated parsers
 *.tab.c

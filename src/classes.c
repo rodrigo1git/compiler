@@ -7,8 +7,8 @@
 
 void class_set_code(map_node_t *symbol, map_node_t *code) {
     if (symbol == NULL || code == NULL) return;
-    symbol->class_code = strdup(code->key);
-    if (symbol->class_code == NULL) {
+    symbol->class_info->class_code = strdup(code->key);
+    if (symbol->class_info->class_code == NULL) {
         fprintf(stderr, "Fatal error: Cannot allocate class information\n");
         exit(1);
     }
@@ -16,8 +16,8 @@ void class_set_code(map_node_t *symbol, map_node_t *code) {
 
 void class_add_base(map_node_t *class_symbol, map_node_t *base) {
     if (class_symbol == NULL) return;
-    class_symbol->layout_state = 0;
-    symbol_list_append(&class_symbol->bases, base);
+    class_symbol->class_info->layout_state = 0;
+    symbol_list_append(&class_symbol->class_info->bases, base);
 }
 
 static void append_distinct(symbol_list_t *list, map_node_t *symbol) {
@@ -35,8 +35,8 @@ static void find_members(map_node_t *class_symbol, const char *name,
     symbol_list_append(path, class_symbol);
     map_node_t *own = scope_lookup_local(class_symbol->body_scope, name);
     if (own != NULL) append_distinct(matches, own);
-    else for (size_t i = 0; i < class_symbol->bases.count; i++)
-        find_members(class_symbol->bases.items[i], name, path, matches, unresolved);
+    else for (size_t i = 0; i < class_symbol->class_info->bases.count; i++)
+        find_members(class_symbol->class_info->bases.items[i], name, path, matches, unresolved);
     path->count--;
 }
 
@@ -45,8 +45,8 @@ class_member_t class_lookup_member(map_node_t *class_symbol, const char *name,
     symbol_list_t path = {0}, matches = {0};
     bool cyclic = false;
     if (search == CLASS_INHERITED_MEMBERS) {
-        for (size_t i = 0; i < class_symbol->bases.count; i++)
-            find_members(class_symbol->bases.items[i], name, &path, &matches, &cyclic);
+        for (size_t i = 0; i < class_symbol->class_info->bases.count; i++)
+            find_members(class_symbol->class_info->bases.items[i], name, &path, &matches, &cyclic);
     } else find_members(class_symbol, name, &path, &matches, &cyclic);
     class_member_t result = {
         .symbol = matches.count != 0 ? matches.items[0] : NULL,
@@ -84,35 +84,35 @@ map_node_t *class_resolve_method(map_node_t *object, map_node_t *name, int line)
 
 bool class_build_layout(map_node_t *class_symbol, int line) {
     if (class_symbol == NULL) return false;
-    if (class_symbol->layout_state == 2) return true;
-    if (class_symbol->layout_state == 3) return false;
-    if (class_symbol->layout_state == 1) {
+    if (class_symbol->class_info->layout_state == 2) return true;
+    if (class_symbol->class_info->layout_state == 3) return false;
+    if (class_symbol->class_info->layout_state == 1) {
         report_semantic_error(line, "Cyclic inheritance in class '%s'", class_symbol->key);
-        class_symbol->layout_state = 3;
+        class_symbol->class_info->layout_state = 3;
         return false;
     }
-    class_symbol->layout_state = 1;
-    class_symbol->effective_attributes.count = 0;
-    for (size_t i = 0; i < class_symbol->bases.count; i++) {
-        map_node_t *base = class_symbol->bases.items[i];
+    class_symbol->class_info->layout_state = 1;
+    class_symbol->class_info->effective_attributes.count = 0;
+    for (size_t i = 0; i < class_symbol->class_info->bases.count; i++) {
+        map_node_t *base = class_symbol->class_info->bases.items[i];
         if (!class_build_layout(base, line)) {
-            class_symbol->layout_state = 3;
+            class_symbol->class_info->layout_state = 3;
             return false;
         }
-        for (size_t j = 0; j < base->effective_attributes.count; j++)
-            append_distinct(&class_symbol->effective_attributes, base->effective_attributes.items[j]);
+        for (size_t j = 0; j < base->class_info->effective_attributes.count; j++)
+            append_distinct(&class_symbol->class_info->effective_attributes, base->class_info->effective_attributes.items[j]);
     }
-    for (size_t i = 0; i < class_symbol->attributes.count; i++)
-        append_distinct(&class_symbol->effective_attributes, class_symbol->attributes.items[i]);
-    class_symbol->layout_state = 2;
+    for (size_t i = 0; i < class_symbol->class_info->attributes.count; i++)
+        append_distinct(&class_symbol->class_info->effective_attributes, class_symbol->class_info->attributes.items[i]);
+    class_symbol->class_info->layout_state = 2;
     return true;
 }
 
 bool class_same_layout(const map_node_t *left, const map_node_t *right) {
-    if (left->effective_attributes.count != right->effective_attributes.count) return false;
-    for (size_t i = 0; i < left->effective_attributes.count; i++) {
-        const map_node_t *a = left->effective_attributes.items[i];
-        const map_node_t *b = right->effective_attributes.items[i];
+    if (left->class_info->effective_attributes.count != right->class_info->effective_attributes.count) return false;
+    for (size_t i = 0; i < left->class_info->effective_attributes.count; i++) {
+        const map_node_t *a = left->class_info->effective_attributes.items[i];
+        const map_node_t *b = right->class_info->effective_attributes.items[i];
         if (a->type_symbol != b->type_symbol || a->declared_type == NULL || b->declared_type == NULL ||
             strcmp(a->declared_type, b->declared_type) != 0) return false;
     }
@@ -120,32 +120,32 @@ bool class_same_layout(const map_node_t *left, const map_node_t *right) {
 }
 
 void class_complete(map_node_t *class_symbol, int line) {
-    if (!class_build_layout(class_symbol, line) || class_symbol->class_code == NULL) return;
-    class_symbol->class_complete = true;
+    if (!class_build_layout(class_symbol, line) || class_symbol->class_info->class_code == NULL) return;
+    class_symbol->class_info->class_complete = true;
     for (int i = 0; i < symbol_table->capacity; i++)
         for (map_node_t *other = symbol_table->buckets[i]; other != NULL; other = other->next)
-            if (other != class_symbol && other->usage == SYMBOL_CLASS && other->class_code != NULL &&
-                other->class_complete && other->layout_state == 2 && strcmp(other->class_code, class_symbol->class_code) == 0 &&
+            if (other != class_symbol && other->usage == SYMBOL_CLASS && other->class_info->class_code != NULL &&
+                other->class_info->class_complete && other->class_info->layout_state == 2 && strcmp(other->class_info->class_code, class_symbol->class_info->class_code) == 0 &&
                 !class_same_layout(other, class_symbol))
                 report_semantic_error(line, "Classes '%s' and '%s' share code '%s' but have incompatible attribute types or order",
-                    class_symbol->key, other->key, class_symbol->class_code);
+                    class_symbol->key, other->key, class_symbol->class_info->class_code);
 }
 
 map_node_t *class_attribute_at(map_node_t *class_symbol, size_t position, int line) {
     if (!class_build_layout(class_symbol, line)) return NULL;
-    if (position >= class_symbol->effective_attributes.count) {
+    if (position >= class_symbol->class_info->effective_attributes.count) {
         report_semantic_error(line, "Attribute position %zu does not exist in class '%s'", position, class_symbol->key);
         return NULL;
     }
-    map_node_t *attribute = class_symbol->effective_attributes.items[position];
+    map_node_t *attribute = class_symbol->class_info->effective_attributes.items[position];
     const char *separator = strchr(attribute->key, ':');
     size_t length = (size_t)(separator - attribute->key);
-    for (size_t i = 0; i < class_symbol->attributes.count; i++) {
-        map_node_t *own = class_symbol->attributes.items[i];
+    for (size_t i = 0; i < class_symbol->class_info->attributes.count; i++) {
+        map_node_t *own = class_symbol->class_info->attributes.items[i];
         if (strncmp(own->key, attribute->key, length) == 0 && own->key[length] == ':') return attribute;
     }
-    for (size_t i = 0; i < class_symbol->effective_attributes.count; i++) {
-        map_node_t *other = class_symbol->effective_attributes.items[i];
+    for (size_t i = 0; i < class_symbol->class_info->effective_attributes.count; i++) {
+        map_node_t *other = class_symbol->class_info->effective_attributes.items[i];
         if (other != attribute && strncmp(other->key, attribute->key, length) == 0 && other->key[length] == ':') {
             report_semantic_error(line, "Inherited attribute '%.*s' is ambiguous in class '%s'",
                 (int)length, attribute->key, class_symbol->key);
@@ -157,8 +157,9 @@ map_node_t *class_attribute_at(map_node_t *class_symbol, size_t position, int li
 
 bool class_check_copy(const map_node_t *destination, const map_node_t *source, int line) {
     if (destination == NULL || source == NULL || destination == source ||
-        destination->class_code == NULL || source->class_code == NULL) return true;
-    if (strcmp(destination->class_code, source->class_code) == 0) return true;
+        destination->class_info == NULL || source->class_info == NULL ||
+        destination->class_info->class_code == NULL || source->class_info->class_code == NULL) return true;
+    if (strcmp(destination->class_info->class_code, source->class_info->class_code) == 0) return true;
     report_semantic_error(line, "Object assignment requires matching class codes (topic 24)");
     return false;
 }
@@ -184,8 +185,8 @@ static bool check_containment_path(map_node_t *type, const type_path_t *path, sy
         return false;
     }
     type_path_t current = {type, path};
-    for (size_t i = 0; i < type->effective_attributes.count; i++)
-        if (!check_containment_path(type->effective_attributes.items[i]->type_symbol, &current, complete))
+    for (size_t i = 0; i < type->class_info->effective_attributes.count; i++)
+        if (!check_containment_path(type->class_info->effective_attributes.items[i]->type_symbol, &current, complete))
             return false;
     symbol_list_append(complete, type);
     return true;
@@ -204,8 +205,8 @@ bool class_check_containment(void) {
 static bool class_has_comptime_path(const map_node_t *class_symbol, const type_path_t *path) {
     if (class_symbol == NULL || type_in_path(path, class_symbol)) return false;
     type_path_t current = {class_symbol, path};
-    for (size_t i = 0; i < class_symbol->effective_attributes.count; i++) {
-        const map_node_t *field = class_symbol->effective_attributes.items[i];
+    for (size_t i = 0; i < class_symbol->class_info->effective_attributes.count; i++) {
+        const map_node_t *field = class_symbol->class_info->effective_attributes.items[i];
         if (field->is_comptime || class_has_comptime_path(field->type_symbol, &current)) return true;
     }
     return false;

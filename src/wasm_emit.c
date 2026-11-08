@@ -45,7 +45,7 @@ static size_t new_local(emitter_t *e, type_t type, int line) {
         char key[96];
         snprintf(key, sizeof(key), "@tmp_%zu_%zu", body_id(e), id);
         map_node_t *s = map_put(symbol_table, key, "ID");
-        s->usage = SYMBOL_AUXILIARY;
+        symbol_set_usage(s, SYMBOL_AUXILIARY);
         s->owner = (map_node_t *)layout_source(e->body->symbol);
         s->declaration_line = line;
         s->type_symbol = (map_node_t *)type.class_symbol;
@@ -97,8 +97,8 @@ static void symbol_address(emitter_t *e, const map_node_t *symbol, int line) {
 static bool object_type(type_t type) {
     if (type.kind == TYPE_OBJECT) return true;
     if (type.kind != TYPE_CANDIDATES) return false;
-    for (size_t i = 0; i < type.class_symbol->effective_attributes.count; i++)
-        if (type_of_symbol(type.class_symbol->effective_attributes.items[i]).kind != TYPE_OBJECT) return false;
+    for (size_t i = 0; i < type.class_symbol->class_info->effective_attributes.count; i++)
+        if (type_of_symbol(type.class_symbol->class_info->effective_attributes.items[i]).kind != TYPE_OBJECT) return false;
     return true;
 }
 static size_t snapshot(emitter_t *e, size_t source, size_t pc) {
@@ -198,13 +198,15 @@ static void call_function(emitter_t *e, const rpn_step_t *step) {
     push(e, (operand_t){type, result, 0});
 }
 static void materialize(emitter_t *e, size_t object, const map_node_t *capture, size_t offset) {
+    const symbol_capture_info_t *info = capture->capture_info;
+    if (info == NULL) return;
     const map_node_t *kind = capture->type_symbol;
-    for (size_t i = 0; i < kind->effective_attributes.count; i++) {
-        const map_node_t *field = kind->effective_attributes.items[i];
+    for (size_t i = 0; i < kind->class_info->effective_attributes.count; i++) {
+        const map_node_t *field = kind->class_info->effective_attributes.items[i];
         size_t field_offset = offset + layout_field_offset(&e->layout, kind, i);
-        for (size_t j = 0; j < capture->comptime_bindings.count; j++)
-            if (capture->comptime_bindings.items[j] == field) {
-                const map_node_t *constant = capture->comptime_values.items[j];
+        for (size_t j = 0; j < info->comptime_bindings.count; j++)
+            if (info->comptime_bindings.items[j] == field) {
+                const map_node_t *constant = info->comptime_values.items[j];
                 get_local(e, object); write_line(e, "i32.const %zu\ni32.add", field_offset);
                 if (type_of_symbol(field).kind == TYPE_INTEGER) write_line(e, "i32.const %ld", strtol(constant->key, NULL, 10));
                 else {
@@ -214,9 +216,9 @@ static void materialize(emitter_t *e, size_t object, const map_node_t *capture, 
                 }
                 write_line(e, "%s.store", wasm_type(type_of_symbol(field)));
             }
-        for (size_t j = 0; j < capture->object_fields.count; j++)
-            if (capture->object_fields.items[j] == field)
-                materialize(e, object, capture->object_values.items[j], field_offset);
+        for (size_t j = 0; j < info->object_fields.count; j++)
+            if (info->object_fields.items[j] == field)
+                materialize(e, object, info->object_values.items[j], field_offset);
     }
 }
 
@@ -367,8 +369,8 @@ static void write_object_helpers(emitter_t *e) {
         const map_node_t *kind = item->symbol;
         if (kind->usage != SYMBOL_CLASS) continue;
         write_line(e, "(func $init_%zu (param $object i32)\nlocal.get $object\ni32.const %zu\ni32.store", item->id, item->id);
-        for (size_t j = 0; j < kind->effective_attributes.count; j++) {
-            const map_node_t *field = kind->effective_attributes.items[j];
+        for (size_t j = 0; j < kind->class_info->effective_attributes.count; j++) {
+            const map_node_t *field = kind->class_info->effective_attributes.items[j];
             if (field->type_symbol)
                 write_line(e, "local.get $object\ni32.const %zu\ni32.add\ncall $init_%zu",
                     layout_field_offset(&e->layout, kind, j), layout_id(&e->layout, field->type_symbol));
@@ -382,8 +384,8 @@ static void write_object_helpers(emitter_t *e) {
             const map_node_t *kind = e->layout.items[i].symbol;
             if (kind->usage != SYMBOL_CLASS) continue;
             write_line(e, "local.get $object\ni32.load\ni32.const %zu\ni32.eq\nif", e->layout.items[i].id);
-            for (size_t j = 0; j < kind->effective_attributes.count; j++) {
-                const map_node_t *field = kind->effective_attributes.items[j];
+            for (size_t j = 0; j < kind->class_info->effective_attributes.count; j++) {
+                const map_node_t *field = kind->class_info->effective_attributes.items[j];
                 write_line(e, "local.get $index\ni32.const %zu\ni32.eq\nif",
                     helper == 1 ? layout_id(&e->layout, field) : j);
                 if (helper == 2) write_line(e, "i32.const %d", type_of_symbol(field).kind);
@@ -406,8 +408,8 @@ static void write_copy_helper(emitter_t *e) {
             if (src->usage != SYMBOL_CLASS || !types_compatible((type_t){TYPE_OBJECT, dst}, (type_t){TYPE_OBJECT, src})) continue;
             write_line(e, "local.get $destination\ni32.load\ni32.const %zu\ni32.eq\nlocal.get $source\ni32.load\ni32.const %zu\ni32.eq\ni32.and\nif",
                 layout_id(&e->layout, dst), layout_id(&e->layout, src));
-            for (size_t k = 0; k < dst->effective_attributes.count; k++) {
-                const map_node_t *field = dst->effective_attributes.items[k];
+            for (size_t k = 0; k < dst->class_info->effective_attributes.count; k++) {
+                const map_node_t *field = dst->class_info->effective_attributes.items[k];
                 write_line(e, "local.get $destination\ni32.const %zu\ni32.add\nlocal.get $source\ni32.const %zu\ni32.add",
                     layout_field_offset(&e->layout, dst, k), layout_field_offset(&e->layout, src, k));
                 write_line(e, field->type_symbol ? "call $copy_object" : "i32.load\ni32.store");

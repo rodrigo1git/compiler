@@ -321,7 +321,7 @@ static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step
     bool runtime_index = !index->is_comptime && index->usage != SYMBOL_LEXEME;
     map_node_t *attribute = (map_node_t *)comptime_select_field(object->type_symbol, selected);
     if (runtime_index && selected.known &&
-        (selected.number < 0 || selected.number >= object->type_symbol->effective_attributes.count))
+        (selected.number < 0 || selected.number >= object->type_symbol->class_info->effective_attributes.count))
         selected.known = false;
     if (selected.known && !selected.floating) {
         if (selected.number < 0)

@@ -29,16 +29,16 @@ type_t type_of_attribute(const rpn_step_t *step) {
     if (step->index->usage == SYMBOL_LEXEME) {
         if (type_of_symbol(step->index).kind != TYPE_INTEGER) return (type_t){TYPE_ERROR, NULL};
         long position = strtol(step->index->key, NULL, 10);
-        if (position < 0 || (size_t)position >= kind->effective_attributes.count)
+        if (position < 0 || (size_t)position >= kind->class_info->effective_attributes.count)
             return (type_t){TYPE_ERROR, NULL};
-        return type_of_symbol(kind->effective_attributes.items[position]);
+        return type_of_symbol(kind->class_info->effective_attributes.items[position]);
     }
     if (step->index->is_comptime) return (type_t){TYPE_COMPTIME_PENDING, kind};
     type_t result = {TYPE_CANDIDATES, kind};
-    if (kind->effective_attributes.count) {
-        result = type_of_symbol(kind->effective_attributes.items[0]);
-        for (size_t i = 1; i < kind->effective_attributes.count; i++) {
-            type_t next = type_of_symbol(kind->effective_attributes.items[i]);
+    if (kind->class_info->effective_attributes.count) {
+        result = type_of_symbol(kind->class_info->effective_attributes.items[0]);
+        for (size_t i = 1; i < kind->class_info->effective_attributes.count; i++) {
+            type_t next = type_of_symbol(kind->class_info->effective_attributes.items[i]);
             if (next.kind != result.kind || next.class_symbol != result.class_symbol)
                 return (type_t){TYPE_CANDIDATES, kind};
         }
@@ -50,26 +50,26 @@ bool types_compatible(type_t destination, type_t source) {
     if (destination.kind == TYPE_ERROR || source.kind == TYPE_ERROR ||
         destination.kind == TYPE_COMPTIME_PENDING || source.kind == TYPE_COMPTIME_PENDING) return true;
     if (destination.kind == TYPE_CANDIDATES) {
-        for (size_t i = 0; i < destination.class_symbol->effective_attributes.count; i++)
-            if (!types_compatible(type_of_symbol(destination.class_symbol->effective_attributes.items[i]), source)) return false;
+        for (size_t i = 0; i < destination.class_symbol->class_info->effective_attributes.count; i++)
+            if (!types_compatible(type_of_symbol(destination.class_symbol->class_info->effective_attributes.items[i]), source)) return false;
         return true;
     }
     if (source.kind == TYPE_CANDIDATES) {
-        for (size_t i = 0; i < source.class_symbol->effective_attributes.count; i++)
-            if (!types_compatible(destination, type_of_symbol(source.class_symbol->effective_attributes.items[i]))) return false;
+        for (size_t i = 0; i < source.class_symbol->class_info->effective_attributes.count; i++)
+            if (!types_compatible(destination, type_of_symbol(source.class_symbol->class_info->effective_attributes.items[i]))) return false;
         return true;
     }
     if (destination.kind != source.kind) return false;
     if (source.kind != TYPE_OBJECT) return true;
     const map_node_t *a = destination.class_symbol, *b = source.class_symbol;
-    return a == b || (a->class_code && b->class_code && !strcmp(a->class_code, b->class_code) && class_same_layout(a, b));
+    return a == b || (a->class_info->class_code && b->class_info->class_code && !strcmp(a->class_info->class_code, b->class_info->class_code) && class_same_layout(a, b));
 }
 
 static bool numeric(type_t type) {
     if (type.kind == TYPE_COMPTIME_PENDING || type.kind == TYPE_ERROR) return true;
     if (type.kind == TYPE_CANDIDATES) {
-        for (size_t i = 0; i < type.class_symbol->effective_attributes.count; i++)
-            if (!numeric(type_of_symbol(type.class_symbol->effective_attributes.items[i]))) return false;
+        for (size_t i = 0; i < type.class_symbol->class_info->effective_attributes.count; i++)
+            if (!numeric(type_of_symbol(type.class_symbol->class_info->effective_attributes.items[i]))) return false;
         return true;
     }
     return type.kind == TYPE_INTEGER || type.kind == TYPE_SINGLEF;
@@ -104,7 +104,7 @@ static bool check_body(const rpn_t *body, const map_node_t *function,
             if (type_of_symbol(step->index).kind != TYPE_INTEGER)
                 report_semantic_error(line, "Attribute index requires INTEGER; received %s", type_name(type_of_symbol(step->index)));
             if (!step->index->is_comptime && step->index->usage != SYMBOL_LEXEME) {
-                const symbol_list_t *fields = &step->receiver->type_symbol->effective_attributes;
+                const symbol_list_t *fields = &step->receiver->type_symbol->class_info->effective_attributes;
                 for (size_t i = 0; i < fields->count; i++) {
                     class_attribute_at(step->receiver->type_symbol, i, line);
                     if (step->kind == RPN_ATTRIBUTE_DESTINATION && fields->items[i]->is_comptime)

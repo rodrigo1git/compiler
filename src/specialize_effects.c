@@ -67,8 +67,8 @@ static bool record_runtime_write(function_template_t *source, map_node_t *symbol
 }
 
 static void analyze_function_effects(function_template_t *source) {
-    for (size_t i = 0; i < source->symbol->parameters.count; i++)
-        if (source->symbol->parameters.items[i]->is_comptime) source->contextual = true;
+    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++)
+        if (source->symbol->function_info->parameters.items[i]->is_comptime) source->contextual = true;
     for (size_t i = 0; i < source->body->count; i++) {
         const rpn_step_t *step = &source->body->steps[i];
         if ((step->kind == RPN_SYMBOL || step->kind == RPN_ATTRIBUTE) &&
@@ -134,5 +134,5 @@ void sp_analyze_effects(specialize_state_t *state) {
         analyze_function_effects(source);
     propagate_function_effects(state);
     for (function_template_t *source = state->templates; source; source = source->next)
-        source->symbol->comptime_template = source->contextual;
+        source->symbol->function_info->comptime_template = source->contextual;
 }

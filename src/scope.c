@@ -91,7 +91,7 @@ static map_node_t *declare(map_node_t *name, symbol_usage_t usage,
     char *qualified = qualified_name(name->key, current_scope->path);
     map_node_t *symbol = map_put(symbol_table, qualified, "ID");
     free(qualified);
-    symbol->usage = usage;
+    symbol_set_usage(symbol, usage);
     symbol->declaration_scope = current_scope;
     symbol->declaration_line = line;
     symbol->owner = current_scope->symbol;
@@ -101,13 +101,13 @@ static map_node_t *declare(map_node_t *name, symbol_usage_t usage,
         strcpy(symbol->declared_type, type.name);
     }
     if (symbol->owner != NULL && usage == SYMBOL_ATTRIBUTE) {
-        symbol->owner->layout_state = 0;
-        symbol_list_append(&symbol->owner->attributes, symbol);
+        symbol->owner->class_info->layout_state = 0;
+        symbol_list_append(&symbol->owner->class_info->attributes, symbol);
     }
     if (symbol->owner != NULL && usage == SYMBOL_METHOD)
-        symbol_list_append(&symbol->owner->methods, symbol);
+        symbol_list_append(&symbol->owner->class_info->methods, symbol);
     if (symbol->owner != NULL && usage == SYMBOL_PARAMETER)
-        symbol_list_append(&symbol->owner->parameters, symbol);
+        symbol_list_append(&symbol->owner->function_info->parameters, symbol);
     return symbol;
 }
 

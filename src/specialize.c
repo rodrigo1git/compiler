@@ -7,7 +7,8 @@
 static specialize_state_t state;
 
 function_template_t *sp_find_template(const specialize_state_t *state, const map_node_t *symbol) {
-    if (symbol != NULL && symbol->source_function != NULL) symbol = symbol->source_function;
+    if (symbol != NULL && symbol->function_info != NULL && symbol->function_info->source_function != NULL)
+        symbol = symbol->function_info->source_function;
     for (function_template_t *source = state->templates; source != NULL; source = source->next)
         if (source->symbol == symbol) return source;
     return NULL;

@@ -82,11 +82,11 @@ static void probe_copy_object(probe_t *probe, comptime_environment_t *destinatio
                               const comptime_environment_t *fields, bool argument, unsigned int depth) {
     if (type == NULL || depth == SP_MAX_DEPTH || !*probe->budget) return;
     (*probe->budget)--;
-    for (size_t i = 0; i < type->effective_attributes.count; i++) {
-        const map_node_t *field = type->effective_attributes.items[i];
+    for (size_t i = 0; i < type->class_info->effective_attributes.count; i++) {
+        const map_node_t *field = type->class_info->effective_attributes.items[i];
         comptime_value_t selected = {0};
-        if (value.object_type && i < value.object_type->effective_attributes.count)
-            selected = comptime_object_field(value, value.object_type->effective_attributes.items[i], fields);
+        if (value.object_type && i < value.object_type->class_info->effective_attributes.count)
+            selected = comptime_object_field(value, value.object_type->class_info->effective_attributes.items[i], fields);
         if (field->type_symbol) {
             const map_node_t *child = comptime_object_location(object, field);
             probe_copy_object(probe, destination, child, field->type_symbol, selected, fields, argument,
@@ -122,8 +122,8 @@ static comptime_value_t probe_invoke(probe_t *probe, probe_call_t *call) {
     if (probe->validating)
         return specialize_evaluate_call(source->symbol, &probe->environment, &call->arguments,
                                         call->receiver, probe->unknown_control || probe->external_unknown, probe->line);
-    for (size_t i = 0; i < source->symbol->parameters.count; i++) {
-        const map_node_t *parameter = source->symbol->parameters.items[i];
+    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
+        const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
         if (parameter->is_comptime && !comptime_get(&call->arguments, parameter, NULL).known)
             probe->needs_iteration = true;
     }
@@ -382,8 +382,8 @@ comptime_value_t sp_evaluate_call(const specialize_state_t *state, function_temp
         .environment = comptime_call_environment(environment, arguments, source->symbol),
         .budget = &budget, .validating = true, .function = source->symbol,
         .external_unknown = unknown_entry};
-    for (size_t i = 0; i < source->symbol->parameters.count; i++) {
-        const map_node_t *parameter = source->symbol->parameters.items[i];
+    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
+        const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
         if (parameter->is_comptime && !comptime_get(arguments, parameter, NULL).known)
             report_semantic_error(line, "Argument for comptime parameter '%s' is not known at compile time", parameter->key);
     }

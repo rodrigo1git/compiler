@@ -4,7 +4,8 @@
 #include "../include/diagnostics.h"
 
 const map_node_t *layout_source(const map_node_t *symbol) {
-    return symbol && symbol->source_function ? symbol->source_function : symbol;
+    return symbol && symbol->function_info && symbol->function_info->source_function
+        ? symbol->function_info->source_function : symbol;
 }
 
 const map_node_t *layout_parent(const map_node_t *symbol) {
@@ -35,7 +36,7 @@ size_t layout_class_size(const layout_t *layout, const map_node_t *kind) {
 size_t layout_field_offset(const layout_t *layout, const map_node_t *kind, size_t position) {
     size_t offset = 4;
     for (size_t i = 0; i < position; i++) {
-        const map_node_t *field = kind->effective_attributes.items[i];
+        const map_node_t *field = kind->class_info->effective_attributes.items[i];
         offset += field->type_symbol ? layout_class_size(layout, field->type_symbol) : 4;
     }
     return offset;
@@ -61,8 +62,8 @@ static size_t measure_class(layout_t *layout, const map_node_t *kind) {
     }
     item->state = LAYOUT_VISITING;
     size_t size = 4;
-    for (size_t i = 0; i < kind->effective_attributes.count; i++) {
-        const map_node_t *field = kind->effective_attributes.items[i];
+    for (size_t i = 0; i < kind->class_info->effective_attributes.count; i++) {
+        const map_node_t *field = kind->class_info->effective_attributes.items[i];
         size += field->type_symbol ? measure_class(layout, field->type_symbol) : 4;
         if (size > 1048576) {
             report_semantic_error(kind->declaration_line, "Object layout exceeds implementation memory limit"); break;

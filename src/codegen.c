@@ -134,9 +134,9 @@ void codegen_order_free(codegen_order_t *order) {
 
 static void validate_argument_count(const codegen_call_t *call) {
     if (call->function != NULL && call->arguments != NULL &&
-        call->arguments->count != call->function->parameters.count)
+        call->arguments->count != call->function->function_info->parameters.count)
         report_semantic_error(call->line, "Call to '%s' has %zu arguments; expected %zu",
-            call->function->key, call->arguments->count, call->function->parameters.count);
+            call->function->key, call->arguments->count, call->function->function_info->parameters.count);
 }
 
 codegen_call_t *codegen_call_begin(map_node_t *function, map_node_t *receiver,
@@ -170,7 +170,7 @@ static size_t evaluation_position(const map_node_t *constant, size_t count, int 
 
 /* The call and order exist; validate everything needed before emission. */
 static size_t *validate_evaluation_order(const codegen_call_t *call, const codegen_order_t *order) {
-    size_t count = call->function->parameters.count;
+    size_t count = call->function->function_info->parameters.count;
     if (order->constants.count != count) {
         report_semantic_error(call->line, "Evaluation order for '%s' has %zu entries; expected %zu",
             call->function->key, order->constants.count, count);
@@ -196,7 +196,7 @@ static size_t *validate_evaluation_order(const codegen_call_t *call, const codeg
 }
 
 static rpn_t *emit_call(const codegen_call_t *call, const size_t *positions) {
-    size_t count = call->function->parameters.count;
+    size_t count = call->function->function_info->parameters.count;
     rpn_t *result = new_fragment();
     /* TP3 pp.5,7: evaluate and copy in the explicit order, retaining formal positions.
        A pending frame keeps nested/recursive calls independent of the caller's frame. */
@@ -206,7 +206,7 @@ static rpn_t *emit_call(const codegen_call_t *call, const size_t *positions) {
         size_t position = positions[i];
         rpn_append_sequence(result, call->arguments->items[position]);
         rpn_append_step(result, (rpn_step_t){.kind = RPN_ARGUMENT_DESTINATION,
-            .value.symbol = call->function->parameters.items[position], .source_line = call->line});
+            .value.symbol = call->function->function_info->parameters.items[position], .source_line = call->line});
         append_operator(result, RPN_ASSIGN, call->line);
     }
     rpn_append_step(result, (rpn_step_t){.kind = RPN_CALL,
@@ -235,7 +235,7 @@ codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int
     if (!class_build_layout(class_symbol, line)) return (codegen_attribute_t){0};
     if (strcmp(index->value, "INTEGER") == 0) {
         long position = strtol(index->key, NULL, 10);
-        if (position < 0 || (size_t)position >= class_symbol->effective_attributes.count) {
+        if (position < 0 || (size_t)position >= class_symbol->class_info->effective_attributes.count) {
             report_semantic_error(line, "Attribute position '%s' does not exist in class '%s'",
                 index->key, class_symbol->key);
             return (codegen_attribute_t){0};
@@ -262,7 +262,7 @@ static codegen_attribute_t save_attribute_index(codegen_attribute_t attribute) {
     char name[64];
     snprintf(name, sizeof(name), "@index%u", ++index_serial);
     map_node_t *saved = map_put(symbol_table, name, "ID");
-    saved->usage = attribute.index->is_comptime ? SYMBOL_AUXILIARY : SYMBOL_VARIABLE;
+    symbol_set_usage(saved, attribute.index->is_comptime ? SYMBOL_AUXILIARY : SYMBOL_VARIABLE);
     saved->is_comptime = attribute.index->is_comptime;
     saved->declared_type = memory_resize(NULL, sizeof("INTEGER"));
     strcpy(saved->declared_type, "INTEGER");
