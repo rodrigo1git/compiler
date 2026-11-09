@@ -215,7 +215,6 @@ typedef struct {
     size_t call_count;
     comptime_environment_t *snapshots;
     size_t snapshot_count;
-    size_t remaining_iterations;
     size_t *controls;
 } type_resolution_t;
 
@@ -351,12 +350,6 @@ static bool same_type_environment(const comptime_environment_t *left,
 static void resolve_loop(type_resolution_t *context, size_t begin, size_t target, size_t body_end) {
     int errors = global_errors;
     for (;;) {
-        if (!context->remaining_iterations) {
-            report_semantic_error(context->origin->steps[target].source_line,
-                "Discarded loop type checking exceeded the iteration limit");
-            return;
-        }
-        context->remaining_iterations--;
         comptime_environment_t before = comptime_copy_environment(&context->environment);
         resolve_range(context, target + 2, body_end);
         if (errors == global_errors) check_resolved_range(context, target + 2, body_end);
@@ -423,7 +416,7 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
                            const map_node_t *receiver) {
     int errors = global_errors;
     type_resolution_t context = {.body = *body, .origin = body, .function = function,
-        .receiver = receiver, .remaining_iterations = 100000,
+        .receiver = receiver,
         .environment = comptime_copy_environment(environment)};
     context.body.steps = calloc(body->count + 1, sizeof(*body->steps));
     context.stack = calloc(body->count + 2, sizeof(*context.stack));

@@ -36,8 +36,7 @@ typedef struct {
     probe_operand_t *stack;
     size_t count;
     probe_call_t *pending;
-    size_t *budget;
-    unsigned int depth;
+    const evaluation_frame_t *invoking;
     bool needs_iteration;
     bool validating;
     bool unknown_control;
@@ -79,9 +78,8 @@ static void probe_destroy(probe_t *probe) {
 
 static void probe_copy_object(probe_t *probe, comptime_environment_t *destination, const map_node_t *object,
                               const map_node_t *type, comptime_value_t value,
-                              const comptime_environment_t *fields, bool argument, unsigned int depth) {
-    if (type == NULL || depth == SP_MAX_DEPTH || !*probe->budget) return;
-    (*probe->budget)--;
+                              const comptime_environment_t *fields, bool argument) {
+    if (type == NULL) return;
     for (size_t i = 0; i < type->class_info->effective_attributes.count; i++) {
         const map_node_t *field = type->class_info->effective_attributes.items[i];
         comptime_value_t selected = {0};
@@ -89,8 +87,7 @@ static void probe_copy_object(probe_t *probe, comptime_environment_t *destinatio
             selected = comptime_object_field(value, value.object_type->class_info->effective_attributes.items[i], fields);
         if (field->type_symbol) {
             const map_node_t *child = comptime_object_location(object, field);
-            probe_copy_object(probe, destination, child, field->type_symbol, selected, fields, argument,
-                              depth + 1);
+            probe_copy_object(probe, destination, child, field->type_symbol, selected, fields, argument);
             selected.object = child;
             selected.object_type = field->type_symbol;
             selected.object_snapshot = NULL;
@@ -112,7 +109,7 @@ static void probe_validate_object(probe_t *probe, comptime_value_t value) {
     comptime_environment_t capture = {0};
     /* A read captures fields; it is not a write under the enclosing control. */
     probe_copy_object(probe, &capture, value.object, value.object_type, value,
-                      &probe->environment, true, 0);
+                      &probe->environment, true);
     free(capture.items);
 }
 
@@ -127,16 +124,22 @@ static comptime_value_t probe_invoke(probe_t *probe, probe_call_t *call) {
         if (parameter->is_comptime && !comptime_get(&call->arguments, parameter, NULL).known)
             probe->needs_iteration = true;
     }
-    if (probe->needs_iteration || probe->depth == SP_MAX_DEPTH || !*probe->budget) {
+    /* Recursive exploration yields unknown values, just like validation. */
+    for (const evaluation_frame_t *frame = probe->invoking; frame; frame = frame->parent) {
+        if (frame->function != source->symbol) continue;
         sp_forget_call_writes(&probe->environment, source);
         return (comptime_value_t){0};
     }
+    if (probe->needs_iteration) {
+        sp_forget_call_writes(&probe->environment, source);
+        return (comptime_value_t){0};
+    }
+    evaluation_frame_t frame = {source->symbol, probe->invoking};
     probe_t callee = {.state = probe->state,
                       .input = source->body,
                       .receiver = call->receiver,
                       .environment = comptime_call_environment(&probe->environment, &call->arguments, source->symbol),
-                      .depth = probe->depth + 1,
-                      .budget = probe->budget};
+                      .invoking = &frame};
     probe_range(&callee, 0, source->body->count, true);
     probe->needs_iteration |= callee.needs_iteration;
     sp_apply_effects(source, &callee.environment, call->receiver, &probe->environment, call->receiver);
@@ -162,7 +165,7 @@ static void probe_assign(probe_t *probe, probe_destination_t destination, const 
                                            : destination.symbol;
             /* Keep the source snapshot separate, including self-copies. */
             probe_copy_object(probe, environment, object, destination.symbol->type_symbol, assigned->value,
-                              &assigned->fields, argument, 0);
+                              &assigned->fields, argument);
         }
         comptime_set(environment, destination.symbol, destination.object, assigned->value);
     } else if (!argument) {
@@ -286,8 +289,7 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
                        .input = probe->input,
                        .receiver = probe->receiver,
                        .environment = comptime_copy_environment(&probe->environment),
-                       .depth = probe->depth,
-                       .budget = probe->budget};
+                       .invoking = probe->invoking};
     comptime_forget_runtime(&attempt.environment);
     probe_range(&attempt, control.branch + 2, control.body_end, true);
     bool needs_iteration = attempt.needs_iteration;
@@ -307,12 +309,12 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
         comptime_forget_runtime(&probe->environment);
         return;
     }
-    while (condition.known && condition.number != 0 && !probe->stopped && *probe->budget) {
+    while (condition.known && condition.number != 0 && !probe->stopped) {
         probe_range(probe, control.branch + 2, control.body_end, true);
         if (probe->stopped || probe->needs_iteration) return;
         condition = probe_condition(probe, control);
     }
-    if (!condition.known || !*probe->budget) probe->needs_iteration = true;
+    if (!condition.known) probe->needs_iteration = true;
     return;
 }
 
@@ -348,8 +350,6 @@ static void probe_control(probe_t *probe, rpn_control_t control) {
 static void probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first) {
     if (!probe->controls) probe->controls = rpn_index_controls(probe->input);
     for (size_t pc = begin; pc < end && !probe->stopped && !probe->needs_iteration; pc++) {
-        if (!*probe->budget) break;
-        (*probe->budget)--;
         size_t branch = (pc != begin || inspect_first) && probe->controls[pc] ? probe->controls[pc] - 1 : end;
         if (branch < end) {
             rpn_control_t control = rpn_describe_control(probe->input, pc, branch);
@@ -361,12 +361,10 @@ static void probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_f
 
 bool sp_requires_iteration(const specialize_state_t *state, const rpn_t *input, size_t begin, size_t end,
                            const comptime_environment_t *environment, const map_node_t *receiver) {
-    size_t budget = SP_EVALUATION_BUDGET;
     probe_t probe = {.state = state,
                      .input = input,
                      .environment = comptime_copy_environment(environment),
-                     .receiver = receiver,
-                     .budget = &budget};
+                     .receiver = receiver};
     comptime_forget_runtime(&probe.environment);
     probe_range(&probe, begin, end, true);
     bool result = probe.needs_iteration;
@@ -377,10 +375,9 @@ bool sp_requires_iteration(const specialize_state_t *state, const rpn_t *input, 
 comptime_value_t sp_evaluate_call(const specialize_state_t *state, function_template_t *source,
     comptime_environment_t *environment, const comptime_environment_t *arguments,
     const map_node_t *receiver, bool unknown_entry, int line) {
-    size_t budget = SP_EVALUATION_BUDGET;
     probe_t probe = {.state = state, .input = source->body, .receiver = receiver,
         .environment = comptime_call_environment(environment, arguments, source->symbol),
-        .budget = &budget, .validating = true, .function = source->symbol,
+        .validating = true, .function = source->symbol,
         .external_unknown = unknown_entry};
     for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
         const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
@@ -390,7 +387,6 @@ comptime_value_t sp_evaluate_call(const specialize_state_t *state, function_temp
     types_check_discarded(source->body, source->symbol, 0, source->body->count,
                          &probe.environment, receiver);
     probe_range(&probe, 0, source->body->count, true);
-    if (!budget) report_semantic_error(line, "Compile-time evaluation exceeded the resource limit");
     sp_apply_effects(source, &probe.environment, receiver, environment, receiver);
     comptime_value_t returned = probe.needs_iteration ? (comptime_value_t){0} : probe.returned;
     probe_destroy(&probe);

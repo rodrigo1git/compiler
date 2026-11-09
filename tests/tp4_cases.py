@@ -293,3 +293,13 @@ begin ret(0$i);
         from j := 0$i to 1000$i by 1$i repeat begin pout(j); end;
     end;
 end;''', 'pout(read(0$i)[1$i]);', [0])
+
+
+case('recursive_probe_in_loop',
+     'integer function f(integer p) begin ret(f(p)[1$i]); end; integer i;',
+     'from i := 0$i to 2$i by 1$i repeat pout(f(i)[1$i]);;', runtime_error='(i)')
+case('indirect_recursive_probe_in_loop',
+     """integer function outer(integer p)
+     integer function inner(integer q) begin ret(outer(q)[1$i]); end;
+     begin ret(inner(p)[1$i]); end; integer i;""",
+     'from i := 0$i to 2$i by 1$i repeat pout(outer(i)[1$i]);;', runtime_error='(i)')

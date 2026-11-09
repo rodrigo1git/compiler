@@ -71,8 +71,10 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
    Los índices que son atributos se consultan con el receptor del método.
    Los ciclos conocidos con efectos comptime se comprueban en cada iteración,
    restaurando el índice simbólico antes de volver a resolverlo. El análisis
-   termina al salir del ciclo, estabilizarse el entorno o alcanzar el límite
-   de 100000 iteraciones por auditoría; superar ese límite informa un error.
+   termina al salir del ciclo o estabilizarse el entorno, sin un máximo de
+   iteraciones. Las llamadas recursivas se detectan por la cadena de funciones
+   activas. Un ciclo infinito que requiera evaluación comptime puede impedir
+   que termine la compilación.
    Los ciclos sin efectos comptime mantienen el análisis conservador de una vuelta.
    Para resolver valores que provienen de llamadas utiliza la evaluación abstracta
    sobre ese entorno aislado, sin registrar instancias ejecutables. Véase
@@ -187,8 +189,9 @@ al cuerpo activo y conserva resultado desconocido. Su guardia EI termina antes
 que se ejecute ese cuerpo otra vez, aunque el argumento comptime cambie como
 p-1 o p+1. No se crean infinitas instancias para una reentrada ordinaria. Los
 argumentos conservan sus efectos previos a la llamada. Esta regla se aplica con todas las opciones de salida.
-Los límites de profundidad/expansión del especializador protegen al compilador;
-no sustituyen la guardia de recursión del ejecutable.
+El especializador y los evaluadores abstractos detectan reentradas mediante
+las funciones activas, sin imponer un máximo de profundidad ni de iteraciones.
+La guardia de recursión del ejecutable conserva su comportamiento.
 
 Las sumas/restas INTEGER se normalizan modularmente a int16; 32767+1 produce
 −32768. La división entera trunca hacia cero y también normaliza. La división

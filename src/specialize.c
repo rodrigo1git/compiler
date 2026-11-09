@@ -15,7 +15,7 @@ function_template_t *sp_find_template(const specialize_state_t *state, const map
 }
 
 void specialize_init(void) {
-    state = (specialize_state_t){.evaluation_budget = SP_EVALUATION_BUDGET};
+    state = (specialize_state_t){0};
     comptime_objects_init();
     clear_semantic_origins();
     rpn_init(&state.main_body);
@@ -75,15 +75,9 @@ comptime_value_t specialize_evaluate_call(const map_node_t *symbol, comptime_env
     /* Validation owns only abstract environments, never executable instances. */
     for (const evaluation_frame_t *frame = state.evaluating; frame; frame = frame->parent)
         if (frame->function == source->symbol) return (comptime_value_t){0};
-    if (state.evaluation_depth == SP_MAX_DEPTH) {
-        report_semantic_error(line, "Compile-time evaluation exceeded the recursion resource limit");
-        return (comptime_value_t){0};
-    }
     evaluation_frame_t frame = {source->symbol, state.evaluating};
     state.evaluating = &frame;
-    state.evaluation_depth++;
     comptime_value_t value = sp_evaluate_call(&state, source, environment, arguments, receiver, unknown_entry, line);
-    state.evaluation_depth--;
     state.evaluating = frame.parent;
     return value;
 }

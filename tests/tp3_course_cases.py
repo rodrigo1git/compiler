@@ -805,9 +805,11 @@ case("singlef_compiletime_runtime_rounding", "TP3 pp.1,8; topic 7 representation
      "comptime singlef staged; singlef runtime;",
      "staged := 0.1+0.2; runtime := 0.1+0.2; pout(staged); pout(runtime);",
      [0.30000001192092896, 0.30000001192092896])
-case("expansion_resource_guard", "Documented implementation resource limit", "comptime integer x; integer i;",
-     "x := 0$i; from i := 0$i to 1$i by 0$i repeat x := 0$i;;",
-     error="loop evaluation exceeded the resource limit")
+case("expansion_above_former_budget", "Finite comptime loops have no iteration cap",
+     "comptime integer x,i,j;",
+     "x := 0$i; from i := 0$i to 1100$i by 1$i repeat "
+     "from j := 0$i to 100$i by 1$i repeat x := j;; ; pout(x);",
+     [99])
 
 case("from_negative_step_ascending", "TP3 p.6; update uses the body's current control value", "integer i;",
      "from i := 0$i to 2$i by -1$i repeat begin pout(i); i := i+2$i; end;", [0, 1])
@@ -815,3 +817,24 @@ case("from_negative_step_descending", "TP3 p.6; update uses the body's current c
      "from i := 2$i to 0$i by -1$i repeat begin pout(i); i := i-2$i; end;", [2, 1])
 case("from_zero_step_with_body_progress", "TP3 p.6; no extra BY sign restriction", "integer i;",
      "from i := 0$i to 2$i by 0$i repeat begin pout(i); i := i+1$i; end;", [0, 1])
+
+
+case("specialization_above_former_depth", "Finite call chains have no depth cap",
+     "\n".join(
+         f"integer function chain{index}(comptime integer p) begin "
+         + ("ret(p);" if index == 139 else f"ret(chain{index + 1}(p)[1$i]);")
+         + " end;"
+         for index in reversed(range(140))
+     ),
+     "pout(chain0(7$i)[1$i]);", [7])
+
+case("discarded_loop_above_former_budget", "Discarded loop checks have no iteration cap",
+     """integer function audit(integer ignored)
+     comptime integer x,i,j;
+     begin
+         ret(7$i);
+         x := 0$i;
+         from i := 0$i to 1100$i by 1$i repeat
+             from j := 0$i to 100$i by 1$i repeat x := j;; ;
+     end;""",
+     "pout(audit(0$i)[1$i]);", [7])

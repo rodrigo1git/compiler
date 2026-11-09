@@ -118,19 +118,12 @@ function_instance_t *sp_instantiate(specialize_state_t *state, function_template
         free(environment.items);
         return instance;
     }
-    if (++state->depth > SP_MAX_DEPTH) {
-        report_semantic_error(line, "Compile-time specialization exceeded the recursion resource limit");
-        state->depth--;
-        free(environment.items);
-        return NULL;
-    }
     instance = create_instance(state, source, &environment, receiver, unknown_entry);
     sp_transform(state, source->body, &instance->body, &environment, source->symbol, receiver, unknown_entry,
                  &instance->returned);
     instance->active = false;
     instance->after = environment;
     record_instance_bindings(instance);
-    state->depth--;
     return instance;
 }
 

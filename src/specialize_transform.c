@@ -158,10 +158,6 @@ static void process_loop(context_t *context, rpn_control_t control, bool unknown
         for (;;) {
             discard(context, condition, line);
             if (condition.value.number == 0 || context->stopped) break;
-            if (context->state->evaluation_budget-- == 0) {
-                report_semantic_error(line, "Compile-time loop evaluation exceeded the resource limit");
-                break;
-            }
             int errors = global_errors;
             transform_range(context, control.branch + 2, control.body_end, unknown_control, true);
             if (context->stopped || global_errors != errors) break;

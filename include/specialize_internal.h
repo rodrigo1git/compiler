@@ -42,13 +42,8 @@ typedef struct {
     function_instance_t *last_instance;
     rpn_t main_body;
     unsigned int serial;
-    unsigned int depth;
-    size_t evaluation_budget;
     const evaluation_frame_t *evaluating;
-    unsigned int evaluation_depth;
 } specialize_state_t;
-
-enum { SP_MAX_DEPTH = 128, SP_EVALUATION_BUDGET = 100000 };
 
 function_template_t *sp_find_template(const specialize_state_t *state, const map_node_t *symbol);
 
