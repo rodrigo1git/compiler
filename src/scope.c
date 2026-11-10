@@ -219,7 +219,8 @@ void scope_names_free(scope_names_t *names) {
 
 void scope_declare_names(scope_names_t *names, scope_type_t type, bool is_comptime) {
     symbol_usage_t usage = current_scope->kind == SYMBOL_CLASS
-        ? SYMBOL_ATTRIBUTE : SYMBOL_VARIABLE;
+        ? SYMBOL_ATTRIBUTE
+        : SYMBOL_VARIABLE;
     for (scope_name_t *entry = names->first; entry != NULL; entry = entry->next) {
         map_node_t *symbol = declare(entry->symbol, usage, type, entry->line);
         if (symbol != NULL) symbol->is_comptime = is_comptime;

@@ -296,9 +296,9 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [yyerror](../src/grammar.y#L527) | Callback de Bison: entrega mensaje y línea actual a report_parser_error. No implementa recuperación gramatical por sí mismo. | G03 G07 |
-| [yyreport_syntax_error](../src/grammar.y#L533) | Consulta el contexto de Bison y tokens esperados, arma una explicación legible y registra un error pendiente que las producciones pueden especializar. | G03 G07 |
-| [friendly_symbol_name](../src/grammar.y#L580) | Traduce nombres internos de tokens a palabras útiles para el diagnóstico, como identifier o integer. | G03 G07 |
+| [yyerror](../src/grammar.y#L538) | Callback de Bison: entrega mensaje y línea actual a report_parser_error. No implementa recuperación gramatical por sí mismo. | G03 G07 |
+| [yyreport_syntax_error](../src/grammar.y#L544) | Consulta el contexto de Bison y tokens esperados, arma una explicación legible y registra un error pendiente que las producciones pueden especializar. | G03 G07 |
+| [friendly_symbol_name](../src/grammar.y#L591) | Traduce nombres internos de tokens a palabras útiles para el diagnóstico, como identifier o integer. | G03 G07 |
 
 ### layout.c
 

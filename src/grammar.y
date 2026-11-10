@@ -94,9 +94,9 @@
 
 %start statements
 
-%%
+%% /* Grammar rules */
 
-/* Grammar rules */
+/* Compilation unit */
 
 statements:
       program_name decl_list TOKEN_BEGIN statement TOKEN_END ';'
@@ -120,22 +120,24 @@ decl_list:
     | func_def
     ;
 
+/* Declarations */
+
 var_decl:
-  type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
-| TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2, true); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
-| TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); finish_statement(); }
-| type error ';' {
-      if (syntax_error_unexpected() != NULL && strcmp(syntax_error_unexpected(), "TOKEN_ASSIGN") == 0)
-          RECERR(@2, "Missing begin");
-      else
-          RECERR(@2, "Missing identifier in variable declaration");
-      RECOVER();
-  }
-| TOKEN_COMPTIME type error ';' { RECERR(@3, "Missing identifier in comptime declaration"); RECOVER(); }
-| TOKEN_COMPTIME error id_list ';' { scope_names_free($3); RECERR(@2, "Missing type in comptime declaration"); RECOVER(); }
-| type id_list error ';' { scope_names_free($2); RECERR(@3, "Malformed variable declaration"); RECOVER(); }
-| error ';' { report_recovered_syntax_error_with_context(@1.first_line, "Malformed declaration"); RECOVER(); }
-;
+      type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
+    | TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2, true); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
+    | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); finish_statement(); }
+    | type error ';' {
+          if (syntax_error_unexpected() != NULL && strcmp(syntax_error_unexpected(), "TOKEN_ASSIGN") == 0)
+              RECERR(@2, "Missing begin");
+          else
+              RECERR(@2, "Missing identifier in variable declaration");
+          RECOVER();
+      }
+    | TOKEN_COMPTIME type error ';' { RECERR(@3, "Missing identifier in comptime declaration"); RECOVER(); }
+    | TOKEN_COMPTIME error id_list ';' { scope_names_free($3); RECERR(@2, "Missing type in comptime declaration"); RECOVER(); }
+    | type id_list error ';' { scope_names_free($2); RECERR(@3, "Malformed variable declaration"); RECOVER(); }
+    | error ';' { report_recovered_syntax_error_with_context(@1.first_line, "Malformed declaration"); RECOVER(); }
+    ;
 
 id_list:
       TOKEN_ID { $$ = scope_names_create($1, @1.first_line); }
@@ -143,6 +145,105 @@ id_list:
     | id_list ',' error { $$ = $1; RECERR(@3, "Missing identifier after ',' in variable declaration"); RECOVER(); }
     | id_list error TOKEN_ID { $$ = scope_names_append($1, $3, @3.first_line); RECERR(@2, "Missing ',' in variable declaration"); RECOVER(); }
     ;
+
+type:
+      primitive_type
+    | TOKEN_ID { $$ = scope_named_type($1, @1.first_line); }
+    ;
+
+primitive_type:
+      TOKEN_INTEGER { $$ = (scope_type_t){"INTEGER", NULL}; }
+    | TOKEN_SINGLEF { $$ = (scope_type_t){"SINGLEF", NULL}; }
+    ;
+
+/* Classes */
+
+class_def:
+      class_header TOKEN_BEGIN class_body TOKEN_END ';' { class_complete(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
+    | class_missing_code class_body TOKEN_END ';' { scope_end($1); finish_statement(); }
+    | class_header error TOKEN_END ';' { scope_end($1); RECERR(@2, "Missing 'begin' in class declaration"); RECOVER(); }
+    | class_header TOKEN_BEGIN error TOKEN_END ';' { scope_end($1); RECERR(@3, "Malformed class body"); RECOVER(); }
+    | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { RECERR(@3, "Malformed class declaration"); RECOVER(); }
+    ;
+
+class_header:
+      TOKEN_CLASS TOKEN_ID TOKEN_ID { $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); class_set_code(scope_symbol($$), $3); }
+    ;
+
+class_missing_code:
+      TOKEN_CLASS TOKEN_ID TOKEN_BEGIN { SYNERR(@1, "Missing class code"); $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); }
+    ;
+
+class_body:
+      class_body class_member
+    | class_member
+    ;
+
+class_member:
+      var_decl
+    | method_def
+    | extends_stmt
+    ;
+
+extends_stmt:
+      TOKEN_EXTENDS extends_id_list ';' { trace_printf("[SYNTAX] Line %d: Extends statement\n", @$.first_line); }
+    | TOKEN_EXTENDS extends_id_list ',' error ';' { RECERR(@4, "Missing class name after ',' in extends list"); RECOVER(); }
+    | TOKEN_EXTENDS error ';' { RECERR(@2, "Missing class list after extends"); RECOVER(); }
+    ;
+
+extends_id_list:
+      TOKEN_ID { scope_base($1, @1.first_line); }
+    | extends_id_list ',' TOKEN_ID { scope_base($3, @3.first_line); }
+    ;
+
+/* Functions and methods */
+
+func_def:
+      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
+    | function_prefix error ';' { codegen_function_abort($1.code); scope_end($1.scope); RECERR(@2, "Malformed function header"); RECOVER(); }
+    | function_header decl_list TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@4, "Missing end of function"); YYABORT; }
+    | function_header TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@3, "Missing end of function"); YYABORT; }
+    ;
+
+/* Open the scope before parameters and local declarations are recognized. */
+function_prefix:
+      type TOKEN_FUNCTION TOKEN_ID '(' { $$.scope = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @3.first_line); }
+    | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$.scope = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = NULL; }
+    ;
+
+function_header:
+      function_prefix param_decl_list ')' { $$ = $1; }
+    | function_prefix error ')' { $$ = $1; RECERR(@2, "Malformed formal parameter list"); RECOVER(); }
+    ;
+
+param_decl_list:
+      type TOKEN_ID { scope_parameter($2, $1, false, @2.first_line); }
+    | param_decl_list ',' type TOKEN_ID { scope_parameter($4, $3, false, @4.first_line); }
+    | TOKEN_COMPTIME type TOKEN_ID { scope_parameter($3, $2, true, @3.first_line); }
+    | param_decl_list ',' TOKEN_COMPTIME type TOKEN_ID { scope_parameter($5, $4, true, @5.first_line); }
+    | primitive_type error { RECERR(@2, "Missing formal parameter name"); RECOVER(); }
+    | error TOKEN_ID { RECERR(@1, "Missing formal parameter type"); RECOVER(); }
+    | param_decl_list ',' primitive_type error { RECERR(@4, "Missing formal parameter name"); RECOVER(); }
+    | param_decl_list ',' error TOKEN_ID { RECERR(@3, "Missing formal parameter type"); RECOVER(); }
+    ;
+
+method_def:
+      method_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
+    | method_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
+    | method_prefix error ';' { codegen_function_abort($1.code); scope_end($1.scope); RECERR(@2, "Malformed method header"); RECOVER(); }
+    ;
+
+method_prefix:
+      type TOKEN_ID '(' { $$.scope = scope_begin($2, SYMBOL_METHOD, $1, @2.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @2.first_line); }
+    ;
+
+method_header:
+      method_prefix param_decl_list ')' { $$ = $1; }
+    | method_prefix error ')' { $$ = $1; RECERR(@2, "Malformed formal parameter list"); RECOVER(); }
+    ;
+
+/* Statements */
 
 statement:
       compound_stmt
@@ -176,14 +277,10 @@ single_stmt:
       simple_stmt
     ;
 
-type:
-      primitive_type
-    | TOKEN_ID { $$ = scope_named_type($1, @1.first_line); }
-    ;
-
-primitive_type:
-      TOKEN_INTEGER { $$ = (scope_type_t){"INTEGER", NULL}; }
-    | TOKEN_SINGLEF { $$ = (scope_type_t){"SINGLEF", NULL}; }
+stmt_block:
+      TOKEN_BEGIN compound_stmt TOKEN_END
+    | TOKEN_BEGIN compound_stmt YYEOF { SYNERR(@3, "Missing end"); }
+    | single_stmt
     ;
 
 assign:
@@ -192,146 +289,31 @@ assign:
     | attr_ref '=' expr { codegen_attribute_assignment($1, $3); trace_printf("[SYNTAX] Line %d: Attribute Assignment\n", @$.first_line); }
     ;
 
-expr:
-      expr '+' term { $$ = codegen_binary($1, $3, RPN_ADD, @2.first_line); }
-    | expr '-' term { $$ = codegen_binary($1, $3, RPN_SUBTRACT, @2.first_line); }
-    | expr '+' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '+'"); RECOVER(); }
-    | expr '-' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '-'"); RECOVER(); }
-    | '+' term { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '+'"); }
-    | term
+pout_stmt:
+      TOKEN_POUT '(' expr ')' { codegen_output($3, @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT '(' TOKEN_CHAIN ')' { codegen_output(codegen_value($3, @3.first_line), @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
+    | TOKEN_POUT '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
+    | TOKEN_POUT '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }
     ;
 
-term:
-      term '*' factor { $$ = codegen_binary($1, $3, RPN_MULTIPLY, @2.first_line); }
-    | term '/' factor { $$ = codegen_binary($1, $3, RPN_DIVIDE, @2.first_line); }
-    | term '*' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '*'"); RECOVER(); }
-    | term '/' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '/'"); RECOVER(); }
-    | '*' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '*'"); }
-    | '/' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '/'"); }
-    | factor
-    ;
-
-constant:
-      TOKEN_CONST {
-          $$ = $1;
-          if ($1->provisional) {
-              $$ = NULL;
-              report_lexical_error(@1.first_line,
-                  "Positive integer constant '%s' out of range", $1->key);
-          }
+ret_keyword:
+      TOKEN_RET {
+          if (!scope_in_function())
+              SYNERR(@1, "Forbidden return (Outside function context)");
       }
-    | '-' TOKEN_CONST {
-          char *negative = malloc(strlen($2->key) + 2);
-          if (negative == NULL) {
-              yyerror("Memory exhausted while creating negative constant");
-              YYNOMEM;
-          }
-          sprintf(negative, "-%s", $2->key);
-          $$ = add_to_symbol_table(negative, $2->value);
-          free(negative);
+    ;
+
+ret_stmt:
+      ret_keyword expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in ret statement"); }
+    | ret_keyword '(' ')' { SYNERR(@3, "Missing expression in ret statement"); }
+    | ret_keyword '(' expr ')' {
+          if (scope_in_function()) {
+              codegen_return($3, @1.first_line);
+              trace_printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
+          } else codegen_free($3);
       }
-    | '-' nonconstant_factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Unary '-' is only allowed before a numeric constant"); }
-    | '-' error { $$ = NULL; RECERR(@2, "Missing constant after '-'"); RECOVER(); }
-    ;
-
-assign_chain:
-  TOKEN_ID '=' { $$ = codegen_target(NULL, scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
-| assign_chain TOKEN_ID '=' { $$ = codegen_target($1, scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line); }
-;
-
-factor:
-  assign_chain TOKEN_ID { $$ = codegen_assignment_expression($1, codegen_value(scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line)); }
-| assign_chain constant { $$ = codegen_assignment_expression($1, codegen_value($2, @2.first_line)); }
-| assign_chain TOKEN_ID '(' arg_list ')' evaluation_order {
-      scope_resolve($2, SCOPE_CALLABLE, @2.first_line);
-      codegen_arguments_free($4); codegen_order_free($6);
-      codegen_free($1); $$ = NULL;
-      SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
-  }
-| assign_chain TOKEN_ID '.' TOKEN_ID '(' arg_list ')' evaluation_order {
-      scope_resolve($2, SCOPE_VALUE, @2.first_line);
-      codegen_arguments_free($6); codegen_order_free($8);
-      codegen_free($1); $$ = NULL;
-      SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
-  }
-| factor_base
-| TOKEN_ID TOKEN_ASSIGN factor_base { scope_resolve($1, SCOPE_VALUE, @1.first_line); codegen_free($3); $$ = NULL; SYNERR(@2, "Use '=' instead of ':=' for assignments in expressions"); }
-| TOKEN_ID TOKEN_ASSIGN error { scope_resolve($1, SCOPE_VALUE, @1.first_line); $$ = NULL; RECERR(@2, "Use '=' instead of ':=' for assignments in expressions"); RECOVER(); }
-;
-
-factor_base:
-  constant { $$ = codegen_value($1, @1.first_line); }
-| nonconstant_factor
-;
-
-nonconstant_factor:
-  call { $$ = $1; }
-| TOKEN_ID { $$ = codegen_value(scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
-| TOKEN_TOI '(' expr ')' { $$ = codegen_unary($3, RPN_TO_INTEGER, @1.first_line); }
-| TOKEN_TOI '(' ')' { $$ = NULL; SYNERR(@3, "Missing expression in toi conversion"); }
-| attr_ref { $$ = codegen_attribute_value($1); }
-;
-
-call:
-      call_arguments evaluation_order { $$ = codegen_call_end($1, $2); }
-    | call_arguments { $$ = NULL; codegen_call_free($1); SYNERR(@1, "Missing order for parameter evaluation and assignment"); }
-    ;
-
-/* Recover closed arguments locally; stop at ';' when the closing delimiter is missing. */
-call_arguments:
-      TOKEN_ID '(' arg_list ')' { $$ = codegen_call_begin(scope_resolve($1, SCOPE_CALLABLE, @1.first_line), NULL, $3, @1.first_line); }
-    | TOKEN_ID '.' TOKEN_ID '(' arg_list ')' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_call_begin(class_resolve_method(object, $3, @3.first_line), object, $5, @1.first_line); }
-    | TOKEN_ID '.' TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($5); $$ = NULL; scope_object($1, @1.first_line); SYNERR(@6, "Missing argument after ',' in method call"); }
-    | TOKEN_ID '.' TOKEN_ID '(' error ')' { $$ = NULL; scope_object($1, @1.first_line); RECERR(@5, "Malformed method arguments"); RECOVER(); }
-    | TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($3); $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); SYNERR(@4, "Missing argument after ',' in function call"); }
-    | TOKEN_ID '(' error ')' { $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); RECERR(@3, "Malformed function arguments"); RECOVER(); }
-    | TOKEN_ID '(' error ';' { $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); RECOVER_STATEMENT(@4, "Missing closing parenthesis in function call"); }
-    | TOKEN_ID '.' TOKEN_ID '(' error ';' { $$ = NULL; scope_object($1, @1.first_line); RECOVER_STATEMENT(@6, "Missing closing parenthesis in method call"); }
-    ;
-
-arg_list:
-      expr { $$ = codegen_arguments_append(NULL, $1); }
-    | arg_list ',' expr { $$ = codegen_arguments_append($1, $3); }
-    ;
-
-evaluation_order:
-      '[' const_list ']' { $$ = $2; }
-    | '[' error ']' { $$ = NULL; RECERR(@2, "Malformed parameter evaluation order"); RECOVER(); }
-    | '[' error ';' { $$ = NULL; RECOVER_STATEMENT(@3, "Missing closing bracket in parameter evaluation order"); }
-    ;
-
-const_list:
-      constant { $$ = codegen_order_append(NULL, $1); }
-    | const_list ',' constant { $$ = codegen_order_append($1, $3); }
-    ;
-
-cond:
-      assign_chain '>' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '>'"); }
-    | assign_chain '<' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '<'"); }
-    | '<' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | '>' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_GREATER_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_LESS_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | TOKEN_NOT_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
-    | expr '<' expr { $$ = codegen_binary($1, $3, RPN_LESS, @2.first_line); }
-    | expr '>' expr { $$ = codegen_binary($1, $3, RPN_GREATER, @2.first_line); }
-    | expr TOKEN_GREATER_EQUAL expr { $$ = codegen_binary($1, $3, RPN_GREATER_EQUAL, @2.first_line); }
-    | expr TOKEN_LESS_EQUAL expr { $$ = codegen_binary($1, $3, RPN_LESS_EQUAL, @2.first_line); }
-    | expr TOKEN_EQUAL expr { $$ = codegen_binary($1, $3, RPN_EQUAL, @2.first_line); }
-    | expr TOKEN_NOT_EQUAL expr { $$ = codegen_binary($1, $3, RPN_NOT_EQUAL, @2.first_line); }
-    | expr '<' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr '>' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_GREATER_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_LESS_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    | expr TOKEN_NOT_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
-    ;
-
-stmt_block:
-      TOKEN_BEGIN compound_stmt TOKEN_END
-    | TOKEN_BEGIN compound_stmt YYEOF { SYNERR(@3, "Missing end"); }
-    | single_stmt
+    | ret_keyword '(' expr error { codegen_free($3); RECERR(@4, "Missing closing parenthesis in ret statement"); RECOVER(); }
     ;
 
 if_stmt:
@@ -407,121 +389,148 @@ for_repeat:
     | %empty { SYNERR(@$, "Missing 'repeat' in FOR loop"); }
     ;
 
-func_def:
-      function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
-    | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
-    | function_prefix error ';' { codegen_function_abort($1.code); scope_end($1.scope); RECERR(@2, "Malformed function header"); RECOVER(); }
-    | function_header decl_list TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@4, "Missing end of function"); YYABORT; }
-    | function_header TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@3, "Missing end of function"); YYABORT; }
+/* Expressions */
+
+expr:
+      expr '+' term { $$ = codegen_binary($1, $3, RPN_ADD, @2.first_line); }
+    | expr '-' term { $$ = codegen_binary($1, $3, RPN_SUBTRACT, @2.first_line); }
+    | expr '+' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '+'"); RECOVER(); }
+    | expr '-' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '-'"); RECOVER(); }
+    | '+' term { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '+'"); }
+    | term
     ;
 
-/* Open the scope before parameters and local declarations are recognized. */
-function_prefix:
-      type TOKEN_FUNCTION TOKEN_ID '(' { $$.scope = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @3.first_line); }
-    | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$.scope = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = NULL; }
+term:
+      term '*' factor { $$ = codegen_binary($1, $3, RPN_MULTIPLY, @2.first_line); }
+    | term '/' factor { $$ = codegen_binary($1, $3, RPN_DIVIDE, @2.first_line); }
+    | term '*' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '*'"); RECOVER(); }
+    | term '/' error { codegen_free($1); $$ = NULL; RECERR(@3, "Missing operand after '/'"); RECOVER(); }
+    | '*' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '*'"); }
+    | '/' factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Missing left operand before '/'"); }
+    | factor
     ;
 
-function_header:
-      function_prefix param_decl_list ')' { $$ = $1; }
-    | function_prefix error ')' { $$ = $1; RECERR(@2, "Malformed formal parameter list"); RECOVER(); }
+factor:
+      assign_chain TOKEN_ID { $$ = codegen_assignment_expression($1, codegen_value(scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line)); }
+    | assign_chain constant { $$ = codegen_assignment_expression($1, codegen_value($2, @2.first_line)); }
+    | assign_chain TOKEN_ID '(' arg_list ')' evaluation_order {
+          scope_resolve($2, SCOPE_CALLABLE, @2.first_line);
+          codegen_arguments_free($4); codegen_order_free($6);
+          codegen_free($1); $$ = NULL;
+          SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
+      }
+    | assign_chain TOKEN_ID '.' TOKEN_ID '(' arg_list ')' evaluation_order {
+          scope_resolve($2, SCOPE_VALUE, @2.first_line);
+          codegen_arguments_free($6); codegen_order_free($8);
+          codegen_free($1); $$ = NULL;
+          SYNERR(@2, "Expression assignment with '=' requires an identifier or constant on its right side");
+      }
+    | factor_base
+    | TOKEN_ID TOKEN_ASSIGN factor_base { scope_resolve($1, SCOPE_VALUE, @1.first_line); codegen_free($3); $$ = NULL; SYNERR(@2, "Use '=' instead of ':=' for assignments in expressions"); }
+    | TOKEN_ID TOKEN_ASSIGN error { scope_resolve($1, SCOPE_VALUE, @1.first_line); $$ = NULL; RECERR(@2, "Use '=' instead of ':=' for assignments in expressions"); RECOVER(); }
     ;
 
-param_decl_list:
-      type TOKEN_ID { scope_parameter($2, $1, false, @2.first_line); }
-    | param_decl_list ',' type TOKEN_ID { scope_parameter($4, $3, false, @4.first_line); }
-    | TOKEN_COMPTIME type TOKEN_ID { scope_parameter($3, $2, true, @3.first_line); }
-    | param_decl_list ',' TOKEN_COMPTIME type TOKEN_ID { scope_parameter($5, $4, true, @5.first_line); }
-    | primitive_type error { RECERR(@2, "Missing formal parameter name"); RECOVER(); }
-    | error TOKEN_ID { RECERR(@1, "Missing formal parameter type"); RECOVER(); }
-    | param_decl_list ',' primitive_type error { RECERR(@4, "Missing formal parameter name"); RECOVER(); }
-    | param_decl_list ',' error TOKEN_ID { RECERR(@3, "Missing formal parameter type"); RECOVER(); }
+factor_base:
+      constant { $$ = codegen_value($1, @1.first_line); }
+    | nonconstant_factor
     ;
 
-method_def:
-      method_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
-    | method_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Method definition\n", @1.first_line); }
-    | method_prefix error ';' { codegen_function_abort($1.code); scope_end($1.scope); RECERR(@2, "Malformed method header"); RECOVER(); }
+nonconstant_factor:
+      call { $$ = $1; }
+    | TOKEN_ID { $$ = codegen_value(scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
+    | TOKEN_TOI '(' expr ')' { $$ = codegen_unary($3, RPN_TO_INTEGER, @1.first_line); }
+    | TOKEN_TOI '(' ')' { $$ = NULL; SYNERR(@3, "Missing expression in toi conversion"); }
+    | attr_ref { $$ = codegen_attribute_value($1); }
     ;
 
-method_prefix:
-      type TOKEN_ID '(' { $$.scope = scope_begin($2, SYMBOL_METHOD, $1, @2.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @2.first_line); }
+constant:
+      TOKEN_CONST {
+          $$ = $1;
+          if ($1->provisional) {
+              $$ = NULL;
+              report_lexical_error(@1.first_line,
+                  "Positive integer constant '%s' out of range", $1->key);
+          }
+      }
+    | '-' TOKEN_CONST {
+          char *negative = malloc(strlen($2->key) + 2);
+          if (negative == NULL) {
+              yyerror("Memory exhausted while creating negative constant");
+              YYNOMEM;
+          }
+          sprintf(negative, "-%s", $2->key);
+          $$ = add_to_symbol_table(negative, $2->value);
+          free(negative);
+      }
+    | '-' nonconstant_factor { codegen_free($2); $$ = NULL; SYNERR(@1, "Unary '-' is only allowed before a numeric constant"); }
+    | '-' error { $$ = NULL; RECERR(@2, "Missing constant after '-'"); RECOVER(); }
     ;
 
-method_header:
-      method_prefix param_decl_list ')' { $$ = $1; }
-    | method_prefix error ')' { $$ = $1; RECERR(@2, "Malformed formal parameter list"); RECOVER(); }
+assign_chain:
+      TOKEN_ID '=' { $$ = codegen_target(NULL, scope_resolve($1, SCOPE_VALUE, @1.first_line), @1.first_line); }
+    | assign_chain TOKEN_ID '=' { $$ = codegen_target($1, scope_resolve($2, SCOPE_VALUE, @2.first_line), @2.first_line); }
     ;
 
-class_header:
-      TOKEN_CLASS TOKEN_ID TOKEN_ID { $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); class_set_code(scope_symbol($$), $3); }
+call:
+      call_arguments evaluation_order { $$ = codegen_call_end($1, $2); }
+    | call_arguments { $$ = NULL; codegen_call_free($1); SYNERR(@1, "Missing order for parameter evaluation and assignment"); }
     ;
 
-class_missing_code:
-      TOKEN_CLASS TOKEN_ID TOKEN_BEGIN { SYNERR(@1, "Missing class code"); $$ = scope_begin($2, SYMBOL_CLASS, (scope_type_t){NULL, NULL}, @2.first_line); }
+/* Recover closed arguments locally; stop at ';' when the closing delimiter is missing. */
+call_arguments:
+      TOKEN_ID '(' arg_list ')' { $$ = codegen_call_begin(scope_resolve($1, SCOPE_CALLABLE, @1.first_line), NULL, $3, @1.first_line); }
+    | TOKEN_ID '.' TOKEN_ID '(' arg_list ')' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_call_begin(class_resolve_method(object, $3, @3.first_line), object, $5, @1.first_line); }
+    | TOKEN_ID '.' TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($5); $$ = NULL; scope_object($1, @1.first_line); SYNERR(@6, "Missing argument after ',' in method call"); }
+    | TOKEN_ID '.' TOKEN_ID '(' error ')' { $$ = NULL; scope_object($1, @1.first_line); RECERR(@5, "Malformed method arguments"); RECOVER(); }
+    | TOKEN_ID '(' arg_list ',' ')' { codegen_arguments_free($3); $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); SYNERR(@4, "Missing argument after ',' in function call"); }
+    | TOKEN_ID '(' error ')' { $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); RECERR(@3, "Malformed function arguments"); RECOVER(); }
+    | TOKEN_ID '(' error ';' { $$ = NULL; scope_resolve($1, SCOPE_CALLABLE, @1.first_line); RECOVER_STATEMENT(@4, "Missing closing parenthesis in function call"); }
+    | TOKEN_ID '.' TOKEN_ID '(' error ';' { $$ = NULL; scope_object($1, @1.first_line); RECOVER_STATEMENT(@6, "Missing closing parenthesis in method call"); }
     ;
 
-class_def:
-      class_header TOKEN_BEGIN class_body TOKEN_END ';' { class_complete(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
-    | class_missing_code class_body TOKEN_END ';' { scope_end($1); finish_statement(); }
-    | class_header error TOKEN_END ';' { scope_end($1); RECERR(@2, "Missing 'begin' in class declaration"); RECOVER(); }
-    | class_header TOKEN_BEGIN error TOKEN_END ';' { scope_end($1); RECERR(@3, "Malformed class body"); RECOVER(); }
-    | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { RECERR(@3, "Malformed class declaration"); RECOVER(); }
+arg_list:
+      expr { $$ = codegen_arguments_append(NULL, $1); }
+    | arg_list ',' expr { $$ = codegen_arguments_append($1, $3); }
     ;
 
-class_body:
-      class_body class_member
-    | class_member
+evaluation_order:
+      '[' const_list ']' { $$ = $2; }
+    | '[' error ']' { $$ = NULL; RECERR(@2, "Malformed parameter evaluation order"); RECOVER(); }
+    | '[' error ';' { $$ = NULL; RECOVER_STATEMENT(@3, "Missing closing bracket in parameter evaluation order"); }
     ;
 
-extends_stmt:
-      TOKEN_EXTENDS extends_id_list ';' { trace_printf("[SYNTAX] Line %d: Extends statement\n", @$.first_line); }
-    | TOKEN_EXTENDS extends_id_list ',' error ';' { RECERR(@4, "Missing class name after ',' in extends list"); RECOVER(); }
-    | TOKEN_EXTENDS error ';' { RECERR(@2, "Missing class list after extends"); RECOVER(); }
+const_list:
+      constant { $$ = codegen_order_append(NULL, $1); }
+    | const_list ',' constant { $$ = codegen_order_append($1, $3); }
     ;
 
-extends_id_list:
-      TOKEN_ID { scope_base($1, @1.first_line); }
-    | extends_id_list ',' TOKEN_ID { scope_base($3, @3.first_line); }
-    ;
-
-class_member:
-      var_decl
-    | method_def
-    | extends_stmt
+cond:
+      assign_chain '>' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '>'"); }
+    | assign_chain '<' expr { $$ = NULL; codegen_free($1); codegen_free($3); SYNERR(@2, "Invalid comparator sequence '=' followed by '<'"); }
+    | '<' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | '>' expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_GREATER_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_LESS_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | TOKEN_NOT_EQUAL expr { $$ = NULL; codegen_free($2); SYNERR(@1, "Missing left operand in condition"); }
+    | expr '<' expr { $$ = codegen_binary($1, $3, RPN_LESS, @2.first_line); }
+    | expr '>' expr { $$ = codegen_binary($1, $3, RPN_GREATER, @2.first_line); }
+    | expr TOKEN_GREATER_EQUAL expr { $$ = codegen_binary($1, $3, RPN_GREATER_EQUAL, @2.first_line); }
+    | expr TOKEN_LESS_EQUAL expr { $$ = codegen_binary($1, $3, RPN_LESS_EQUAL, @2.first_line); }
+    | expr TOKEN_EQUAL expr { $$ = codegen_binary($1, $3, RPN_EQUAL, @2.first_line); }
+    | expr TOKEN_NOT_EQUAL expr { $$ = codegen_binary($1, $3, RPN_NOT_EQUAL, @2.first_line); }
+    | expr '<' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr '>' error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_GREATER_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_LESS_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
+    | expr TOKEN_NOT_EQUAL error { $$ = NULL; codegen_free($1); RECERR(@3, "Missing right operand in condition"); RECOVER(); }
     ;
 
 attr_ref:
       TOKEN_ID '[' constant ']' { $$ = codegen_attribute(scope_object($1, @1.first_line), $3, @1.first_line); }
     | TOKEN_ID '[' TOKEN_ID ']' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_attribute(object, scope_resolve($3, SCOPE_VALUE, @3.first_line), @1.first_line); }
     ;
-
-pout_stmt:
-      TOKEN_POUT '(' expr ')' { codegen_output($3, @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT '(' TOKEN_CHAIN ')' { codegen_output(codegen_value($3, @3.first_line), @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
-    | TOKEN_POUT '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
-    | TOKEN_POUT '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }
-    ;
-
-ret_keyword:
-      TOKEN_RET {
-          if (!scope_in_function())
-              SYNERR(@1, "Forbidden return (Outside function context)");
-      }
-    ;
-
-ret_stmt:
-      ret_keyword expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in ret statement"); }
-    | ret_keyword '(' ')' { SYNERR(@3, "Missing expression in ret statement"); }
-    | ret_keyword '(' expr ')' {
-          if (scope_in_function()) {
-              codegen_return($3, @1.first_line);
-              trace_printf("[SYNTAX] Line %d: Return statement (RET)\n", @1.first_line);
-          } else codegen_free($3);
-      }
-    | ret_keyword '(' expr error { codegen_free($3); RECERR(@4, "Missing closing parenthesis in ret statement"); RECOVER(); }
-    ;
-
 %%
 
 void yyerror(const char *message) {
