@@ -59,7 +59,7 @@
   %token TOKEN_INTEGER TOKEN_SINGLEF
   %token TOKEN_BEGIN TOKEN_END TOKEN_IF TOKEN_END_IF TOKEN_ELSE
   %token TOKEN_FROM TOKEN_TO TOKEN_BY TOKEN_REPEAT
-  %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_POUT_LOWER TOKEN_RET
+  %token TOKEN_FUNCTION TOKEN_CLASS TOKEN_TOI TOKEN_POUT TOKEN_RET
   %token TOKEN_COMPTIME TOKEN_EXTENDS
   %type <scope> class_header class_missing_code
   %type <function> function_prefix function_header method_prefix method_header
@@ -163,7 +163,7 @@ simple_stmt:
     | pout_stmt error { RECERR(@2, "Missing ';' after pout statement"); RECOVER(); }
     | ret_stmt ';' { finish_statement(); }
     | ret_stmt error { RECERR(@2, "Missing ';' after ret statement"); RECOVER(); }
-    | TOKEN_POUT_LOWER expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in pout statement"); finish_statement(); }
+    | TOKEN_POUT expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in pout statement"); finish_statement(); }
     | ret_keyword expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in ret statement"); finish_statement(); }
     | ret_keyword '(' expr ';' { codegen_free($3); SYNERR(@4, "Missing closing parenthesis in ret statement"); finish_statement(); }
     | TOKEN_ID TOKEN_ASSIGN ';' { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
@@ -496,11 +496,11 @@ attr_ref:
     ;
 
 pout_stmt:
-      TOKEN_POUT_LOWER '(' expr ')' { codegen_output($3, @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT_LOWER '(' TOKEN_CHAIN ')' { codegen_output(codegen_value($3, @3.first_line), @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
-    | TOKEN_POUT_LOWER expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
-    | TOKEN_POUT_LOWER '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
-    | TOKEN_POUT_LOWER '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }
+      TOKEN_POUT '(' expr ')' { codegen_output($3, @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT '(' TOKEN_CHAIN ')' { codegen_output(codegen_value($3, @3.first_line), @1.first_line); trace_printf("[SYNTAX] Line %d: POUT statement\n", @$.first_line); }
+    | TOKEN_POUT expr ')' { codegen_free($2); SYNERR(@1, "Missing opening parenthesis in pout statement"); }
+    | TOKEN_POUT '(' error ')' { RECERR(@3, "Missing argument in pout"); RECOVER(); }
+    | TOKEN_POUT '(' error ';' { RECOVER_STATEMENT(@4, "Missing closing parenthesis in pout statement"); }
     ;
 
 ret_keyword:
@@ -612,7 +612,7 @@ static const char *friendly_symbol_name(yysymbol_kind_t symbol) {
     if (strcmp(name, "TOKEN_FUNCTION") == 0) return "'function'";
     if (strcmp(name, "TOKEN_CLASS") == 0) return "'class'";
     if (strcmp(name, "TOKEN_TOI") == 0) return "'toi'";
-    if (strcmp(name, "TOKEN_POUT") == 0 || strcmp(name, "TOKEN_POUT_LOWER") == 0) return "'pout'";
+    if (strcmp(name, "TOKEN_POUT") == 0) return "'pout'";
     if (strcmp(name, "TOKEN_RET") == 0) return "'ret'";
     if (strcmp(name, "TOKEN_COMPTIME") == 0) return "'comptime'";
     if (strcmp(name, "TOKEN_FROM") == 0) return "'from'";
