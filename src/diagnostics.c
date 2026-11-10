@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../include/diagnostics.h"
+#include "../include/memory.h"
 
 static struct {
     bool pending;
     bool lexical;
     int line;
     const char *unexpected;
-    char context[256];
+    char *context;
 } recovery;
 
 int global_errors = 0;
@@ -68,6 +69,18 @@ static char *format_message(const char *format, va_list args) {
     return message;
 }
 
+void diagnostic_append(char **message, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    char *suffix = format_message(format, args);
+    va_end(args);
+    size_t used = *message ? strlen(*message) : 0;
+    size_t length = memory_add(strlen(suffix), 1);
+    *message = memory_resize(*message, memory_add(used, length));
+    memcpy(*message + used, suffix, length);
+    free(suffix);
+}
+
 static void write_diagnostic(const char *category, int line, const char *message) {
     fprintf(stderr, "Line %d: ", line);
     if (category != NULL) fprintf(stderr, "%s error: ", category);
@@ -108,13 +121,14 @@ void report_semantic_error(int line, const char *format, ...) {
 static void flush_syntax_error(void) {
     if (recovery.pending) {
         write_diagnostic("Syntax", recovery.line,
-                         recovery.context[0] ? recovery.context : "Invalid syntax");
+                         recovery.context && recovery.context[0] ? recovery.context : "Invalid syntax");
         recovery.pending = false;
     }
 }
 
 void finish_error_recovery(void) {
     flush_syntax_error();
+    free(recovery.context);
     memset(&recovery, 0, sizeof(recovery));
 }
 
@@ -136,8 +150,7 @@ void report_parser_error(int line, const char *message) {
 
 void begin_lexical_recovery(void) {
     /* Reporting a range error in a parser action does not return YYerror. */
-    flush_syntax_error();
-    memset(&recovery, 0, sizeof(recovery));
+    finish_error_recovery();
     recovery.lexical = true;
 }
 
@@ -146,7 +159,7 @@ void begin_syntax_error(int line, const char *unexpected, const char *context) {
     recovery.pending = true;
     recovery.line = line;
     recovery.unexpected = unexpected;
-    snprintf(recovery.context, sizeof(recovery.context), "%s", context);
+    diagnostic_append(&recovery.context, "%s", context ? context : "");
     /* Count at detection, even if no recovery production can reduce. */
     global_errors++;
 }
@@ -165,10 +178,11 @@ void report_recovered_syntax_error(int line, const char *message) {
 }
 
 void report_recovered_syntax_error_with_context(int line, const char *message) {
-    char detailed[512];
-    if (recovery.pending && recovery.context[0]) {
-        snprintf(detailed, sizeof(detailed), "%s (%s)", message, recovery.context);
+    if (recovery.pending && recovery.context && recovery.context[0]) {
+        char *detailed = NULL;
+        diagnostic_append(&detailed, "%s (%s)", message, recovery.context);
         report_recovered_syntax_error(line, detailed);
+        free(detailed);
     } else {
         report_recovered_syntax_error(line, message);
     }

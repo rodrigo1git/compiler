@@ -9,7 +9,7 @@ hash_map_t* symbol_table = NULL;
 
 void symbol_list_append(symbol_list_t *list, map_node_t *symbol) {
     if (symbol == NULL) return;
-    map_node_t **items = realloc(list->items, (list->count + 1) * sizeof(*items));
+    map_node_t **items = realloc(list->items, memory_multiply(memory_add(list->count, 1), sizeof(*items)));
     if (items == NULL) {
         fprintf(stderr, "Fatal error: Cannot allocate symbol metadata\n");
         exit(1);

@@ -4,6 +4,25 @@
 #include "../include/classes.h"
 #include "../include/scope.h"
 #include "../include/diagnostics.h"
+#include "../include/memory.h"
+
+typedef struct {
+    map_node_t *type;
+    size_t next;
+} class_frame_t;
+
+typedef struct {
+    class_frame_t *items;
+    size_t count, capacity;
+} class_stack_t;
+
+static void class_stack_push(class_stack_t *stack, map_node_t *type) {
+    if (stack->count == stack->capacity) {
+        stack->capacity = stack->capacity ? memory_multiply(stack->capacity, 2) : 16;
+        stack->items = memory_resize(stack->items, memory_multiply(stack->capacity, sizeof(*stack->items)));
+    }
+    stack->items[stack->count++] = (class_frame_t){type, 0};
+}
 
 void class_set_code(map_node_t *symbol, map_node_t *code) {
     if (symbol == NULL || code == NULL) return;
@@ -28,32 +47,47 @@ static void append_distinct(symbol_list_t *list, map_node_t *symbol) {
 
 /* TP3 p.11: own declaration first, then inherited candidates, never first-base wins. */
 static void find_members(map_node_t *class_symbol, const char *name,
-                         symbol_list_t *path, symbol_list_t *matches, bool *unresolved) {
-    for (size_t i = 0; i < path->count; i++) {
-        if (path->items[i] == class_symbol) { *unresolved = true; return; }
+                         symbol_list_t *matches, bool *unresolved) {
+    class_stack_t stack = {0};
+    class_stack_push(&stack, class_symbol);
+    while (stack.count) {
+        class_frame_t *frame = &stack.items[stack.count - 1];
+        map_node_t *type = frame->type;
+        if (!frame->next) {
+            map_node_t *own = scope_lookup_local(type->body_scope, name);
+            if (own) {
+                append_distinct(matches, own);
+                stack.count--;
+                continue;
+            }
+        }
+        if (frame->next == type->class_info->bases.count) {
+            stack.count--;
+            continue;
+        }
+        map_node_t *base = type->class_info->bases.items[frame->next++];
+        bool cycle = false;
+        for (size_t i = 0; i < stack.count; i++)
+            if (stack.items[i].type == base) cycle = true;
+        if (cycle) *unresolved = true;
+        else class_stack_push(&stack, base);
     }
-    symbol_list_append(path, class_symbol);
-    map_node_t *own = scope_lookup_local(class_symbol->body_scope, name);
-    if (own != NULL) append_distinct(matches, own);
-    else for (size_t i = 0; i < class_symbol->class_info->bases.count; i++)
-        find_members(class_symbol->class_info->bases.items[i], name, path, matches, unresolved);
-    path->count--;
+    free(stack.items);
 }
 
 class_member_t class_lookup_member(map_node_t *class_symbol, const char *name,
                                   class_search_t search) {
-    symbol_list_t path = {0}, matches = {0};
+    symbol_list_t matches = {0};
     bool cyclic = false;
     if (search == CLASS_INHERITED_MEMBERS) {
         for (size_t i = 0; i < class_symbol->class_info->bases.count; i++)
-            find_members(class_symbol->class_info->bases.items[i], name, &path, &matches, &cyclic);
-    } else find_members(class_symbol, name, &path, &matches, &cyclic);
+            find_members(class_symbol->class_info->bases.items[i], name, &matches, &cyclic);
+    } else find_members(class_symbol, name, &matches, &cyclic);
     class_member_t result = {
         .symbol = matches.count != 0 ? matches.items[0] : NULL,
         .ambiguous = matches.count > 1,
         .cyclic = cyclic
     };
-    free(path.items);
     free(matches.items);
     return result;
 }
@@ -86,26 +120,40 @@ bool class_build_layout(map_node_t *class_symbol, int line) {
     if (class_symbol == NULL) return false;
     if (class_symbol->class_info->layout_state == 2) return true;
     if (class_symbol->class_info->layout_state == 3) return false;
-    if (class_symbol->class_info->layout_state == 1) {
-        report_semantic_error(line, "Cyclic inheritance in class '%s'", class_symbol->key);
-        class_symbol->class_info->layout_state = 3;
-        return false;
-    }
+    class_stack_t stack = {0};
+    class_stack_push(&stack, class_symbol);
     class_symbol->class_info->layout_state = 1;
     class_symbol->class_info->effective_attributes.count = 0;
-    for (size_t i = 0; i < class_symbol->class_info->bases.count; i++) {
-        map_node_t *base = class_symbol->class_info->bases.items[i];
-        if (!class_build_layout(base, line)) {
-            class_symbol->class_info->layout_state = 3;
-            return false;
+    while (stack.count) {
+        class_frame_t *frame = &stack.items[stack.count - 1];
+        symbol_class_info_t *info = frame->type->class_info;
+        if (frame->next < info->bases.count) {
+            map_node_t *base = info->bases.items[frame->next];
+            if (base->class_info->layout_state == 1) {
+                report_semantic_error(line, "Cyclic inheritance in class '%s'", base->key);
+                break;
+            }
+            if (base->class_info->layout_state == 3) break;
+            if (base->class_info->layout_state == 0) {
+                base->class_info->layout_state = 1;
+                base->class_info->effective_attributes.count = 0;
+                class_stack_push(&stack, base);
+                continue;
+            }
+            for (size_t j = 0; j < base->class_info->effective_attributes.count; j++)
+                append_distinct(&info->effective_attributes, base->class_info->effective_attributes.items[j]);
+            frame->next++;
+        } else {
+            for (size_t i = 0; i < info->attributes.count; i++)
+                append_distinct(&info->effective_attributes, info->attributes.items[i]);
+            info->layout_state = 2;
+            stack.count--;
         }
-        for (size_t j = 0; j < base->class_info->effective_attributes.count; j++)
-            append_distinct(&class_symbol->class_info->effective_attributes, base->class_info->effective_attributes.items[j]);
     }
-    for (size_t i = 0; i < class_symbol->class_info->attributes.count; i++)
-        append_distinct(&class_symbol->class_info->effective_attributes, class_symbol->class_info->attributes.items[i]);
-    class_symbol->class_info->layout_state = 2;
-    return true;
+    bool valid = stack.count == 0;
+    while (stack.count) stack.items[--stack.count].type->class_info->layout_state = 3;
+    free(stack.items);
+    return valid;
 }
 
 bool class_same_layout(const map_node_t *left, const map_node_t *right) {
@@ -164,54 +212,45 @@ bool class_check_copy(const map_node_t *destination, const map_node_t *source, i
     return false;
 }
 
-typedef struct type_path {
-    const map_node_t *type;
-    const struct type_path *parent;
-} type_path_t;
-
-static bool type_in_path(const type_path_t *path, const map_node_t *type) {
-    for (; path != NULL; path = path->parent)
-        if (path->type == type) return true;
-    return false;
-}
-
-static bool check_containment_path(map_node_t *type, const type_path_t *path, symbol_list_t *complete) {
-    if (type == NULL) return true;
-    for (size_t i = 0; i < complete->count; i++)
-        if (complete->items[i] == type) return true;
-    if (type_in_path(path, type)) {
-        report_semantic_error(type->declaration_line,
-            "Recursive object containment in class '%s'", type->key);
-        return false;
-    }
-    type_path_t current = {type, path};
-    for (size_t i = 0; i < type->class_info->effective_attributes.count; i++)
-        if (!check_containment_path(type->class_info->effective_attributes.items[i]->type_symbol, &current, complete))
-            return false;
-    symbol_list_append(complete, type);
-    return true;
-}
-
 bool class_check_containment(void) {
-    symbol_list_t complete = {0};
+    class_stack_t stack = {0};
     bool valid = true;
     for (int i = 0; i < symbol_table->capacity && valid; i++)
-        for (map_node_t *symbol = symbol_table->buckets[i]; symbol && valid; symbol = symbol->next)
-            if (symbol->usage == SYMBOL_CLASS) valid = check_containment_path(symbol, NULL, &complete);
-    free(complete.items);
+        for (map_node_t *symbol = symbol_table->buckets[i]; symbol && valid; symbol = symbol->next) {
+            if (symbol->usage != SYMBOL_CLASS || symbol->class_info->containment_state == 2) continue;
+            symbol->class_info->containment_state = 1;
+            class_stack_push(&stack, symbol);
+            while (stack.count) {
+                class_frame_t *frame = &stack.items[stack.count - 1];
+                symbol_class_info_t *info = frame->type->class_info;
+                if (frame->next == info->effective_attributes.count) {
+                    info->containment_state = 2;
+                    stack.count--;
+                    continue;
+                }
+                map_node_t *field = info->effective_attributes.items[frame->next];
+                map_node_t *child = field->type_symbol;
+                if (child && child->class_info->containment_state == 1) {
+                    report_semantic_error(child->declaration_line,
+                        "Recursive object containment in class '%s'", child->key);
+                    valid = false;
+                    break;
+                }
+                if (child && child->class_info->containment_state == 0) {
+                    child->class_info->containment_state = 1;
+                    class_stack_push(&stack, child);
+                    continue;
+                }
+                info->has_comptime |= field->is_comptime || (child && child->class_info->has_comptime);
+                frame->next++;
+            }
+        }
+    while (stack.count) stack.items[--stack.count].type->class_info->containment_state = 3;
+    free(stack.items);
     return valid;
 }
 
-static bool class_has_comptime_path(const map_node_t *class_symbol, const type_path_t *path) {
-    if (class_symbol == NULL || type_in_path(path, class_symbol)) return false;
-    type_path_t current = {class_symbol, path};
-    for (size_t i = 0; i < class_symbol->class_info->effective_attributes.count; i++) {
-        const map_node_t *field = class_symbol->class_info->effective_attributes.items[i];
-        if (field->is_comptime || class_has_comptime_path(field->type_symbol, &current)) return true;
-    }
-    return false;
-}
-
 bool class_has_comptime(const map_node_t *class_symbol) {
-    return class_has_comptime_path(class_symbol, NULL);
+    /* Computed for the immutable class graph by class_check_containment, before specialization. */
+    return class_symbol && class_symbol->class_info->has_comptime;
 }

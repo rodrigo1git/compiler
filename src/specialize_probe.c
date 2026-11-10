@@ -80,28 +80,56 @@ static void probe_copy_object(probe_t *probe, comptime_environment_t *destinatio
                               const map_node_t *type, comptime_value_t value,
                               const comptime_environment_t *fields, bool argument) {
     if (type == NULL) return;
-    for (size_t i = 0; i < type->class_info->effective_attributes.count; i++) {
-        const map_node_t *field = type->class_info->effective_attributes.items[i];
-        comptime_value_t selected = {0};
-        if (value.object_type && i < value.object_type->class_info->effective_attributes.count)
-            selected = comptime_object_field(value, value.object_type->class_info->effective_attributes.items[i], fields);
+    typedef struct {
+        const map_node_t *object, *type;
+        comptime_value_t value, selected;
+        size_t next;
+        bool resumed;
+    } probe_copy_frame_t;
+    size_t count = 1, capacity = 16;
+    probe_copy_frame_t *stack = memory_zero(capacity, sizeof(*stack));
+    stack[0] = (probe_copy_frame_t){.object = object, .type = type, .value = value};
+    while (count) {
+        probe_copy_frame_t *frame = &stack[count - 1];
+        const symbol_list_t *attributes = &frame->type->class_info->effective_attributes;
+        if (frame->next == attributes->count) { count--; continue; }
+        const map_node_t *field = attributes->items[frame->next];
+        if (!frame->resumed) {
+            frame->selected = (comptime_value_t){0};
+            const map_node_t *source = frame->value.object_type;
+            if (source && frame->next < source->class_info->effective_attributes.count)
+                frame->selected = comptime_object_field(frame->value,
+                    source->class_info->effective_attributes.items[frame->next], fields);
+        }
         if (field->type_symbol) {
-            const map_node_t *child = comptime_object_location(object, field);
-            probe_copy_object(probe, destination, child, field->type_symbol, selected, fields, argument);
-            selected.object = child;
-            selected.object_type = field->type_symbol;
-            selected.object_snapshot = NULL;
-        } else if (field->is_comptime && !selected.known) {
+            const map_node_t *child = comptime_object_location(frame->object, field);
+            if (!frame->resumed) {
+                probe_copy_frame_t next = {.object = child, .type = field->type_symbol, .value = frame->selected};
+                frame->resumed = true;
+                if (count == capacity) {
+                    capacity = memory_multiply(capacity, 2);
+                    stack = memory_resize(stack, memory_multiply(capacity, sizeof(*stack)));
+                }
+                stack[count++] = next;
+                continue;
+            }
+            frame->selected.object = child;
+            frame->selected.object_type = field->type_symbol;
+            frame->selected.object_snapshot = NULL;
+        } else if (field->is_comptime && !frame->selected.known) {
             probe->needs_iteration = true;
             if (probe->validating)
                 report_semantic_error(probe->line, "Comptime attribute '%s' has no known value when copying an object '%s'",
-                                      field->key, object ? object->key : type->key);
+                                      field->key, frame->object ? frame->object->key : frame->type->key);
         }
         if (probe->validating && field->is_comptime && !argument &&
-            (probe->unknown_control || (probe->external_unknown && object->owner != probe->function)))
-            report_semantic_error(probe->line, "Cannot modify comptime '%s' under unknown control in object '%s'", field->key, object->key);
-        if (!argument || field->is_comptime) comptime_set(destination, field, object, selected);
+            (probe->unknown_control || (probe->external_unknown && frame->object->owner != probe->function)))
+            report_semantic_error(probe->line, "Cannot modify comptime '%s' under unknown control in object '%s'", field->key, frame->object->key);
+        if (!argument || field->is_comptime) comptime_set(destination, field, frame->object, frame->selected);
+        frame->next++;
+        frame->resumed = false;
     }
+    free(stack);
 }
 
 static void probe_validate_object(probe_t *probe, comptime_value_t value) {

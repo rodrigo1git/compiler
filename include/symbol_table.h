@@ -30,6 +30,8 @@ typedef struct {
     symbol_list_t bases;
     symbol_list_t effective_attributes;
     unsigned int layout_state;
+    unsigned int containment_state;
+    bool has_comptime;
     bool class_complete;
     char *class_code;
 } symbol_class_info_t;

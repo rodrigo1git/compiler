@@ -82,7 +82,7 @@ puede bloquear; ejecutar esa prueba en un entorno normal.
 5. `types_check_specializations` comprueba los cuerpos ejecutables en todas las
    opciones: resuelve obligaciones cuyo tipo dependía de un índice comptime.
 6. Si se solicita destino, `layout_init` calcula símbolos, clases, campos, cadenas
-   y marcos y aplica los límites de memoria del backend.
+   y marcos y comprueba que sean representables en wasm32.
 7. `wasm_write` planifica reservas y auxiliares y emite el módulo estructurado.
 8. WABT valida y convierte el archivo; Node o navegador ejecuta el módulo real.
 
@@ -134,13 +134,20 @@ El comentario `RPN N, source line L` permite localizar cada operación emitida.
 
 ## Almacenamiento, llamadas y objetos
 
-La memoria lineal tiene 16 MiB y se exporta. Cada marco comienza con el enlace
+La memoria lineal se exporta y crece bajo demanda. El tamaño inicial cubre los
+datos estáticos, con un mínimo de una página de 64 KiB. Cada marco comienza con el enlace
 léxico y el receptor (dos direcciones i32); siguen las variables, parámetros y
 reservas de objetos temporales. Los escalares ocupan cuatro bytes; INTEGER sigue
 normalizándose a int16 y SINGLEF usa f32. El tamaño de cada marco se conoce antes
-de emitir cuerpos; `$allocate` controla la reserva y limpia la memoria nueva.
-Los límites son restricciones de esta implementación, no controles adicionales
-asignados por la cátedra.
+de emitir cuerpos; `$allocate` reserva tanto el marco principal como los de las
+funciones y limpia el almacenamiento reutilizado. Si faltan páginas, usa
+`memory.grow`; un fallo informa el error 8 y su línea de origen.
+
+Los objetos y marcos no tienen topes propios de 1 u 8 MiB y la memoria no tiene
+un techo propio de 16 MiB. Los tamaños se calculan en uint64_t con sumas
+comprobadas para wasm32. Las direcciones siguen siendo i32; `$sp` y los cálculos
+de reserva usan i64 para representar el final exclusivo de 4 GiB sin desbordar.
+El host puede rechazar un crecimiento antes de alcanzar ese espacio arquitectónico.
 
 FRAME reserva un marco pendiente, ARG copia cuando corresponde según la lista de
 orden y CALL entra al cuerpo. Las llamadas anidadas tienen marcos pendientes
@@ -153,6 +160,18 @@ objeto se almacenan por valor de forma contigua. Los métodos reciben la direcci
 del receptor; el helper `$field` traduce identidad de atributo y clase real a su
 ubicación. Así un método heredado funciona aunque su base no sea la primera,
 sin clonar cuerpos por cada esquema ni suponer un desplazamiento único.
+
+Los recorridos de herencia, contención, medición y capturas de objetos usan pilas
+dinámicas en el compilador. La comprobación de contención también memoriza qué
+clases contienen campos comptime. La inicialización Wasm usa tareas temporales
+en memoria lineal; la copia usa `memory.copy` sobre el contenido compatible y
+conserva la cabecera del destino. Estos recorridos evitan llamadas recursivas
+por cada nivel de composición. Se mantienen los errores de contención y herencia
+cíclicas y la regla léxica del TP de 22 caracteres por identificador.
+
+Los contextos de error sintáctico y sus mensajes combinados se reservan de forma
+dinámica, sin buffers de 256/512 bytes. El parser enumera todos los tokens
+esperados. La recuperación posee y libera su copia del contexto.
 
 Los slots de campos comptime se reservan dentro de las copias materializadas:
 transportan constantes capturadas y permiten copiarlas hacia campos ordinarios
@@ -202,6 +221,15 @@ representable conforme al rango de literales. Estas políticas se aplican en
 `numeric.c` y en la emisión; no son reglas de overflow adicionales citadas del TP.
 
 ## Verificación y entrega
+
+`tests/verify_storage.py` comprueba objetos y marcos mayores que los antiguos
+topes, crecimiento y reutilización de memoria, fallos de reserva y fronteras de
+wasm32 sin reservar 4 GiB. También prueba 5.000 clases con pila nativa reducida,
+capturas comptime de 1.200 niveles, inicialización Wasm de 1.600 niveles,
+segmentos estáticos mayores de una página y diagnósticos de 5.000 bytes.
+`--sanitize` activa ASan/UBSan para su prueba nativa; `--compiler` permite usar
+además un compilador construido con sanitizadores. La suite general ejecuta
+esta verificación mediante `tests/run_all.sh`.
 
 La revisión del 6 de noviembre corrige tres problemas del análisis comptime:
 

@@ -5,7 +5,7 @@ export const messages = {
     4: 'TOI value is not representable as INTEGER',
     5: 'Attribute index outside the object layout',
     6: 'Recursive function invocation (i)',
-    8: 'Runtime frame memory limit exceeded',
+    8: 'Unable to allocate linear memory',
 };
 
 export async function execute(bytes, print = console.log) {
@@ -14,6 +14,7 @@ export async function execute(bytes, print = console.log) {
         printInteger(value) { print(value); },
         printFloat(value) { print(value); },
         printString(address) {
+            address >>>= 0;
             const memory = new Uint8Array(instance.exports.memory.buffer);
             let end = address;
             while (end < memory.length && memory[end]) end++;

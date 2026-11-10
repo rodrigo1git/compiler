@@ -531,21 +531,17 @@ void yyerror(const char *message) {
 static const char *friendly_symbol_name(yysymbol_kind_t symbol);
 
 static int yyreport_syntax_error(const yypcontext_t *ctx) {
-    enum { EXPECTED_DISPLAY_LIMIT = 3 };
     yysymbol_kind_t expected[YYNTOKENS];
     yysymbol_kind_t unexpected = yypcontext_token(ctx);
     YYLTYPE *location = yypcontext_location(ctx);
     int expected_count;
-    int shown_count;
-    size_t used;
     int expects_operator = 0;
     int expects_arithmetic_operand = 0;
 
     const char *recovered_unexpected_name = yysymbol_name(unexpected);
     int recovered_error_context_line;
-    char recovered_error_context[256];
+    char *recovered_error_context = NULL;
     recovered_error_context_line = location != NULL ? location->first_line : current_line;
-    recovered_error_context[0] = '\0';
 
     expected_count = yypcontext_expected_tokens(ctx, expected, YYNTOKENS);
     if (expected_count < 0) {
@@ -565,30 +561,19 @@ static int yyreport_syntax_error(const yypcontext_t *ctx) {
             detail = "Missing operator in expression; ";
         else if (unexpected == YYSYMBOL_TOKEN_CHAIN && expects_arithmetic_operand)
             detail = "String literal cannot be used as an arithmetic operand; ";
-        snprintf(recovered_error_context, sizeof(recovered_error_context),
-                  "%sunexpected %s", detail, friendly_symbol_name(unexpected));
+        diagnostic_append(&recovered_error_context, "%sunexpected %s", detail, friendly_symbol_name(unexpected));
     }
     if (expected_count > 0) {
-        shown_count = expected_count < EXPECTED_DISPLAY_LIMIT ? expected_count : EXPECTED_DISPLAY_LIMIT;
-        used = strlen(recovered_error_context);
-        if (used < sizeof(recovered_error_context)) {
-            snprintf(recovered_error_context + used, sizeof(recovered_error_context) - used,
-                      "%sexpected ", used == 0 ? "" : "; ");
-        }
-        for (int i = 0; i < shown_count && used < sizeof(recovered_error_context); i++) {
-            used = strlen(recovered_error_context);
-            snprintf(recovered_error_context + used, sizeof(recovered_error_context) - used,
-                      "%s%s", i == 0 ? "" : (i == shown_count - 1 ? " or " : ", "),
-                      friendly_symbol_name(expected[i]));
-        }
-        if (expected_count > EXPECTED_DISPLAY_LIMIT && used < sizeof(recovered_error_context)) {
-            used = strlen(recovered_error_context);
-            snprintf(recovered_error_context + used, sizeof(recovered_error_context) - used,
-                      " or another valid token");
+        diagnostic_append(&recovered_error_context, "%sexpected ", recovered_error_context ? "; " : "");
+        for (int i = 0; i < expected_count; i++) {
+            diagnostic_append(&recovered_error_context, "%s%s",
+                              i == 0 ? "" : (i == expected_count - 1 ? " or " : ", "),
+                              friendly_symbol_name(expected[i]));
         }
     }
     begin_syntax_error(recovered_error_context_line, recovered_unexpected_name,
                         recovered_error_context);
+    free(recovered_error_context);
     return 0;
 }
 

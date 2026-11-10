@@ -9,8 +9,6 @@
 #include "../include/specialize.h"
 #include "../include/diagnostics.h"
 
-#define MEMORY_LIMIT (16 * 1024 * 1024)
-
 #define FRAME_STATIC_LINK_OFFSET 0
 #define FRAME_RECEIVER_OFFSET 4
 #define FRAME_HEADER_SIZE 8
@@ -33,8 +31,8 @@ typedef enum {
 typedef struct {
     const rpn_t *code;
     map_node_t *symbol;
-    size_t size;
-    size_t *scratch;
+    layout_size_t size;
+    layout_size_t *scratch;
     size_t *controls;
 } body_t;
 
@@ -163,7 +161,7 @@ static void symbol_address(body_emitter_t *e, const map_node_t *symbol, int line
         write_line(e->out, "i32.const %zu\ni32.const %d\ncall $field", layout_id(&e->module->layout, symbol), line);
     } else {
         frame_address(e, symbol->owner);
-        write_line(e->out, "i32.const %zu\ni32.add", layout_offset(&e->module->layout, symbol));
+        write_line(e->out, "i32.const %" PRIu64 "\ni32.add", layout_offset(&e->module->layout, symbol));
     }
 }
 
@@ -184,7 +182,7 @@ static bool object_type(type_t type) {
 }
 
 static size_t snapshot(body_emitter_t *e, size_t source, size_t pc) {
-    write_line(e->out, "local.get $frame\ni32.const %zu\ni32.add", e->body->scratch[pc]);
+    write_line(e->out, "local.get $frame\ni32.const %" PRIu64 "\ni32.add", e->body->scratch[pc]);
     size_t result = save_local(e, integer_type(), e->body->code->steps[pc].source_line);
     get_local(e, result);
     get_local(e, source);
@@ -193,7 +191,7 @@ static size_t snapshot(body_emitter_t *e, size_t source, size_t pc) {
     return result;
 }
 
-static void materialize(body_emitter_t *e, size_t object, const map_node_t *capture, size_t offset);
+static void materialize(body_emitter_t *e, size_t object, const map_node_t *capture, layout_size_t offset);
 
 static void emit_float_const(body_emitter_t *e, const char *key) {
     char *text = strdup(key);
@@ -211,7 +209,7 @@ static operand_t read_symbol(body_emitter_t *e, const map_node_t *s, size_t pc) 
     type_t type = type_of_symbol(s);
     if (s->usage == SYMBOL_LEXEME) {
         if (type.kind == TYPE_CHAIN) {
-            write_line(e->out, "i32.const %zu", layout_offset(&e->module->layout, s));
+            write_line(e->out, "i32.const %" PRIu64, layout_offset(&e->module->layout, s));
         } else if (type.kind == TYPE_INTEGER) {
             write_line(e->out, "i32.const %ld", strtol(s->key, NULL, 10));
         } else {
@@ -280,7 +278,7 @@ static void initialize_frame(body_emitter_t *e, size_t local, const map_node_t *
         const map_node_t *s = e->module->layout.items[i].symbol;
         if ((s->usage == SYMBOL_VARIABLE || s->usage == SYMBOL_PARAMETER) && s->owner == source && s->type_symbol) {
             get_local(e, local);
-            write_line(e->out, "i32.const %zu\ni32.add\ncall $init_%zu",
+            write_line(e->out, "i32.const %" PRIu64 "\ni32.add\ncall $init_%zu",
                        layout_offset(&e->module->layout, s), layout_id(&e->module->layout, s->type_symbol));
         }
     }
@@ -288,7 +286,7 @@ static void initialize_frame(body_emitter_t *e, size_t local, const map_node_t *
 
 static void begin_call(body_emitter_t *e, const rpn_step_t *step) {
     body_t *body = find_body(e, step->value.symbol);
-    write_line(e->out, "i32.const %zu\ni32.const %d\ncall $allocate", body->size, step->source_line);
+    write_line(e->out, "i32.const %" PRIu64 "\ni32.const %d\ncall $allocate", body->size, step->source_line);
     size_t frame = save_local(e, integer_type(), step->source_line);
     get_local(e, frame);
     frame_address(e, layout_parent(step->value.symbol));
@@ -314,24 +312,35 @@ static void call_function(body_emitter_t *e, const rpn_step_t *step) {
     type_t type = type_of_symbol(step->value.symbol);
     size_t result = save_local(e, type, step->source_line);
     get_local(e, call.local);
-    write_line(e->out, "global.set $sp");
+    write_line(e->out, "i64.extend_i32_u\nglobal.set $sp");
     push(e, (operand_t){type, result, 0});
 }
 
-static void materialize(body_emitter_t *e, size_t object, const map_node_t *capture, size_t offset) {
-    const symbol_capture_info_t *info = capture->capture_info;
-    if (info == NULL) {
-        return;
-    }
-    const map_node_t *kind = capture->type_symbol;
-    for (size_t i = 0; i < kind->class_info->effective_attributes.count; i++) {
-        const map_node_t *field = kind->class_info->effective_attributes.items[i];
-        size_t field_offset = offset + layout_field_offset(&e->module->layout, kind, i);
+static void materialize(body_emitter_t *e, size_t object, const map_node_t *capture, layout_size_t offset) {
+    typedef struct {
+        const map_node_t *capture;
+        layout_size_t offset;
+        size_t next;
+    } materialize_frame_t;
+    size_t count = 1, capacity = 16;
+    materialize_frame_t *stack = memory_zero(capacity, sizeof(*stack));
+    stack[0] = (materialize_frame_t){capture, offset, 0};
+    while (count) {
+        materialize_frame_t *frame = &stack[count - 1];
+        const symbol_capture_info_t *info = frame->capture->capture_info;
+        const map_node_t *kind = frame->capture->type_symbol;
+        if (!info || frame->next == kind->class_info->effective_attributes.count) {
+            count--;
+            continue;
+        }
+        size_t position = frame->next++;
+        const map_node_t *field = kind->class_info->effective_attributes.items[position];
+        layout_size_t field_offset = layout_add(frame->offset, layout_field_offset(&e->module->layout, kind, position), field->declaration_line);
         for (size_t j = 0; j < info->comptime_bindings.count; j++) {
             if (info->comptime_bindings.items[j] == field) {
                 const map_node_t *constant = info->comptime_values.items[j];
                 get_local(e, object);
-                write_line(e->out, "i32.const %zu\ni32.add", field_offset);
+                write_line(e->out, "i32.const %" PRIu64 "\ni32.add", field_offset);
                 if (type_of_symbol(field).kind == TYPE_INTEGER) {
                     write_line(e->out, "i32.const %ld", strtol(constant->key, NULL, 10));
                 } else {
@@ -342,10 +351,15 @@ static void materialize(body_emitter_t *e, size_t object, const map_node_t *capt
         }
         for (size_t j = 0; j < info->object_fields.count; j++) {
             if (info->object_fields.items[j] == field) {
-                materialize(e, object, info->object_values.items[j], field_offset);
+                if (count == capacity) {
+                    capacity = memory_multiply(capacity, 2);
+                    stack = memory_resize(stack, memory_multiply(capacity, sizeof(*stack)));
+                }
+                stack[count++] = (materialize_frame_t){info->object_values.items[j], field_offset, 0};
             }
         }
     }
+    free(stack);
 }
 
 static void emit_float_add_checked(body_emitter_t *e, operand_t left, operand_t right, int line) {
@@ -509,7 +523,7 @@ static void emit_step(body_emitter_t *e, size_t pc) {
     case RPN_ARGUMENT_DESTINATION: {
         if (step->kind == RPN_ARGUMENT_DESTINATION) {
             get_local(e, e->calls[e->call_depth - 1].local);
-            write_line(e->out, "i32.const %zu\ni32.add", layout_offset(&e->module->layout, step->value.symbol));
+            write_line(e->out, "i32.const %" PRIu64 "\ni32.add", layout_offset(&e->module->layout, step->value.symbol));
         } else {
             symbol_address(e, step->value.symbol, step->source_line);
         }
@@ -559,12 +573,20 @@ static void emit_range(body_emitter_t *e, size_t begin, size_t end) {
 }
 
 static void write_memory_helpers(wasm_module_t *mod) {
-    write_line(mod->out, "(func $allocate (param $size i32) (param $line i32) (result i32) (local $old i32)\n"
-                         "global.get $sp\nlocal.tee $old\nlocal.get $size\ni32.add\ni32.const %d\ni32.gt_u\n"
+    /* The exclusive end may be 2^32. Keep it wide even though addresses are i32. */
+    write_line(mod->out, "(func $allocate (param $size i32) (param $line i32) (result i32)\n"
+                         "(local $old i64) (local $end i64) (local $pages i64)\n"
+                         "global.get $sp\nlocal.tee $old\nlocal.get $size\ni64.extend_i32_u\ni64.add\nlocal.tee $end\n"
+                         "i64.const %" PRIu64 "\ni64.gt_u\n"
                          "if\ni32.const %d\nlocal.get $line\ncall $fail\nunreachable\nend\n"
-                         "local.get $old\ni32.const 0\nlocal.get $size\nmemory.fill\n"
-                         "local.get $old\nlocal.get $size\ni32.add\nglobal.set $sp\nlocal.get $old)",
-               MEMORY_LIMIT, WASM_ERR_OUT_OF_MEMORY);
+                         "local.get $end\ni64.const %" PRIu64 "\ni64.add\ni64.const 16\ni64.shr_u\nlocal.set $pages\n"
+                         "local.get $pages\nmemory.size\ni64.extend_i32_u\ni64.gt_u\nif\n"
+                         "local.get $pages\nmemory.size\ni64.extend_i32_u\ni64.sub\ni32.wrap_i64\nmemory.grow\n"
+                         "i32.const -1\ni32.eq\n"
+                         "if\ni32.const %d\nlocal.get $line\ncall $fail\nunreachable\nend\nend\n"
+                         "local.get $old\ni32.wrap_i64\ni32.const 0\nlocal.get $size\nmemory.fill\n"
+                         "local.get $end\nglobal.set $sp\nlocal.get $old\ni32.wrap_i64)",
+               WASM32_MEMORY_BYTES, WASM_ERR_OUT_OF_MEMORY, WASM_PAGE_BYTES - 1, WASM_ERR_OUT_OF_MEMORY);
 }
 
 static void write_field_helper(wasm_module_t *mod, const char *name, bool index_by_symbol_id, bool emit_type_kind) {
@@ -582,7 +604,7 @@ static void write_field_helper(wasm_module_t *mod, const char *name, bool index_
             if (emit_type_kind) {
                 write_line(mod->out, "i32.const %d", type_of_symbol(field).kind);
             } else {
-                write_line(mod->out, "local.get $object\ni32.const %zu\ni32.add", layout_field_offset(&mod->layout, kind, j));
+                write_line(mod->out, "local.get $object\ni32.const %" PRIu64 "\ni32.add", layout_field_offset(&mod->layout, kind, j));
             }
             write_line(mod->out, "return\nend");
         }
@@ -598,24 +620,47 @@ static void write_object_helpers(wasm_module_t *mod) {
         if (item->symbol->usage != SYMBOL_CLASS) {
             continue;
         }
-        write_line(mod->out, "local.get $object\ni32.load\ni32.const %zu\ni32.eq\nif\ni32.const %zu\nreturn\nend", item->id, item->size);
+        write_line(mod->out, "local.get $object\ni32.load\ni32.const %zu\ni32.eq\nif\ni32.const %" PRIu64 "\nreturn\nend", item->id, item->size);
     }
     write_line(mod->out, "unreachable)");
+    /* Keep traversal tasks in linear memory rather than the engine's call stack. */
+    write_line(mod->out, "(func $init_task (param $object i32) (param $kind i32) (param $line i32) (local $task i32)\n"
+                         "i32.const 8\nlocal.get $line\ncall $allocate\nlocal.set $task\n"
+                         "local.get $task\nlocal.get $object\ni32.store\n"
+                         "local.get $task\nlocal.get $kind\ni32.store offset=4)\n"
+                         "(func $initialize (param $object i32) (param $kind i32) (param $line i32)\n"
+                         "(local $base i64) (local $task i32)\n"
+                         "global.get $sp\nlocal.set $base\n"
+                         "local.get $object\nlocal.get $kind\nlocal.get $line\ncall $init_task\n"
+                         "block $done\nloop $next\n"
+                         "global.get $sp\nlocal.get $base\ni64.eq\nbr_if $done\n"
+                         "global.get $sp\ni64.const 8\ni64.sub\nglobal.set $sp\n"
+                         "global.get $sp\ni32.wrap_i64\nlocal.tee $task\ni32.load\nlocal.set $object\n"
+                         "local.get $task\ni32.load offset=4\nlocal.set $kind\n"
+                         "local.get $object\nlocal.get $kind\ni32.store");
     for (size_t i = 0; i < mod->layout.count; i++) {
         const layout_entry_t *item = &mod->layout.items[i];
         const map_node_t *kind = item->symbol;
         if (kind->usage != SYMBOL_CLASS) {
             continue;
         }
-        write_line(mod->out, "(func $init_%zu (param $object i32)\nlocal.get $object\ni32.const %zu\ni32.store", item->id, item->id);
+        write_line(mod->out, "local.get $kind\ni32.const %zu\ni32.eq\nif", item->id);
         for (size_t j = 0; j < kind->class_info->effective_attributes.count; j++) {
             const map_node_t *field = kind->class_info->effective_attributes.items[j];
             if (field->type_symbol) {
-                write_line(mod->out, "local.get $object\ni32.const %zu\ni32.add\ncall $init_%zu",
+                write_line(mod->out, "local.get $object\ni32.const %" PRIu64 "\ni32.add\ni32.const %zu\nlocal.get $line\ncall $init_task",
                            layout_field_offset(&mod->layout, kind, j), layout_id(&mod->layout, field->type_symbol));
             }
         }
-        write_line(mod->out, ")");
+        write_line(mod->out, "br $next\nend");
+    }
+    write_line(mod->out, "unreachable\nend\nend)");
+    for (size_t i = 0; i < mod->layout.count; i++) {
+        const layout_entry_t *item = &mod->layout.items[i];
+        if (item->symbol->usage == SYMBOL_CLASS) {
+            write_line(mod->out, "(func $init_%zu (param $object i32)\nlocal.get $object\ni32.const %zu\ni32.const %d\ncall $initialize)",
+                       item->id, item->id, item->symbol->declaration_line);
+        }
     }
     write_field_helper(mod, "position", false, false);
     write_field_helper(mod, "field", true, false);
@@ -636,12 +681,11 @@ static void write_copy_helper(wasm_module_t *mod) {
             }
             write_line(mod->out, "local.get $destination\ni32.load\ni32.const %zu\ni32.eq\nlocal.get $source\ni32.load\ni32.const %zu\ni32.eq\ni32.and\nif",
                        layout_id(&mod->layout, dst), layout_id(&mod->layout, src));
-            for (size_t k = 0; k < dst->class_info->effective_attributes.count; k++) {
-                const map_node_t *field = dst->class_info->effective_attributes.items[k];
-                write_line(mod->out, "local.get $destination\ni32.const %zu\ni32.add\nlocal.get $source\ni32.const %zu\ni32.add",
-                           layout_field_offset(&mod->layout, dst, k), layout_field_offset(&mod->layout, src, k));
-                write_line(mod->out, field->type_symbol ? "call $copy_object" : "i32.load\ni32.store");
-            }
+            /* Compatible layouts have identical field types, including nested tags.
+               Preserve only the destination's own tag and copy its entire payload. */
+            write_line(mod->out, "local.get $destination\ni32.const 4\ni32.add\n"
+                                 "local.get $source\ni32.const 4\ni32.add\ni32.const %" PRIu64 "\nmemory.copy",
+                       layout_class_size(&mod->layout, dst) - 4);
             write_line(mod->out, "return\nend");
         }
     }
@@ -649,13 +693,13 @@ static void write_copy_helper(wasm_module_t *mod) {
 }
 
 static void prepare_bodies(wasm_module_t *mod) {
-    mod->count = specialize_instance_count() + 1;
+    mod->count = memory_add(specialize_instance_count(), 1);
     mod->bodies = memory_zero(mod->count, sizeof(*mod->bodies));
     mod->bodies[0].code = specialize_main_body();
     for (size_t i = 1; i < mod->count; i++) {
         mod->bodies[i].code = specialize_instance_body(i - 1, &mod->bodies[i].symbol);
     }
-    size_t maximum = 4;
+    layout_size_t maximum = 4;
     for (size_t i = 0; i < mod->layout.count; i++) {
         if (mod->layout.items[i].symbol->usage == SYMBOL_CLASS && mod->layout.items[i].size > maximum) {
             maximum = mod->layout.items[i].size;
@@ -677,12 +721,11 @@ static void prepare_bodies(wasm_module_t *mod) {
             }
             if (object_type(type) || step->capture) {
                 body->scratch[pc] = body->size;
-                body->size += step->capture ? layout_class_size(&mod->layout, step->capture->type_symbol) :
+                layout_size_t size = step->capture ? layout_class_size(&mod->layout, step->capture->type_symbol) :
                     type.kind == TYPE_OBJECT ? layout_class_size(&mod->layout, type.class_symbol) : maximum;
+                body->size = layout_add(body->size, size, step->source_line);
+                if (!body->size) return;
             }
-        }
-        if (body->size > MEMORY_LIMIT / 2) {
-            report_semantic_error(body->symbol ? body->symbol->declaration_line : 1, "Function frame exceeds implementation memory limit");
         }
     }
 }
@@ -690,11 +733,12 @@ static void prepare_bodies(wasm_module_t *mod) {
 static void write_body_prologue(wasm_module_t *mod, const body_t *body) {
     write_line(mod->out, ";; %s", body->symbol ? body->symbol->key : "main");
     if (!body->symbol) {
-        write_line(mod->out, "i32.const %zu\nlocal.set $frame", mod->layout.chains_end);
+        write_line(mod->out, "i64.const %" PRIu64 "\nglobal.set $sp\ni32.const %" PRIu64 "\ni32.const 1\ncall $allocate\nlocal.set $frame",
+                   mod->layout.chains_end, body->size);
         for (size_t i = 0; i < mod->layout.count; i++) {
             const map_node_t *s = mod->layout.items[i].symbol;
             if (s->usage == SYMBOL_VARIABLE && !s->owner && s->type_symbol) {
-                write_line(mod->out, "local.get $frame\ni32.const %zu\ni32.add\ncall $init_%zu",
+                write_line(mod->out, "local.get $frame\ni32.const %" PRIu64 "\ni32.add\ncall $init_%zu",
                            layout_offset(&mod->layout, s), layout_id(&mod->layout, s->type_symbol));
             }
         }
@@ -715,7 +759,7 @@ static void write_body_epilogue(wasm_module_t *mod, const body_t *body) {
 }
 
 static void write_body(wasm_module_t *mod, body_t *body) {
-    size_t capacity = body->code->count * 16 + 32;
+    size_t capacity = memory_add(memory_multiply(body->code->count, 16), 32);
     char *instructions_buf = NULL;
     size_t instructions_len = 0;
     FILE *body_out = open_memstream(&instructions_buf, &instructions_len);
@@ -774,8 +818,8 @@ static void write_module(wasm_module_t *mod) {
                          "(import \"env\" \"printFloat\" (func $print_float (param f32)))\n"
                          "(import \"env\" \"printString\" (func $print_chain (param i32)))\n"
                          "(import \"env\" \"runtimeFail\" (func $fail (param i32 i32)))\n"
-                         "(memory (export \"memory\") 256)\n(global $sp (mut i32) (i32.const %zu))",
-               mod->layout.chains_end + mod->bodies[0].size);
+                         "(memory (export \"memory\") %" PRIu64 ")\n(global $sp (mut i64) (i64.const %" PRIu64 "))",
+               (mod->layout.chains_end + WASM_PAGE_BYTES - 1) / WASM_PAGE_BYTES, mod->layout.chains_end);
     for (size_t i = 0; i < specialize_source_count(); i++) {
         map_node_t *symbol;
         specialize_source_body(i, &symbol);
@@ -786,7 +830,7 @@ static void write_module(wasm_module_t *mod) {
         if (s->usage != SYMBOL_LEXEME || strcmp(s->value, "CHAIN")) {
             continue;
         }
-        fprintf(mod->out, "(data (i32.const %zu) \"", mod->layout.items[i].offset);
+        fprintf(mod->out, "(data (i32.const %" PRIu64 ") \"", mod->layout.items[i].offset);
         for (const unsigned char *p = (const unsigned char *)s->key; *p; p++) {
             fprintf(mod->out, "\\%02x", *p);
         }
@@ -808,8 +852,8 @@ bool wasm_write(const char *path) {
         return false;
     }
     prepare_bodies(&mod);
-    if (mod.layout.chains_end + mod.bodies[0].size > MEMORY_LIMIT) {
-        report_semantic_error(1, "Global data exceeds implementation memory limit");
+    if (mod.layout.chains_end + mod.bodies[0].size > WASM32_MEMORY_BYTES) {
+        report_semantic_error(1, "Global storage is not representable in wasm32");
     }
     char *temporary = malloc(strlen(path) + 16);
     if (!temporary) {

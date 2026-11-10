@@ -10,6 +10,8 @@ typedef struct {
 } semantic_origin_t;
 
 extern int global_errors;
+/* Append formatted text to a malloc-owned string; NULL starts an empty string. */
+void diagnostic_append(char **message, const char *format, ...);
 void set_trace_enabled(bool enabled);
 void trace_printf(const char *format, ...);
 void report_lexical_error(int line, const char *format, ...);
