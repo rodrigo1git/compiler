@@ -14,7 +14,7 @@ type_t type_of_symbol(const map_node_t *symbol) {
     type_kind_t kind = TYPE_ERROR;
     if (!strcmp(name, "INTEGER")) kind = TYPE_INTEGER;
     if (!strcmp(name, "SINGLEF")) kind = TYPE_SINGLEF;
-    if (!strcmp(name, "CHAIN")) kind = TYPE_STRING;
+    if (!strcmp(name, "CHAIN")) kind = TYPE_CHAIN;
     return (type_t){kind, NULL};
 }
 
@@ -144,8 +144,8 @@ static bool check_body(const rpn_t *body, const map_node_t *function,
                 else if (!function || !types_compatible(type_of_symbol(function), right))
                     report_semantic_error(line, "Incompatible return type: %s", type_name(right));
             } else if (op == RPN_OUTPUT) {
-                if (!numeric(right) && right.kind != TYPE_STRING)
-                    report_semantic_error(line, "POUT requires a numeric expression or string");
+                if (!numeric(right) && right.kind != TYPE_CHAIN)
+                    report_semantic_error(line, "POUT requires a numeric expression or char chain");
             } else if (op == RPN_BRANCH_FALSE) {
                 value = stack[--count];
                 if (!types_compatible((type_t){TYPE_INTEGER, NULL}, value))

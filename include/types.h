@@ -6,7 +6,7 @@ typedef enum {
     TYPE_ERROR,
     TYPE_INTEGER,
     TYPE_SINGLEF,
-    TYPE_STRING,
+    TYPE_CHAIN,
     TYPE_OBJECT,
     /* Candidate field types for a variable-position attribute. */
     TYPE_CANDIDATES,

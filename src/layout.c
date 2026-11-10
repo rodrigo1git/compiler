@@ -92,13 +92,13 @@ bool layout_init(layout_t *layout) {
     for (size_t i = 0; i < layout->count; i++) layout->items[i].id = i + 1;
     for (size_t i = 0; i < layout->count; i++)
         if (layout->items[i].symbol->usage == SYMBOL_CLASS) measure_class(layout, layout->items[i].symbol);
-    size_t string_offset = 16;
+    size_t chain_offset = 16;
     for (size_t i = 0; i < layout->count; i++) {
         layout_entry_t *item = &layout->items[i];
         const map_node_t *s = item->symbol;
         if (s->usage == SYMBOL_LEXEME && !strcmp(s->value, "CHAIN")) {
-            item->offset = string_offset;
-            string_offset += strlen(s->key) + 1;
+            item->offset = chain_offset;
+            chain_offset += strlen(s->key) + 1;
         }
         if (s->usage == SYMBOL_VARIABLE || s->usage == SYMBOL_PARAMETER) {
             item->size = s->type_symbol ? layout_class_size(layout, s->type_symbol) : 4;
@@ -111,7 +111,7 @@ bool layout_init(layout_t *layout) {
             }
         }
     }
-    layout->strings_end = (string_offset + 15) & ~(size_t)15;
+    layout->chains_end = (chain_offset + 15) & ~(size_t)15;
     return global_errors == 0;
 }
 void layout_destroy(layout_t *layout) { free(layout->items); *layout = (layout_t){0}; }
