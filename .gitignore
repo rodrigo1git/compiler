@@ -28,3 +28,15 @@ test_empty.y
 *.wat
 *.wasm
 node_modules/
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*:Zone.Identifier
+*Zone.Identifier*
+*.lnk
+
