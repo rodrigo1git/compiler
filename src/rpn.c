@@ -42,7 +42,7 @@ size_t rpn_append_step(rpn_t *rpn, rpn_step_t step) {
 }
 
 size_t rpn_append_symbol(rpn_t *rpn, const map_node_t *symbol) {
-    //if (symbol == NULL) return 0;
+    if (symbol == NULL) return 0;
     return rpn_append_step(rpn, (rpn_step_t){.kind = RPN_SYMBOL, .value.symbol = symbol});
 }
 

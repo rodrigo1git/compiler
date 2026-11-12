@@ -17,7 +17,11 @@ typedef struct {
     layout_size_t offset, size;
     layout_state_t state;
 } layout_entry_t;
-typedef struct { layout_entry_t *items; size_t count; layout_size_t chains_end; } layout_t;
+typedef struct { 
+    layout_entry_t *items; 
+    size_t count; 
+    layout_size_t chains_end; 
+} layout_t;
 layout_size_t layout_add(layout_size_t left, layout_size_t right, int line);
 bool layout_init(layout_t *layout);
 void layout_destroy(layout_t *layout);

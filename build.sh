@@ -43,6 +43,8 @@ gcc -Wall -Wextra -Werror -std=gnu99 -Iinclude -I. \
     src/numeric.c \
     src/layout.c \
     src/wasm_emit.c \
+    src/wasm_runtime.c \
+    src/wasm_body.c \
     src/diagnostics.c \
     src/lexer.c \
     src/lexer_actions.c \

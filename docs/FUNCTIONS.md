@@ -45,7 +45,9 @@ El módulo resultante se valida con assemble.mjs y se ejecuta mediante host.mjs.
 | numeric.c | Resultado numérico y error explícito con la política numérica única; no emite Wasm. |
 | types.c | Tipos, compatibilidad y pila de tipos de todos los cuerpos; pospone obligaciones dependientes de índices comptime. |
 | layout.c | IDs, tamaños de objetos, offsets y marcos; detecta contención recursiva. |
-| wasm_emit.c | Planifica auxiliares/snapshots y escribe cuerpos, controles y helpers Wasm. |
+| wasm_emit.c | Coordina layout, apertura atómica y escritura del módulo Wasm. |
+| wasm_runtime.c | Emite las rutinas auxiliares del runtime Wasm (`$allocate`, `$initialize`, `$position`, `$field`, `$copy_object`). |
+| wasm_body.c | Planifica marcos/scratch y traduce los cuerpos RPN a WebAssembly. |
 | runtime/assemble.mjs | WABT: parsea WAT, resuelve nombres, valida y escribe Wasm. |
 | runtime/host.mjs | Imports de salida/error y carga del módulo; no implementa los cálculos del lenguaje. |
 
@@ -568,41 +570,66 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [write_line](../src/wasm_emit.c#L69) | Escribe una línea WAT formateada; durante planificación no produce salida. No ejecuta instrucciones del programa. | G09 |
+| [wasm_write](../src/wasm_emit.c#L14) | Recibe una ruta tras el chequeo común de tipos; planifica layout y cuerpos, y publica WAT por archivo temporal y rename. Libera recursos en éxito y fallo. | G07 G09 G10 |
+| [write_module](../src/wasm_emit.c#L71) | Escribe encabezado, runtime Wasm y todos los cuerpos concretos; las plantillas simbólicas no se emiten como funciones ejecutables. | G05 G09 |
+| [write_module_header](../src/wasm_emit.c#L81) | Emite imports, memoria exportada, puntero `$sp`, banderas de recursión y segmento de datos para cadenas. | G05 G09 |
+| [wasm_emit_line](../src/wasm_emit.c#L110) | Escribe una línea WAT formateada con la indentación indicada. | G09 |
 
-| [body_id](../src/wasm_emit.c#L77) | Consulta el ID del cuerpo actual en layout; devuelve cero para el principal. | G09 |
-| [wasm_type](../src/wasm_emit.c#L81) | Devuelve literal prestado f32 para SINGLEF e i32 para otras representaciones admitidas por el traductor. | G08 G09 |
-| [new_local](../src/wasm_emit.c#L85) | Reserva ID de auxiliar; en planificación registra tipo y símbolo AUXILIARY en TS. Devuelve ID, sin emitir su asignación. | G02 G09 |
-| [save_local](../src/wasm_emit.c#L101) | Crea auxiliar y emite local.set para guardar el valor calculado; devuelve ID del auxiliar, no el valor del programa. | G09 |
-| [get_local](../src/wasm_emit.c#L107) | Emite local.get del auxiliar indicado; devuelve void y no lee una variable del compilador. | G09 |
-| [pop](../src/wasm_emit.c#L111) | Retira referencia a operando del traductor; informa pila inválida si está vacía. No retira valores del ejecutable. | G05 G09 |
-| [push](../src/wasm_emit.c#L119) | Añade descriptor de operando al array temporal de traducción; no emite instrucciones. | G05 G09 |
-| [fail_if](../src/wasm_emit.c#L123) | Emite condición de fallo ya calculada, llamada a runtimeFail con código/línea y unreachable. No decide la condición de tipos. | G07 G09 EC ED EG EI |
-| [integer_type](../src/wasm_emit.c#L127) | Construye y devuelve descripción estática INTEGER sin reserva de memoria. | G08 G09 |
-| [frame_address](../src/wasm_emit.c#L131) | Emite recorrido de enlaces léxicos desde el marco actual hasta el dueño pedido; informa una relación léxica imposible. | G04 G06 G09 |
-| [receiver_address](../src/wasm_emit.c#L144) | Encuentra la función método exterior y emite carga del receptor de su marco; informa receptor ausente. | G06 G09 T32 |
-| [symbol_address](../src/wasm_emit.c#L158) | Emite dirección de símbolo por marco o identidad de atributo sobre receptor; consulta layout y no reconstruye ámbitos desde texto. | G04 G09 T29 T32 |
-| [object_type](../src/wasm_emit.c#L168) | Consulta si un tipo o todos sus candidatos son objetos; no modifica metadatos. | G08 G09 T24 |
-| [snapshot](../src/wasm_emit.c#L184) | Emite copia temporal de objeto en la reserva preplanificada del paso; devuelve auxiliar de la nueva dirección. | G06 G09 T19 T24 |
-| [read_symbol](../src/wasm_emit.c#L207) | Emite literal o lectura de símbolo, guarda su valor en auxiliar y copia objetos para conservar el instante de evaluación; devuelve descriptor de operando. | G09 T19 T24 |
-| [attribute](../src/wasm_emit.c#L231) | Emite índice/dirección y lectura o destino; aplica captura, conserva valor/categoría y copia objetos cuando corresponde. Añade descriptor a la pila del traductor. | G09 T22 T29 |
-| [find_body](../src/wasm_emit.c#L265) | Busca cuerpo concreto por identidad; devuelve referencia prestada o informa ausencia de destino ejecutable. | G05 G09 |
-| [initialize_frame](../src/wasm_emit.c#L275) | Emite inicialización de headers para objetos locales y formales del marco pendiente; no reserva marcos durante la compilación C. | G06 G09 T24 |
-| [begin_call](../src/wasm_emit.c#L287) | Emite reserva/inicialización del marco pendiente, enlace léxico y receptor; apila símbolo y auxiliar del marco. | G06 G09 T19 |
-| [call_function](../src/wasm_emit.c#L308) | Emite llamada al cuerpo concreto, guarda retorno en auxiliar y restaura sp del llamador; retira el marco pendiente del traductor. | G06 G09 T19 |
-| [materialize](../src/wasm_emit.c#L319) | Escribe campos de capturas comptime mediante una pila dinámica y desplazamientos comprobados. | T22 T24 |
-| [binary](../src/wasm_emit.c#L388) | Retira dos operandos, emite operación y auxiliar tipado; incluye controles c/d y normalización int16 antes de devolver descriptor a la pila. | G08 G09 EC ED |
-| [convert_integer](../src/wasm_emit.c#L417) | Emite comprobaciones de finitud, rango y fracción antes de la conversión; produce auxiliar INTEGER o fallo del módulo. | G09 T34 EG |
-| [output](../src/wasm_emit.c#L436) | Emite import de impresión por tipo; para selección heterogénea usa categoría y valor ya capturados sin releer el objeto. | G09 T10 T29 |
-| [emit_operator](../src/wasm_emit.c#L452) | Despacha operadores de IR, asignación, retorno, duplicación y descarte; RET guarda resultado y salta al epílogo compartido. | G05 G09 T18 EI |
-| [emit_control](../src/wasm_emit.c#L487) | Traduce región IF/FROM a control estructurado con etiquetas locales y destinos validados; devuelve primer paso posterior a la región. | G05 G09 T14 |
-| [emit_step](../src/wasm_emit.c#L515) | Traduce un paso ordinario y sus metadatos, incluido CHECK_INDEX antes del RHS; modifica estado de traducción y escribe WAT. | G05 G09 T29 |
-| [emit_range](../src/wasm_emit.c#L564) | Recorre pasos, localiza regiones por control_start y delega control o instrucción. No introduce un despachador runtime de PC. | G05 G09 |
+### wasm_runtime.c
 
-| [prepare_bodies](../src/wasm_emit.c#L695) | Planifica marcos y temporales con sumas comprobadas para wasm32, sin cortes de 8 o 16 MiB. | G05 G09 |
-| [write_body](../src/wasm_emit.c#L761) | Planifica auxiliares, declara locales y escribe entrada, cuerpo y epílogo; emite indicador de recursión por fuente y libera pilas C del cuerpo. | G02 G09 EI |
-| [write_module](../src/wasm_emit.c#L815) | Escribe imports, memoria, datos, indicadores y todos los cuerpos concretos; las plantillas simbólicas no se emiten como funciones ejecutables. | G05 G09 |
-| [wasm_write](../src/wasm_emit.c#L848) | Recibe una ruta tras el chequeo común de tipos; planifica layout y auxiliares y publica WAT por archivo temporal y rename. Libera recursos en éxito y fallo. | G07 G09 G10 |
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [wasm_emit_runtime](../src/wasm_runtime.c#L16) | Emite todas las funciones de soporte en tiempo de ejecución del módulo WebAssembly. | G09 |
+| [write_memory_helpers](../src/wasm_runtime.c#L22) | Emite la función `$allocate` para reserva dinámica de memoria lineal con control de páginas y cero-inicialización. | G09 |
+| [write_object_helpers](../src/wasm_runtime.c#L79) | Emite `$object_size`, `$init_task`, `$initialize`, inicializadores por clase y despachadores de acceso a campos. | G09 T24 T29 |
+| [write_field_helper](../src/wasm_runtime.c#L189) | Emite funciones de consulta de atributos (`$position`, `$field`, `$field_type`) según el modo de búsqueda. | G09 T29 |
+| [write_copy_helper](../src/wasm_runtime.c#L228) | Emite `$copy_object` para copia estructural entre objetos compatibles preservando el tag destino. | G09 T24 |
+
+### wasm_body.c
+
+| Función | Contrato y efectos | Requisitos |
+| --- | --- | --- |
+| [wasm_prepare_bodies](../src/wasm_body.c#L89) | Planifica marcos, índices de control y espacio scratch para copias de objetos con sumas comprobadas para wasm32. | G05 G09 |
+| [wasm_write_body](../src/wasm_body.c#L132) | Traduce un cuerpo ejecutable a WAT usando `open_memstream` para declarar temporales tras la pasada única. | G02 G09 EI |
+| [write_body_prologue](../src/wasm_body.c#L189) | Emite reserva inicial de marco en `main` o control de reentrancia en funciones y métodos. | G06 G09 EI |
+| [write_body_epilogue](../src/wasm_body.c#L217) | Limpia la bandera de reentrancia, devuelve `$result` si aplica y cierra la función Wasm. | G09 EI |
+| [emit_range](../src/wasm_body.c#L228) | Recorre pasos RPN delegando regiones de control o instrucciones individuales. | G05 G09 |
+| [emit_control](../src/wasm_body.c#L239) | Traduce regiones IF/FROM a bloques estructurados `block`/`loop`/`if` con indentación. | G05 G09 T14 |
+| [emit_step](../src/wasm_body.c#L275) | Despacha cada tipo de paso RPN al traductor específico correspondiente. | G05 G09 T29 |
+| [emit_symbol_step](../src/wasm_body.c#L317) | Emite literal o lectura de símbolo, guarda en un temporal y realiza snapshot si es objeto. | G09 T19 T24 |
+| [emit_destination_step](../src/wasm_body.c#L344) | Calcula dirección de destino de variable o argumento en el marco correspondiente y la apila. | G06 G09 |
+| [emit_attr_step](../src/wasm_body.c#L357) | Resuelve acceso posicional a atributo como destino de escritura o como lectura con snapshot/tag. | G09 T22 T29 |
+| [emit_attr_address](../src/wasm_body.c#L389) | Calcula la dirección física de un atributo mediante `$position`, materializando capturas si existen. | G09 T22 T29 |
+| [emit_index_check_step](../src/wasm_body.c#L413) | Emite validación anticipada de índice posicional mediante `$position` antes del RHS. | G09 T29 |
+| [emit_call_frame](../src/wasm_body.c#L425) | Reserva marco de llamada, guarda enlace estático y receptor, e inicializa objetos del marco. | G06 G09 T19 |
+| [emit_call](../src/wasm_body.c#L452) | Emite llamada a `$fn_*`, guarda retorno en temporal y restaura `$sp` al marco anterior. | G06 G09 T19 |
+| [emit_operator](../src/wasm_body.c#L467) | Despacha operadores aritméticos, asignación, retorno, conversión, salida y manipulación de pila. | G05 G09 T18 EI |
+| [emit_binary](../src/wasm_body.c#L509) | Desapila dos operandos, emite operación binaria, controles de overflow y normalización int16. | G08 G09 EC ED |
+| [emit_assign](../src/wasm_body.c#L544) | Emite asignación primitiva (`store`) o copia de objeto (`$copy_object`). | G09 T24 |
+| [emit_convert_integer](../src/wasm_body.c#L557) | Emite comprobaciones de finitud, rango y fracción antes de convertir SINGLEF a INTEGER. | G09 T34 EG |
+| [emit_output](../src/wasm_body.c#L587) | Emite llamada a `$print_*` según tipo o discriminando por tag en `TYPE_CANDIDATES`. | G09 T10 T29 |
+| [emit_materialize](../src/wasm_body.c#L611) | Escribe campos de capturas comptime mediante pila dinámica y desplazamientos comprobados. | T22 T24 |
+| [emit_frame_address](../src/wasm_body.c#L668) | Emite recorrido de enlaces léxicos desde `$frame` hasta el ámbito dueño indicado. | G04 G06 G09 |
+| [emit_receiver_address](../src/wasm_body.c#L681) | Localiza el marco del método actual y carga el puntero al receptor `this`. | G06 G09 T32 |
+| [emit_symbol_address](../src/wasm_body.c#L695) | Emite dirección de símbolo por marco o por `$field` si es atributo. | G04 G09 T29 T32 |
+| [emit_initialize_frame](../src/wasm_body.c#L708) | Emite inicialización de headers para objetos locales y parámetros del marco pendiente. | G06 G09 T24 |
+| [emit_snapshot](../src/wasm_body.c#L721) | Emite copia temporal de objeto en la reserva scratch preplanificada del paso. | G06 G09 T19 T24 |
+| [emit_float_const](../src/wasm_body.c#L735) | Convierte exponente `s` a `e` y emite constante `f32.const`. | G09 T07 |
+| [emit_fail_if](../src/wasm_body.c#L746) | Emite bloque `if` de fallo en tiempo de ejecución llamando a `$fail` y `unreachable`. | G07 G09 EC ED EG EI |
+| [emit_float_add_checked](../src/wasm_body.c#L755) | Emite suma `f64` con verificación de overflow antes de degradar a `f32`. | G09 EC |
+| [emit_int16_overflow_check](../src/wasm_body.c#L770) | Verifica que el resultado entero esté dentro del rango de 16 bits con signo. | G09 ED |
+| [emit_int16_sign_extend](../src/wasm_body.c#L781) | Normaliza enteros de 16 bits mediante desplazamiento aritmético en `i32`. | G09 T03 |
+| [alloc_temp](../src/wasm_body.c#L790) | Reserva un nuevo ID de temporal `$tmp` y registra el símbolo `SYMBOL_AUXILIARY` en la TS. | G02 G09 |
+| [emit_pop_to_temp](../src/wasm_body.c#L806) | Reserva un temporal y emite `local.set` para guardar el tope de la pila Wasm. | G09 |
+| [emit_push_temp](../src/wasm_body.c#L812) | Emite `local.get` para cargar un temporal en la pila Wasm. | G09 |
+| [pop_operand](../src/wasm_body.c#L816) | Retira un descriptor de operando de la pila del traductor en C. | G05 G09 |
+| [push_operand](../src/wasm_body.c#L824) | Añade un descriptor de operando a la pila del traductor en C. | G05 G09 |
+| [body_id](../src/wasm_body.c#L828) | Consulta el ID del cuerpo actual en `layout`. | G09 |
+| [wasm_type](../src/wasm_body.c#L832) | Devuelve `f32` para `SINGLEF` o `i32` para los demás tipos. | G08 G09 |
+| [integer_type](../src/wasm_body.c#L836) | Construye descripción estática de tipo `INTEGER`. | G08 G09 |
+| [object_type](../src/wasm_body.c#L840) | Determina si un tipo o todos sus candidatos corresponden a objetos. | G08 G09 T24 |
+| [find_body](../src/wasm_body.c#L856) | Busca el cuerpo ejecutable concreto asociado a un símbolo de función o método. | G05 G09 |
+| [has_control_jump](../src/wasm_body.c#L866) | Consulta si en el paso RPN actual inicia una estructura de control y devuelve su destino base-0. | G05 G09 |
 
 ## Funciones del soporte JavaScript
 
@@ -652,14 +679,4 @@ texto: las descripciones se revisan contra los cuerpos de las funciones.
 | [rpn_describe_control](../src/rpn.c#L174) | Interpreta destinos de Polaca para describir condición, cuerpo, else y final de IF/FROM. | Polaca |
 | [rpn_index_controls](../src/rpn.c#L196) | Construye un índice por posición de inicio para consultar controles sin búsquedas repetidas. | Polaca |
 | [sp_evaluate_call](../src/specialize_probe.c#L403) | Valida tipos y evalúa una llamada sobre un entorno privado, propagando valores y efectos sin registrar instancias ejecutables. | Evaluación |
-| [write_copy_helper](../src/wasm_emit.c#L670) | Emite copias de payload compatible con memory.copy, preservando la cabecera del destino sin recursión. | Backend |
-| [write_memory_helpers](../src/wasm_emit.c#L575) | Emite reservas con cuentas i64, crecimiento por páginas y fallo descriptivo; limpia cada reserva y conserva sp ante fallos. | Backend |
-| [write_object_helpers](../src/wasm_emit.c#L616) | Emite tamaños, búsqueda de campos e inicialización iterativa con tareas en memoria lineal. | Backend |
-| [emit_float_add_checked](../src/wasm_emit.c#L365) | Emite suma SINGLEF ampliada y controles de rango antes y después del redondeo a f32. | EC |
-| [emit_float_const](../src/wasm_emit.c#L196) | Traduce el exponente fuente y emite una constante f32; libera el texto temporal. | T07 |
-| [emit_int16_overflow_check](../src/wasm_emit.c#L374) | Comprueba que un resultado INTEGER esté dentro del rango int16 y emite el fallo de multiplicación. | ED |
-| [emit_int16_sign_extend](../src/wasm_emit.c#L382) | Normaliza un resultado INTEGER a int16 mediante desplazamientos con signo. | T03 |
-| [write_body_epilogue](../src/wasm_emit.c#L753) | Libera la guardia de actividad y devuelve el resultado de la función. | G06 EI |
-| [write_body_prologue](../src/wasm_emit.c#L733) | Reserva el marco principal con el asignador dinámico o comprueba la guardia de reentrada de una función. | G09 EI |
-| [write_field_helper](../src/wasm_emit.c#L592) | Emite búsquedas de campos por identidad o posición y consulta de tipos, con fallo de índice inválido. | T29 T32 |
 | [probe_validate_object](../src/specialize_probe.c#L135) | Comprueba campos comptime capturados por una lectura sobre un entorno privado, sin emitir snapshots ni instancias. | Evaluación |
