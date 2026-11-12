@@ -158,6 +158,7 @@ int sa_identifier(char c) {
         lexeme_buffer[22] = '\0';
     }
     yylval.symbol_ref = add_to_symbol_table(lexeme_buffer, "ID");
+    yylval.symbol_ref->provisional = true;
     return TOKEN_ID;
 }
 

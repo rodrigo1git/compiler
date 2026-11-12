@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
 
     int parse_result = yyparse();
     finish_error_recovery();
+    map_purge_provisional(symbol_table);
     if (parse_result == 0 && global_errors == 0) types_check_sources(codegen_source_body());
     if (parse_result == 0 && global_errors == 0) codegen_finalize();
     if (parse_result == 0 && global_errors == 0) types_check_specializations();
@@ -91,7 +92,7 @@ int main(int argc, char *argv[]) {
         }
         wasm_write(output_path);
     }
-    map_purge_provisional(symbol_table);
+
     int success = (parse_result == 0 && global_errors == 0);
     if (success) {
         printf("Parsing successful.\n");

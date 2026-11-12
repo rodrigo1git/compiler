@@ -56,7 +56,6 @@ static scope_t *push_scope(const char *name, symbol_usage_t kind) {
 }
 
 void scope_init(void) {
-    symbol_table->scoped_identifiers = true;
     anonymous_scopes = 0;
     push_scope("main", SYMBOL_PROGRAM);
 }

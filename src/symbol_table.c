@@ -100,7 +100,6 @@ hash_map_t* map_create(int capacity) {
         exit(1);
     }
     map->capacity = capacity;
-    map->scoped_identifiers = false;
     map->buckets = (map_node_t**)calloc(capacity, sizeof(map_node_t*));
     if (map->buckets == NULL) {
         free(map);
@@ -172,9 +171,7 @@ void map_print(hash_map_t* map) {
     for (int i = 0; i < map->capacity; i++) {
         map_node_t* current = map->buckets[i];
         while (current != NULL) {
-            if (!current->provisional &&
-                !(map->scoped_identifiers && strcmp(current->value, "ID") == 0 &&
-                  current->usage == SYMBOL_LEXEME)) {
+            if (!current->provisional) {
                 static const char *usage_names[] = {
                     "LEXEME", "PROGRAM", "VARIABLE", "PARAMETER", "FUNCTION",
                     "CLASS", "ATTRIBUTE", "METHOD", "OBJECT_VALUE", "AUXILIARY"

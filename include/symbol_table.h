@@ -71,7 +71,6 @@ typedef struct map_node {
 typedef struct {
     map_node_t** buckets;
     int capacity;
-    bool scoped_identifiers;
 } hash_map_t;
 
 extern hash_map_t* symbol_table;
