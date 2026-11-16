@@ -50,7 +50,7 @@ static void deep_classes(void) {
     map_node_t *target = map_put(symbol_table, "target", "ID");
     source->type_symbol = target->type_symbol = classes[start];
     comptime_objects_init();
-    const map_node_t *source_leaf = source, *target_leaf = target;
+    map_node_t *source_leaf = source, *target_leaf = target;
     for (size_t i = start; i + 1 < count; i++) {
         map_node_t *field = classes[i]->class_info->effective_attributes.items[0];
         source_leaf = comptime_object_location(source_leaf, field);

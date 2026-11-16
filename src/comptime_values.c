@@ -12,22 +12,40 @@ bool comptime_values_equal(comptime_value_t left, comptime_value_t right) {
           !!signbit(left.number) == !!signbit(right.number))));
 }
 
+bool comptime_environments_equal(const comptime_environment_t *left,
+                                 const comptime_environment_t *right) {
+    if (left->count != right->count) {
+        return false;
+    }
+    for (size_t i = 0; i < left->count; i++) {
+        comptime_binding_t binding = left->items[i];
+        if (!comptime_values_equal(binding.value, comptime_get(right, binding.symbol, binding.object))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 comptime_value_t comptime_get(const comptime_environment_t *environment, const map_node_t *symbol,
-                             const map_node_t *object) {
-    for (size_t i = environment->count; i > 0; i--)
-        if (environment->items[i - 1].symbol == symbol && environment->items[i - 1].object == object)
+                              const map_node_t *object) {
+    for (size_t i = environment->count; i > 0; i--) {
+        if (environment->items[i - 1].symbol == symbol && environment->items[i - 1].object == object) {
             return environment->items[i - 1].value;
+        }
+    }
     return (comptime_value_t){0};
 }
 
 comptime_value_t comptime_read_symbol(const comptime_environment_t *environment,
-                                      const map_node_t *symbol, const map_node_t *receiver) {
-    if (symbol->usage == SYMBOL_LEXEME) return comptime_read_constant(symbol);
+                                      map_node_t *symbol, map_node_t *receiver) {
+    if (symbol->usage == SYMBOL_LEXEME) {
+        return comptime_read_constant(symbol);
+    }
     return comptime_get(environment, symbol, symbol->usage == SYMBOL_ATTRIBUTE ? receiver : NULL);
 }
 
-void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
-                  const map_node_t *object, comptime_value_t value) {
+void comptime_set(comptime_environment_t *environment, map_node_t *symbol,
+                  map_node_t *object, comptime_value_t value) {
     for (size_t i = 0; i < environment->count; i++) {
         if (environment->items[i].symbol == symbol && environment->items[i].object == object) {
             environment->items[i].value = value;
@@ -36,6 +54,14 @@ void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
     }
     environment->items = memory_resize(environment->items, (environment->count + 1) * sizeof(*environment->items));
     environment->items[environment->count++] = (comptime_binding_t){symbol, object, value};
+}
+
+void comptime_invalidate_object(comptime_environment_t *environment, const map_node_t *object) {
+    for (size_t i = 0; i < environment->count; i++) {
+        if (environment->items[i].object == object) {
+            environment->items[i].value = (comptime_value_t){0};
+        }
+    }
 }
 
 comptime_environment_t comptime_copy_environment(const comptime_environment_t *source) {
@@ -48,10 +74,23 @@ comptime_environment_t comptime_copy_environment(const comptime_environment_t *s
     return result;
 }
 
+void comptime_environment_free(comptime_environment_t *environment) {
+    free(environment->items);
+    *environment = (comptime_environment_t){0};
+}
+
+void comptime_environment_replace(comptime_environment_t *destination,
+                                  comptime_environment_t source) {
+    free(destination->items);
+    *destination = source;
+}
+
 void comptime_forget_runtime(comptime_environment_t *environment) {
-    for (size_t i = 0; i < environment->count; i++)
-        if (!environment->items[i].symbol->is_comptime)
+    for (size_t i = 0; i < environment->count; i++) {
+        if (!environment->items[i].symbol->is_comptime) {
             environment->items[i].value = (comptime_value_t){0};
+        }
+    }
 }
 
 comptime_environment_t comptime_join_environments(const comptime_environment_t *left,
@@ -65,15 +104,20 @@ comptime_environment_t comptime_join_environments(const comptime_environment_t *
     }
     for (size_t i = 0; i < result.count; i++) {
         comptime_binding_t *binding = &result.items[i];
-        if (!comptime_values_equal(binding->value, comptime_get(right, binding->symbol, binding->object)))
+        if (!comptime_values_equal(binding->value, comptime_get(right, binding->symbol, binding->object))) {
             binding->value = (comptime_value_t){0};
+        }
     }
     return result;
 }
 
-const map_node_t *comptime_make_constant(comptime_value_t value, int line) {
-    if (!value.known) return NULL;
-    if (value.constant != NULL) return value.constant;
+map_node_t *comptime_make_constant(comptime_value_t value, int line) {
+    if (!value.known) {
+        return NULL;
+    }
+    if (value.constant != NULL) {
+        return value.constant;
+    }
     char text[96];
     if (!isfinite(value.number) || (!value.floating && (value.number < -32768 || value.number > 32767)) ||
         (value.floating && value.number != 0.0 &&
@@ -85,7 +129,9 @@ const map_node_t *comptime_make_constant(comptime_value_t value, int line) {
     if (value.floating) {
         snprintf(text, sizeof(text), "%.9g", (double)(float)value.number);
         char *exponent = strchr(text, 'e');
-        if (exponent != NULL) *exponent = 's';
+        if (exponent != NULL) {
+            *exponent = 's';
+        }
         if (strchr(text, '.') == NULL) {
             exponent = strchr(text, 's');
             if (exponent != NULL) {
@@ -93,21 +139,32 @@ const map_node_t *comptime_make_constant(comptime_value_t value, int line) {
                 memmove(text + offset + 2, text + offset, strlen(text + offset) + 1);
                 text[offset] = '.';
                 text[offset + 1] = '0';
-            } else strcat(text, ".0");
+            } else {
+                strcat(text, ".0");
+            }
         }
-    } else snprintf(text, sizeof(text), "%ld$i", (long)value.number);
+    } else {
+        snprintf(text, sizeof(text), "%ld$i", (long)value.number);
+    }
     return map_put(symbol_table, text, value.floating ? "SINGLEF" : "INTEGER");
 }
 
-comptime_value_t comptime_read_constant(const map_node_t *symbol) {
+comptime_value_t comptime_read_constant(map_node_t *symbol) {
     comptime_value_t value = {0};
-    if (strcmp(symbol->value, "INTEGER") != 0 && strcmp(symbol->value, "SINGLEF") != 0) return value;
-    char *text = memory_resize(NULL, strlen(symbol->key) + 1);
-    strcpy(text, symbol->key);
-    for (char *p = text; *p != '\0'; p++) if (*p == 's') *p = 'e';
+    if (strcmp(symbol->value, "INTEGER") != 0 && strcmp(symbol->value, "SINGLEF") != 0) {
+        return value;
+    }
+    char *text = memory_strdup(symbol->key);
+    for (char *p = text; *p != '\0'; p++) {
+        if (*p == 's') {
+            *p = 'e';
+        }
+    }
     value.number = strtod(text, NULL);
     value.floating = strcmp(symbol->value, "SINGLEF") == 0;
-    if (value.floating) value.number = (float)value.number;
+    if (value.floating) {
+        value.number = (float)value.number;
+    }
     value.known = true;
     value.constant = symbol;
     free(text);
@@ -144,30 +201,34 @@ comptime_environment_t comptime_call_environment(const comptime_environment_t *c
     comptime_forget_runtime(&environment);
     for (size_t i = 0; i < environment.count; i++) {
         comptime_binding_t *binding = &environment.items[i];
-        if (binding->symbol->owner == function || (binding->object && binding->object->owner == function))
+        if (binding->symbol->owner == function || (binding->object && binding->object->owner == function)) {
             binding->value = (comptime_value_t){0};
+        }
     }
     for (size_t i = 0; i < arguments->count; i++) {
         comptime_binding_t binding = arguments->items[i];
-        if (binding.symbol->is_comptime)
+        if (binding.symbol->is_comptime) {
             comptime_set(&environment, binding.symbol, binding.object, binding.value);
+        }
     }
     return environment;
 }
 
 bool comptime_validate_assignment(const map_node_t *symbol, comptime_value_t value,
                                   bool forbidden, int line) {
-    if (forbidden)
+    if (forbidden) {
         report_semantic_error(line, "Cannot modify comptime '%s' under unknown control", symbol->key);
-    else if (value.error)
+    } else if (value.error) {
         report_semantic_error(line, "%s required by comptime assignment", numeric_error_message(value.error));
-    else if (!value.known)
+    } else if (!value.known) {
         report_semantic_error(line, "Value for comptime '%s' is not known at compile time", symbol->key);
-    else if (symbol->declared_type == NULL ||
-             (value.floating ? strcmp(symbol->declared_type, "SINGLEF") != 0
-                             : strcmp(symbol->declared_type, "INTEGER") != 0))
+    } else if (symbol->declared_type == NULL ||
+               (value.floating ? strcmp(symbol->declared_type, "SINGLEF") != 0
+                               : strcmp(symbol->declared_type, "INTEGER") != 0)) {
         report_semantic_error(line, "Compile-time value for '%s' requires the declared type %s", symbol->key,
                               symbol->declared_type != NULL ? symbol->declared_type : "numeric");
-    else return comptime_make_constant(value, line) != NULL;
+    } else {
+        return comptime_make_constant(value, line) != NULL;
+    }
     return false;
 }

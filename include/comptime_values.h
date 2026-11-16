@@ -9,15 +9,15 @@ typedef struct {
     bool known;
     double number;
     bool floating;
-    const map_node_t *constant;
-    const map_node_t *object_type;
-    const map_node_t *object;
-    const map_node_t *object_snapshot;
+    map_node_t *constant;
+    map_node_t *object_type;
+    map_node_t *object;
+    map_node_t *object_snapshot;
 } comptime_value_t;
 
 typedef struct {
-    const map_node_t *symbol;
-    const map_node_t *object;
+    map_node_t *symbol;
+    map_node_t *object;
     comptime_value_t value;
 } comptime_binding_t;
 
@@ -27,24 +27,29 @@ typedef struct {
 } comptime_environment_t;
 
 bool comptime_values_equal(comptime_value_t left, comptime_value_t right);
+bool comptime_environments_equal(const comptime_environment_t *left,
+                                 const comptime_environment_t *right);
 comptime_value_t comptime_get(const comptime_environment_t *environment, const map_node_t *symbol,
-                             const map_node_t *object);
+                              const map_node_t *object);
 comptime_value_t comptime_read_symbol(const comptime_environment_t *environment,
-                                      const map_node_t *symbol, const map_node_t *receiver);
-void comptime_set(comptime_environment_t *environment, const map_node_t *symbol,
-                  const map_node_t *object, comptime_value_t value);
+                                      map_node_t *symbol, map_node_t *receiver);
+void comptime_set(comptime_environment_t *environment, map_node_t *symbol,
+                  map_node_t *object, comptime_value_t value);
+void comptime_invalidate_object(comptime_environment_t *environment, const map_node_t *object);
 comptime_environment_t comptime_copy_environment(const comptime_environment_t *source);
+void comptime_environment_free(comptime_environment_t *environment);
+void comptime_environment_replace(comptime_environment_t *destination,
+                                  comptime_environment_t source);
 void comptime_forget_runtime(comptime_environment_t *environment);
 comptime_environment_t comptime_join_environments(const comptime_environment_t *left,
                                                   const comptime_environment_t *right);
-const map_node_t *comptime_make_constant(comptime_value_t value, int line);
-comptime_value_t comptime_read_constant(const map_node_t *symbol);
+map_node_t *comptime_make_constant(comptime_value_t value, int line);
+comptime_value_t comptime_read_constant(map_node_t *symbol);
 comptime_value_t comptime_binary(comptime_value_t left, comptime_value_t right, rpn_operator_t operator);
-
 comptime_value_t comptime_to_integer(comptime_value_t value);
-
 comptime_environment_t comptime_call_environment(const comptime_environment_t *caller,
     const comptime_environment_t *arguments, const map_node_t *function);
 bool comptime_validate_assignment(const map_node_t *symbol, comptime_value_t value,
                                   bool forbidden, int line);
+
 #endif

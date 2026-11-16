@@ -12,21 +12,28 @@ layout_size_t layout_add(layout_size_t left, layout_size_t right, int line) {
     return left + right;
 }
 
-const map_node_t *layout_source(const map_node_t *symbol) {
-    return symbol && symbol->function_info && symbol->function_info->source_function
-        ? symbol->function_info->source_function : symbol;
+map_node_t *layout_source(const map_node_t *symbol) {
+    if (symbol && symbol->function_info && symbol->function_info->source_function) {
+        return symbol->function_info->source_function;
+    }
+    return (map_node_t *)symbol;
 }
 
-const map_node_t *layout_parent(const map_node_t *symbol) {
-    symbol = layout_source(symbol);
-    symbol = symbol ? symbol->owner : NULL;
-    while (symbol && symbol->usage == SYMBOL_CLASS) symbol = symbol->owner;
-    return symbol;
+map_node_t *layout_parent(const map_node_t *symbol) {
+    map_node_t *current = layout_source(symbol);
+    current = current ? current->owner : NULL;
+    while (current && current->usage == SYMBOL_CLASS) {
+        current = current->owner;
+    }
+    return current;
 }
 
 static layout_entry_t *entry(const layout_t *layout, const map_node_t *symbol) {
-    for (size_t i = 0; i < layout->count; i++)
-        if (layout->items[i].symbol == symbol) return &layout->items[i];
+    for (size_t i = 0; i < layout->count; i++) {
+        if (layout->items[i].symbol == symbol) {
+            return &layout->items[i];
+        }
+    }
     return NULL;
 }
 
@@ -34,31 +41,39 @@ size_t layout_id(const layout_t *layout, const map_node_t *symbol) {
     layout_entry_t *item = entry(layout, symbol);
     return item ? item->id : 0;
 }
+
 layout_size_t layout_offset(const layout_t *layout, const map_node_t *symbol) {
     layout_entry_t *item = entry(layout, symbol);
     return item ? item->offset : 0;
 }
+
 layout_size_t layout_class_size(const layout_t *layout, const map_node_t *kind) {
     layout_entry_t *item = entry(layout, kind);
     return item ? item->size : 4;
 }
+
 layout_size_t layout_field_offset(const layout_t *layout, const map_node_t *kind, size_t position) {
     layout_size_t offset = 4;
     for (size_t i = 0; i < position; i++) {
         const map_node_t *field = kind->class_info->effective_attributes.items[i];
-        offset = layout_add(offset, field->type_symbol ? layout_class_size(layout, field->type_symbol) : 4,
-                            field->declaration_line);
+        layout_size_t field_size = field->type_symbol ? layout_class_size(layout, field->type_symbol) : 4;
+        offset = layout_add(offset, field_size, field->declaration_line);
     }
     return offset;
 }
+
 layout_size_t layout_frame_size(const layout_t *layout, const map_node_t *function) {
     layout_size_t size = 8;
     function = layout_source(function);
     for (size_t i = 0; i < layout->count; i++) {
-        const map_node_t *s = layout->items[i].symbol;
-        if ((s->usage == SYMBOL_VARIABLE || s->usage == SYMBOL_PARAMETER) && s->owner == function) {
-            layout_size_t end = layout_add(layout->items[i].offset, layout->items[i].size, s->declaration_line);
-            if (end > size) size = end;
+        const layout_entry_t *item = &layout->items[i];
+        const map_node_t *s = item->symbol;
+        if ((s->usage == SYMBOL_VARIABLE || s->usage == SYMBOL_PARAMETER) &&
+            s->owner == function && item->size != 0) {
+            layout_size_t end = layout_add(item->offset, item->size, s->declaration_line);
+            if (end > size) {
+                size = end;
+            }
         }
     }
     return size;
@@ -71,7 +86,9 @@ typedef struct {
 
 static bool measure_class(layout_t *layout, const map_node_t *kind, measure_frame_t *stack) {
     layout_entry_t *root = entry(layout, kind);
-    if (root->state == LAYOUT_COMPLETE) return true;
+    if (root->state == LAYOUT_COMPLETE) {
+        return true;
+    }
     size_t depth = 1;
     stack[0] = (measure_frame_t){root, 0};
     root->state = LAYOUT_VISITING;
@@ -88,7 +105,8 @@ static bool measure_class(layout_t *layout, const map_node_t *kind, measure_fram
         const map_node_t *field = fields->items[frame->next];
         layout_entry_t *child = field->type_symbol ? entry(layout, field->type_symbol) : NULL;
         if (child && child->state == LAYOUT_VISITING) {
-            report_semantic_error(field->declaration_line, "Recursive object containment in class '%s'", child->symbol->key);
+            report_semantic_error(field->declaration_line, "Recursive object containment in class '%s'",
+                                  child->symbol->key);
             break;
         }
         if (child && child->state == LAYOUT_UNVISITED) {
@@ -97,14 +115,22 @@ static bool measure_class(layout_t *layout, const map_node_t *kind, measure_fram
             stack[depth++] = (measure_frame_t){child, 0};
             continue;
         }
-        if (child && child->state == LAYOUT_FAILED) break;
+        if (child && child->state == LAYOUT_FAILED) {
+            break;
+        }
         layout_size_t size = layout_add(item->size, child ? child->size : 4, item->symbol->declaration_line);
-        if (!size) break;
+        if (!size) {
+            break;
+        }
         item->size = size;
         frame->next++;
     }
-    if (!depth) return true;
-    while (depth) stack[--depth].item->state = LAYOUT_FAILED;
+    if (!depth) {
+        return true;
+    }
+    while (depth) {
+        stack[--depth].item->state = LAYOUT_FAILED;
+    }
     return false;
 }
 
@@ -114,27 +140,37 @@ static int compare_entries(const void *a, const void *b) {
 
 bool layout_init(layout_t *layout) {
     *layout = (layout_t){0};
-    for (int bucket = 0; bucket < symbol_table->capacity; bucket++)
-        for (map_node_t *s = symbol_table->buckets[bucket]; s; s = s->next)
+    for (int bucket = 0; bucket < symbol_table->capacity; bucket++) {
+        for (map_node_t *s = symbol_table->buckets[bucket]; s; s = s->next) {
             layout->count = memory_add(layout->count, 1);
+        }
+    }
     if (layout->count > UINT32_MAX) {
         report_semantic_error(1, "Symbol identifiers are not representable in wasm32");
         return false;
     }
     layout->items = memory_zero(layout->count, sizeof(*layout->items));
     size_t index = 0;
-    for (int bucket = 0; bucket < symbol_table->capacity; bucket++)
-        for (map_node_t *s = symbol_table->buckets[bucket]; s; s = s->next)
+    for (int bucket = 0; bucket < symbol_table->capacity; bucket++) {
+        for (map_node_t *s = symbol_table->buckets[bucket]; s; s = s->next) {
             layout->items[index++].symbol = s;
+        }
+    }
     qsort(layout->items, layout->count, sizeof(*layout->items), compare_entries);
-    for (size_t i = 0; i < layout->count; i++) layout->items[i].id = i + 1;
+    for (size_t i = 0; i < layout->count; i++) {
+        layout->items[i].id = i + 1;
+    }
     measure_frame_t *stack = memory_zero(layout->count, sizeof(*stack));
     bool valid = true;
-    for (size_t i = 0; i < layout->count && valid; i++)
-        if (layout->items[i].symbol->usage == SYMBOL_CLASS)
+    for (size_t i = 0; i < layout->count && valid; i++) {
+        if (layout->items[i].symbol->usage == SYMBOL_CLASS) {
             valid = measure_class(layout, layout->items[i].symbol, stack);
+        }
+    }
     free(stack);
-    if (!valid) return false;
+    if (!valid) {
+        return false;
+    }
     layout_size_t chain_offset = 16;
     for (size_t i = 0; i < layout->count; i++) {
         layout_entry_t *item = &layout->items[i];
@@ -145,21 +181,19 @@ bool layout_init(layout_t *layout) {
             chain_offset = layout_add(chain_offset, 1, s->declaration_line);
         }
         if (s->usage == SYMBOL_VARIABLE || s->usage == SYMBOL_PARAMETER) {
+            item->offset = layout_frame_size(layout, s->owner);
             item->size = s->type_symbol ? layout_class_size(layout, s->type_symbol) : 4;
-            item->offset = 8;
-            for (size_t j = 0; j < i; j++) {
-                const layout_entry_t *previous = &layout->items[j];
-                if ((previous->symbol->usage == SYMBOL_VARIABLE || previous->symbol->usage == SYMBOL_PARAMETER) &&
-                    previous->symbol->owner == s->owner) {
-                    layout_size_t end = layout_add(previous->offset, previous->size, s->declaration_line);
-                    if (end > item->offset) item->offset = end;
-                }
-            }
             layout_add(item->offset, item->size, s->declaration_line);
         }
-        if (global_errors) return false;
+        if (global_errors) {
+            return false;
+        }
     }
     layout->chains_end = layout_add(chain_offset, 15, 1) & ~UINT64_C(15);
     return global_errors == 0;
 }
-void layout_destroy(layout_t *layout) { free(layout->items); *layout = (layout_t){0}; }
+
+void layout_destroy(layout_t *layout) {
+    free(layout->items);
+    *layout = (layout_t){0};
+}

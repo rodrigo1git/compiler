@@ -4,8 +4,6 @@
 #include "../include/classes.h"
 #include "../include/diagnostics.h"
 #include "../include/specialize.h"
-#include "../include/comptime_values.h"
-#include "../include/comptime_objects.h"
 
 type_t type_of_symbol(const map_node_t *symbol) {
     if (!symbol) {
@@ -42,7 +40,7 @@ const char *type_name(type_t type) {
 }
 
 type_t type_of_attribute(const rpn_step_t *step) {
-    const map_node_t *kind = step->receiver->type_symbol;
+    map_node_t *kind = step->receiver->type_symbol;
     if (step->index->usage == SYMBOL_LEXEME) {
         if (type_of_symbol(step->index).kind != TYPE_INTEGER) {
             return (type_t){TYPE_ERROR, NULL};
@@ -209,18 +207,19 @@ static void check_operator_step(const rpn_step_t *step, const map_node_t *functi
     }
 }
 
-static bool check_body(const rpn_t *body, const map_node_t *function,
-                       const rpn_t *origin, size_t first_step) {
-    semantic_origin_t previous = set_semantic_origin((semantic_origin_t){origin, first_step});
+bool types_check_slice(const rpn_t *body, const map_node_t *function,
+                       const rpn_t *origin, size_t begin, size_t end) {
+    semantic_origin_t previous = set_semantic_origin((semantic_origin_t){origin, begin});
     int errors = global_errors;
-    type_t *stack = calloc(body->count + 2, sizeof(*stack));
+    size_t slice_length = end - begin;
+    type_t *stack = calloc(slice_length + 2, sizeof(*stack));
     if (!stack) {
         fprintf(stderr, "Cannot allocate type stack\n");
         exit(1);
     }
     size_t count = 0;
-    for (size_t pc = 0; pc < body->count; pc++) {
-        set_semantic_origin((semantic_origin_t){origin, first_step + pc});
+    for (size_t pc = begin; pc < end; pc++) {
+        set_semantic_origin((semantic_origin_t){origin, pc});
         const rpn_step_t *step = &body->steps[pc];
         int fallback_line = function ? function->declaration_line : 1;
         int line = step->source_line ? step->source_line : fallback_line;
@@ -262,7 +261,7 @@ static bool check_body(const rpn_t *body, const map_node_t *function,
 }
 
 bool types_check_body(const rpn_t *body, const map_node_t *function) {
-    return check_body(body, function, body, 0);
+    return types_check_slice(body, function, body, 0, body->count);
 }
 
 bool types_check_sources(const rpn_t *main_body) {
@@ -287,338 +286,5 @@ bool types_check_specializations(void) {
         const rpn_t *body = specialize_instance_body(i, &symbol);
         types_check_body(body, symbol);
     }
-    return errors == global_errors;
-}
-
-typedef struct {
-    comptime_value_t value;
-    const map_node_t *destination;
-    const map_node_t *object;
-    const comptime_environment_t *fields;
-    bool argument;
-} type_value_t;
-
-typedef struct {
-    const map_node_t *symbol;
-    const map_node_t *receiver;
-    comptime_environment_t arguments;
-    int errors;
-} type_call_t;
-
-struct type_resolution {
-    rpn_t body;
-    const rpn_t *origin;
-    const map_node_t *function;
-    const map_node_t *receiver;
-    comptime_environment_t environment;
-    type_value_t *stack;
-    size_t count;
-    type_call_t *calls;
-    size_t call_count;
-    comptime_environment_t *snapshots;
-    size_t snapshot_count;
-    size_t *controls;
-};
-
-static void clear_type_snapshots(type_resolution_t *context) {
-    for (size_t i = 0; i < context->snapshot_count; i++) {
-        free(context->snapshots[i].items);
-    }
-    context->snapshot_count = 0;
-}
-
-static void push_type_value(type_resolution_t *context, type_value_t value) {
-    if (value.value.object_type && !value.destination) {
-        comptime_environment_t *snapshot = &context->snapshots[context->snapshot_count++];
-        *snapshot = comptime_copy_environment(&context->environment);
-        value.fields = snapshot;
-    }
-    context->stack[context->count++] = value;
-}
-
-static void resolve_attribute_step(type_resolution_t *context, rpn_step_t *step) {
-    comptime_value_t index = comptime_read_symbol(&context->environment, step->index, context->receiver);
-    if (step->index->is_comptime) {
-        if (index.known) {
-            step->index = comptime_make_constant(index, step->source_line);
-        } else {
-            report_semantic_error(step->source_line,
-                "Cannot determine comptime index '%s' when checking discarded source", step->index->key);
-        }
-    }
-    type_value_t value = {0};
-    const map_node_t *field = comptime_select_field(step->receiver->type_symbol, index);
-    if (field) {
-        const map_node_t *receiver = comptime_resolve_object(step->receiver, context->receiver);
-        comptime_value_t object = {.object = receiver, .object_type = step->receiver->type_symbol};
-        value.value = comptime_object_field(object, field, &context->environment);
-        value.destination = field;
-        value.object = receiver;
-    }
-    if (step->index && step->index->usage == SYMBOL_LEXEME && index.known && !index.floating) {
-        if (index.number < 0) {
-            report_semantic_error(step->source_line, "Attribute position %ld does not exist in class '%s'",
-                (long)index.number, step->receiver->type_symbol->key);
-        } else {
-            class_attribute_at(step->receiver->type_symbol, (size_t)index.number, step->source_line);
-        }
-    }
-    if (step->kind == RPN_ATTRIBUTE) {
-        value.destination = NULL;
-    }
-    push_type_value(context, value);
-}
-
-static void resolve_assignment_step(type_resolution_t *context, type_value_t left,
-                                    type_value_t right, int line) {
-    if (!right.destination) {
-        return;
-    }
-    bool has_pending_call = right.argument && context->call_count;
-    comptime_environment_t *destination = has_pending_call
-        ? &context->calls[context->call_count - 1].arguments
-        : &context->environment;
-    if (right.destination->type_symbol) {
-        const map_node_t *object = right.object
-            ? comptime_object_location(right.object, right.destination)
-            : right.destination;
-        comptime_copy_t copy = {
-            .source = left.fields ? left.fields : &context->environment,
-            .destination = destination,
-            .argument = right.argument
-        };
-        comptime_copy_object_fields(&copy, object, right.destination->type_symbol, left.value, line);
-    }
-    comptime_set(destination, right.destination, right.object, left.value);
-}
-
-static void resolve_operator_step(type_resolution_t *context, const rpn_step_t *step) {
-    rpn_operator_t op = step->value.operator;
-    if (!context->count) {
-        return;
-    }
-    type_value_t right = context->stack[--context->count];
-    if (op <= RPN_NOT_EQUAL) {
-        if (!context->count) {
-            return;
-        }
-        type_value_t left = context->stack[--context->count];
-        if (op == RPN_ASSIGN) {
-            resolve_assignment_step(context, left, right, step->source_line);
-        } else {
-            type_value_t result = {0};
-            result.value = comptime_binary(left.value, right.value, op);
-            context->stack[context->count++] = result;
-        }
-        return;
-    }
-    if (op == RPN_TO_INTEGER) {
-        right.value = comptime_to_integer(right.value);
-        context->stack[context->count++] = right;
-        return;
-    }
-    if (op == RPN_DUPLICATE) {
-        context->stack[context->count++] = right;
-        context->stack[context->count++] = right;
-    }
-}
-
-static void resolve_step(type_resolution_t *context, size_t pc) {
-    rpn_step_t *step = &context->body.steps[pc];
-    *step = context->origin->steps[pc];
-    type_value_t value = {0};
-    switch (step->kind) {
-        case RPN_SYMBOL: {
-            const map_node_t *symbol = step->value.symbol;
-            value.value = comptime_read_symbol(&context->environment, symbol, context->receiver);
-            value.value.object_type = symbol->type_symbol;
-            if (symbol->type_symbol) {
-                value.value.object = comptime_resolve_object(symbol, context->receiver);
-            }
-            push_type_value(context, value);
-            break;
-        }
-        case RPN_DESTINATION:
-        case RPN_ARGUMENT_DESTINATION:
-            value.destination = step->value.symbol;
-            value.object = value.destination->usage == SYMBOL_ATTRIBUTE ? context->receiver : NULL;
-            value.argument = step->kind == RPN_ARGUMENT_DESTINATION;
-            context->stack[context->count++] = value;
-            break;
-        case RPN_ATTRIBUTE:
-        case RPN_ATTRIBUTE_DESTINATION:
-            resolve_attribute_step(context, step);
-            break;
-        case RPN_CALL_FRAME:
-            context->calls[context->call_count++] = (type_call_t){
-                .symbol = step->value.symbol,
-                .receiver = comptime_resolve_object(step->receiver, context->receiver),
-                .errors = global_errors
-            };
-            break;
-        case RPN_CALL: {
-            if (!context->call_count) {
-                break;
-            }
-            type_call_t *call = &context->calls[--context->call_count];
-            if (call->errors == global_errors) {
-                value.value = specialize_evaluate_call(call->symbol, &context->environment,
-                    &call->arguments, call->receiver, false, step->source_line);
-            }
-            free(call->arguments.items);
-            context->stack[context->count++] = value;
-            break;
-        }
-        case RPN_OPERATOR:
-            resolve_operator_step(context, step);
-            break;
-        case RPN_TARGET:
-        case RPN_OBJECT_VALUE:
-        case RPN_INDEX_CHECK:
-            break;
-    }
-}
-
-static bool check_resolved_range(type_resolution_t *context, size_t begin, size_t end) {
-    rpn_t slice = {.steps = context->body.steps + begin, .count = end - begin};
-    return check_body(&slice, context->function, context->origin, begin);
-}
-
-static bool same_type_environment(const comptime_environment_t *left,
-                                  const comptime_environment_t *right) {
-    if (left->count != right->count) {
-        return false;
-    }
-    for (size_t i = 0; i < left->count; i++) {
-        comptime_binding_t binding = left->items[i];
-        if (!comptime_values_equal(binding.value, comptime_get(right, binding.symbol, binding.object))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static void resolve_loop(type_resolution_t *context, size_t begin, size_t target, size_t body_end) {
-    int errors = global_errors;
-    for (;;) {
-        comptime_environment_t before = comptime_copy_environment(&context->environment);
-        types_resolve_range(context, target + 2, body_end);
-        if (errors == global_errors) {
-            check_resolved_range(context, target + 2, body_end);
-        }
-        clear_type_snapshots(context);
-        if (errors != global_errors) {
-            free(before.items);
-            return;
-        }
-        types_resolve_range(context, begin, target);
-        comptime_value_t condition = context->count
-            ? context->stack[--context->count].value
-            : (comptime_value_t){0};
-        if (errors == global_errors) {
-            check_resolved_range(context, begin, target + 2);
-        }
-        bool stable = same_type_environment(&before, &context->environment);
-        if (!condition.known) {
-            comptime_environment_t joined = comptime_join_environments(&before, &context->environment);
-            free(context->environment.items);
-            context->environment = joined;
-        }
-        free(before.items);
-        if (errors != global_errors || !condition.known || condition.number == 0 || stable) {
-            return;
-        }
-    }
-}
-
-static size_t resolve_control(type_resolution_t *context, size_t begin, size_t target) {
-    rpn_control_t control = rpn_describe_control(&context->body, begin, target);
-    size_t false_start = control.false_start;
-    size_t body_end = control.body_end;
-    size_t finish = control.end;
-    bool has_else = control.has_else;
-    types_resolve_range(context, begin, target);
-    comptime_value_t condition = context->count
-        ? context->stack[--context->count].value
-        : (comptime_value_t){0};
-    if (control.loop && condition.known && condition.number != 0 &&
-        (specialize_has_comptime_effects(context->origin, target + 2, body_end) ||
-         specialize_requires_iteration(context->origin, target + 2, body_end,
-             &context->environment, context->receiver))) {
-        if (check_resolved_range(context, begin, target + 2)) {
-            resolve_loop(context, begin, target, body_end);
-        }
-        return finish;
-    }
-    comptime_environment_t original = comptime_copy_environment(&context->environment);
-    types_resolve_range(context, target + 2, body_end);
-    comptime_environment_t true_environment = context->environment;
-    context->environment = comptime_copy_environment(&original);
-    if (has_else) {
-        types_resolve_range(context, false_start, finish);
-    }
-    comptime_environment_t result;
-    if (condition.known && (!control.loop || condition.number == 0)) {
-        result = comptime_copy_environment(condition.number != 0 ? &true_environment : &context->environment);
-    } else {
-        result = comptime_join_environments(&true_environment, &context->environment);
-    }
-    free(original.items);
-    free(true_environment.items);
-    free(context->environment.items);
-    context->environment = result;
-    return finish;
-}
-
-void types_resolve_range(type_resolution_t *context, size_t begin, size_t end) {
-    semantic_origin_t previous = set_semantic_origin((semantic_origin_t){context->origin, begin});
-    for (size_t pc = begin; pc < end; pc++) {
-        set_semantic_origin((semantic_origin_t){context->origin, pc});
-        size_t target = context->controls[pc] ? context->controls[pc] - 1 : end;
-        if (target < end) {
-            pc = resolve_control(context, pc, target) - 1;
-        } else {
-            resolve_step(context, pc);
-        }
-    }
-    set_semantic_origin(previous);
-}
-
-bool types_check_discarded(const rpn_t *body, const map_node_t *function,
-                           size_t begin, size_t end,
-                           const comptime_environment_t *environment,
-                           const map_node_t *receiver) {
-    int errors = global_errors;
-    type_resolution_t context = {
-        .body = *body,
-        .origin = body,
-        .function = function,
-        .receiver = receiver,
-        .environment = comptime_copy_environment(environment)
-    };
-    context.body.steps = calloc(body->count + 1, sizeof(*body->steps));
-    context.stack = calloc(body->count + 2, sizeof(*context.stack));
-    context.calls = calloc(body->count + 1, sizeof(*context.calls));
-    context.snapshots = calloc(body->count + 1, sizeof(*context.snapshots));
-    if (!context.body.steps || !context.stack || !context.calls || !context.snapshots) {
-        fprintf(stderr, "Cannot allocate source type resolution\n");
-        exit(1);
-    }
-    memcpy(context.body.steps, body->steps, body->count * sizeof(*body->steps));
-    context.controls = rpn_index_controls(body);
-    types_resolve_range(&context, begin, end);
-    if (errors == global_errors) {
-        check_resolved_range(&context, begin, end);
-    }
-    free(context.controls);
-    free(context.body.steps);
-    free(context.stack);
-    for (size_t i = 0; i < context.call_count; i++) {
-        free(context.calls[i].arguments.items);
-    }
-    clear_type_snapshots(&context);
-    free(context.calls);
-    free(context.snapshots);
-    free(context.environment.items);
     return errors == global_errors;
 }

@@ -24,7 +24,7 @@ void sp_forget_call_writes(comptime_environment_t *environment, const function_t
 
 void sp_apply_effects(const function_template_t *source, const comptime_environment_t *after,
                       const map_node_t *from_receiver, comptime_environment_t *caller,
-                      const map_node_t *receiver) {
+                      map_node_t *receiver) {
     sp_forget_call_writes(caller, source);
     for (size_t i = 0; i < after->count; i++) {
         comptime_binding_t binding = after->items[i];
@@ -42,7 +42,7 @@ void sp_apply_effects(const function_template_t *source, const comptime_environm
         }
     }
     for (size_t i = 0; i < source->runtime_writes.count; i++) {
-        const map_node_t *symbol = source->runtime_writes.items[i];
+        map_node_t *symbol = source->runtime_writes.items[i];
         if (symbol->usage != SYMBOL_ATTRIBUTE) {
             comptime_set(caller, symbol, NULL, comptime_get(after, symbol, NULL));
         }
@@ -97,6 +97,58 @@ static bool record_runtime_write(function_template_t *source, map_node_t *symbol
     return true;
 }
 
+static void analyze_step_effects(function_template_t *source, const rpn_step_t *step) {
+    map_node_t *symbol = step->value.symbol;
+    switch (step->kind) {
+        case RPN_SYMBOL:
+            if (class_has_comptime(symbol->type_symbol) ||
+                (symbol->is_comptime && symbol->owner != source->symbol)) {
+                source->contextual = true;
+            }
+            break;
+        case RPN_DESTINATION:
+            record_runtime_write(source, symbol);
+            if (symbol->usage == SYMBOL_ATTRIBUTE) {
+                source->writes_attributes = true;
+            }
+            if (class_has_comptime(symbol->type_symbol)) {
+                source->contextual = true;
+                source->writes_attributes = true;
+                if (symbol->owner != source->symbol) {
+                    source->external_writes = true;
+                }
+            }
+            if (symbol->is_comptime && symbol->owner != source->symbol) {
+                source->contextual = true;
+                source->external_writes = true;
+            }
+            break;
+        case RPN_ATTRIBUTE:
+            if (class_has_comptime(symbol != NULL ? symbol->type_symbol : NULL) ||
+                class_has_comptime(step->receiver->type_symbol) ||
+                (step->index != NULL && step->index->is_comptime) ||
+                (symbol != NULL && symbol->is_comptime)) {
+                source->contextual = true;
+            }
+            break;
+        case RPN_ATTRIBUTE_DESTINATION:
+            source->writes_attributes = true;
+            if ((step->index != NULL && step->index->is_comptime) ||
+                (symbol != NULL && symbol->is_comptime)) {
+                source->contextual = true;
+            }
+            if (class_has_comptime(step->receiver->type_symbol)) {
+                source->contextual = true;
+                if (step->receiver->owner != source->symbol) {
+                    source->external_writes = true;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void analyze_function_effects(function_template_t *source) {
     for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
         if (source->symbol->function_info->parameters.items[i]->is_comptime) {
@@ -104,45 +156,7 @@ static void analyze_function_effects(function_template_t *source) {
         }
     }
     for (size_t i = 0; i < source->body->count; i++) {
-        const rpn_step_t *step = &source->body->steps[i];
-        if ((step->kind == RPN_SYMBOL || step->kind == RPN_ATTRIBUTE) &&
-            (class_has_comptime(step->value.symbol != NULL ? step->value.symbol->type_symbol : NULL) ||
-             (step->kind == RPN_ATTRIBUTE && class_has_comptime(step->receiver->type_symbol)))) {
-            source->contextual = true;
-        }
-        if (step->kind == RPN_DESTINATION) {
-            record_runtime_write(source, (map_node_t *)step->value.symbol);
-        }
-        if (step->kind == RPN_DESTINATION && class_has_comptime(step->value.symbol->type_symbol)) {
-            source->contextual = true;
-            if (step->value.symbol->owner != source->symbol) {
-                source->external_writes = true;
-            }
-            source->writes_attributes = true;
-        }
-        if (step->kind == RPN_ATTRIBUTE_DESTINATION ||
-            (step->kind == RPN_DESTINATION && step->value.symbol->usage == SYMBOL_ATTRIBUTE)) {
-            source->writes_attributes = true;
-        }
-        if (step->kind == RPN_ATTRIBUTE || step->kind == RPN_ATTRIBUTE_DESTINATION) {
-            if ((step->index != NULL && step->index->is_comptime) ||
-                (step->value.symbol != NULL && step->value.symbol->is_comptime)) {
-                source->contextual = true;
-            }
-            if (step->kind == RPN_ATTRIBUTE_DESTINATION && class_has_comptime(step->receiver->type_symbol)) {
-                source->contextual = true;
-                if (step->receiver->owner != source->symbol) {
-                    source->external_writes = true;
-                }
-            }
-        }
-        if ((step->kind == RPN_SYMBOL || step->kind == RPN_DESTINATION) && step->value.symbol->is_comptime &&
-            step->value.symbol->owner != source->symbol) {
-            source->contextual = true;
-            if (step->kind == RPN_DESTINATION) {
-                source->external_writes = true;
-            }
-        }
+        analyze_step_effects(source, &source->body->steps[i]);
     }
 }
 

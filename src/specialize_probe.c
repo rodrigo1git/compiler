@@ -3,133 +3,65 @@
 #include "../include/classes.h"
 #include "../include/memory.h"
 #include <stdlib.h>
+#include <string.h>
 #include "../include/specialize_internal.h"
 #include "../include/comptime_objects.h"
 
 typedef struct {
-    const map_node_t *symbol;
-    rpn_step_kind_t kind;
-    const map_node_t *object;
-} probe_destination_t;
-
-typedef struct {
     comptime_value_t value;
-    probe_destination_t destination;
+    sp_destination_t destination;
     comptime_environment_t fields;
 } probe_operand_t;
 
-typedef struct probe_call {
-    function_template_t *source;
-    const map_node_t *receiver;
-    comptime_environment_t arguments;
-    struct probe_call *parent;
-} probe_call_t;
-
-struct probe {
-    const specialize_state_t *state;
-    const rpn_t *input;
-    size_t *controls;
-    comptime_environment_t environment;
-    const map_node_t *receiver;
-    probe_operand_t *stack;
-    size_t count;
-    probe_call_t *pending;
-    const evaluation_frame_t *invoking;
+typedef struct {
     bool needs_iteration;
     bool validating;
+    bool auditing_types;
     bool unknown_control;
     bool external_unknown;
-    const map_node_t *function;
-    int line;
     bool stopped;
     bool has_return;
+} probe_flags_t;
+
+struct probe {
+    specialize_state_t *state;
+    const rpn_t *input;
+    rpn_t resolved;
+    size_t *controls;
+    comptime_environment_t environment;
+    map_node_t *receiver;
+    probe_operand_t *stack;
+    size_t count;
+    sp_pending_call_t *pending;
+    const evaluation_frame_t *invoking;
+    probe_flags_t flags;
+    map_node_t *function;
+    int line;
     comptime_value_t returned;
 };
 
-static void probe_copy_object(probe_t *probe, comptime_environment_t *destination, const map_node_t *object,
-                              const map_node_t *type, comptime_value_t value,
-                              const comptime_environment_t *fields, bool argument) {
-    if (type == NULL) {
-        return;
-    }
-    typedef struct {
-        const map_node_t *object;
-        const map_node_t *type;
-        comptime_value_t value;
-        comptime_value_t selected;
-        size_t next;
-        bool resumed;
-    } probe_copy_frame_t;
-    size_t count = 1;
-    size_t capacity = 16;
-    probe_copy_frame_t *stack = memory_zero(capacity, sizeof(*stack));
-    stack[0] = (probe_copy_frame_t){.object = object, .type = type, .value = value};
-    while (count) {
-        probe_copy_frame_t *frame = &stack[count - 1];
-        const symbol_list_t *attributes = &frame->type->class_info->effective_attributes;
-        if (frame->next == attributes->count) {
-            count--;
-            continue;
-        }
-        const map_node_t *field = attributes->items[frame->next];
-        if (!frame->resumed) {
-            frame->selected = (comptime_value_t){0};
-            const map_node_t *source = frame->value.object_type;
-            if (source && frame->next < source->class_info->effective_attributes.count) {
-                frame->selected = comptime_object_field(frame->value,
-                    source->class_info->effective_attributes.items[frame->next], fields);
-            }
-        }
-        if (field->type_symbol) {
-            const map_node_t *child = comptime_object_location(frame->object, field);
-            if (!frame->resumed) {
-                probe_copy_frame_t next = {.object = child, .type = field->type_symbol, .value = frame->selected};
-                frame->resumed = true;
-                if (count == capacity) {
-                    capacity = memory_multiply(capacity, 2);
-                    stack = memory_resize(stack, memory_multiply(capacity, sizeof(*stack)));
-                }
-                stack[count++] = next;
-                continue;
-            }
-            frame->selected.object = child;
-            frame->selected.object_type = field->type_symbol;
-            frame->selected.object_snapshot = NULL;
-        } else if (field->is_comptime && !frame->selected.known) {
-            probe->needs_iteration = true;
-            if (probe->validating) {
-                report_semantic_error(probe->line,
-                    "Comptime attribute '%s' has no known value when copying an object '%s'",
-                    field->key, frame->object ? frame->object->key : frame->type->key);
-            }
-        }
-        if (probe->validating && field->is_comptime && !argument &&
-            (probe->unknown_control || (probe->external_unknown && frame->object->owner != probe->function))) {
-            report_semantic_error(probe->line,
-                "Cannot modify comptime '%s' under unknown control in object '%s'",
-                field->key, frame->object->key);
-        }
-        if (!argument || field->is_comptime) {
-            comptime_set(destination, field, frame->object, frame->selected);
-        }
-        frame->next++;
-        frame->resumed = false;
-    }
-    free(stack);
+static void probe_operand_free(probe_operand_t *operand) {
+    comptime_environment_free(&operand->fields);
 }
 
 static void probe_validate_object(probe_t *probe, comptime_value_t value) {
     if (!class_has_comptime(value.object_type)) {
         return;
     }
-    comptime_environment_t capture = {0};
-    probe_copy_object(probe, &capture, value.object, value.object_type, value,
-                      &probe->environment, true);
-    free(capture.items);
+    comptime_copy_t copy = {
+        .source = &probe->environment,
+        .function = probe->function,
+        .argument = true,
+        .capture = true,
+        .silent = !probe->flags.validating
+    };
+    if (!comptime_copy_object_fields(&copy, value.object, value.object_type, value, probe->line)) {
+        probe->flags.needs_iteration = true;
+    }
 }
 
 static void probe_push(probe_t *probe, probe_operand_t value) {
-    if (probe->validating) {
+    if (probe->flags.validating) {
         probe_validate_object(probe, value.value);
     }
     probe->stack = memory_resize(probe->stack, (probe->count + 1) * sizeof(*probe->stack));
@@ -140,49 +72,51 @@ static void probe_push(probe_t *probe, probe_operand_t value) {
 }
 
 static probe_operand_t probe_pop(probe_t *probe) {
-    return probe->count ? probe->stack[--probe->count] : (probe_operand_t){0};
+    if (probe->count != 0) {
+        return probe->stack[--probe->count];
+    }
+    return (probe_operand_t){0};
 }
 
 static void probe_destroy(probe_t *probe) {
     for (size_t i = 0; i < probe->count; i++) {
-        free(probe->stack[i].fields.items);
+        probe_operand_free(&probe->stack[i]);
     }
-    while (probe->pending != NULL) {
-        probe_call_t *parent = probe->pending->parent;
-        free(probe->pending->arguments.items);
-        free(probe->pending);
-        probe->pending = parent;
-    }
+    sp_pending_free_all(&probe->pending);
+    free(probe->resolved.steps);
     free(probe->controls);
     free(probe->stack);
-    free(probe->environment.items);
+    comptime_environment_free(&probe->environment);
 }
 
-static comptime_value_t probe_invoke(probe_t *probe, probe_call_t *call) {
+static comptime_value_t probe_invoke(probe_t *probe, sp_pending_call_t *call) {
     function_template_t *source = call->source;
     if (source == NULL) {
         return (comptime_value_t){0};
     }
-    if (probe->validating) {
-        return specialize_evaluate_call(source->symbol, &probe->environment, &call->arguments,
-                                        call->receiver, probe->unknown_control || probe->external_unknown,
-                                        probe->line);
+    if (probe->flags.auditing_types && call->errors != global_errors) {
+        return (comptime_value_t){0};
+    }
+    if (probe->flags.validating || probe->flags.auditing_types) {
+        return sp_evaluate_call(probe->state, source, &probe->environment, &call->arguments,
+                                call->receiver,
+                                probe->flags.unknown_control || probe->flags.external_unknown,
+                                probe->line);
     }
     for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
         const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
         if (parameter->is_comptime && !comptime_get(&call->arguments, parameter, NULL).known) {
-            probe->needs_iteration = true;
+            probe->flags.needs_iteration = true;
         }
     }
-
-    for (const evaluation_frame_t *frame = probe->invoking; frame; frame = frame->parent) {
+    for (const evaluation_frame_t *frame = probe->invoking; frame != NULL; frame = frame->parent) {
         if (frame->function != source->symbol) {
             continue;
         }
         sp_forget_call_writes(&probe->environment, source);
         return (comptime_value_t){0};
     }
-    if (probe->needs_iteration) {
+    if (probe->flags.needs_iteration) {
         sp_forget_call_writes(&probe->environment, source);
         return (comptime_value_t){0};
     }
@@ -194,40 +128,47 @@ static comptime_value_t probe_invoke(probe_t *probe, probe_call_t *call) {
         .environment = comptime_call_environment(&probe->environment, &call->arguments, source->symbol),
         .invoking = &frame
     };
-    sp_probe_range(&callee, 0, source->body->count, true);
-    probe->needs_iteration |= callee.needs_iteration;
+    sp_probe_range(&callee, 0, source->body->count);
+    probe->flags.needs_iteration |= callee.flags.needs_iteration;
     sp_apply_effects(source, &callee.environment, call->receiver, &probe->environment, call->receiver);
     comptime_value_t returned = callee.returned;
     probe_destroy(&callee);
     return returned;
 }
 
-static void probe_assign(probe_t *probe, probe_destination_t destination, const probe_operand_t *assigned) {
-    bool argument = destination.kind == RPN_ARGUMENT_DESTINATION && probe->pending;
+static void probe_assign(probe_t *probe, sp_destination_t destination, const probe_operand_t *assigned) {
+    bool argument = destination.kind == RPN_ARGUMENT_DESTINATION && probe->pending != NULL;
     comptime_environment_t *environment = argument ? &probe->pending->arguments : &probe->environment;
-    if (destination.symbol) {
-        if (probe->validating && destination.symbol->is_comptime) {
-            bool forbidden = !argument && destination.symbol->usage != SYMBOL_AUXILIARY &&
-                (probe->unknown_control || (probe->external_unknown &&
-                destination.symbol->owner != probe->function &&
-                (!destination.object || destination.object->owner != probe->function)));
+    if (destination.symbol != NULL) {
+        if (probe->flags.validating && destination.symbol->is_comptime) {
+            bool forbidden = sp_is_forbidden_comptime_write(
+                destination.symbol, destination.object, probe->function, argument,
+                probe->flags.unknown_control, probe->flags.external_unknown);
             comptime_validate_assignment(destination.symbol, assigned->value, forbidden, probe->line);
         }
-        if (destination.symbol->type_symbol) {
-            const map_node_t *object = destination.object
+        if (destination.symbol->type_symbol != NULL) {
+            map_node_t *object = destination.object != NULL
                 ? comptime_object_location(destination.object, destination.symbol)
                 : destination.symbol;
-
-            probe_copy_object(probe, environment, object, destination.symbol->type_symbol, assigned->value,
-                              &assigned->fields, argument);
-        }
-        comptime_set(environment, destination.symbol, destination.object, assigned->value);
-    } else if (!argument) {
-        for (size_t i = 0; i < environment->count; i++) {
-            if (environment->items[i].object == destination.object) {
-                environment->items[i].value = (comptime_value_t){0};
+            comptime_copy_t copy = {
+                .source = &assigned->fields,
+                .destination = environment,
+                .function = probe->function,
+                .argument = argument,
+                .capture = !probe->flags.auditing_types,
+                .silent = !probe->flags.validating && !probe->flags.auditing_types,
+                .unknown_control = probe->flags.unknown_control,
+                .external_unknown = probe->flags.external_unknown
+            };
+            bool all_known = comptime_copy_object_fields(
+                &copy, object, destination.symbol->type_symbol, assigned->value, probe->line);
+            if (!all_known && !probe->flags.auditing_types) {
+                probe->flags.needs_iteration = true;
             }
         }
+        comptime_set(environment, destination.symbol, destination.object, assigned->value);
+    } else if (!argument && !probe->flags.auditing_types) {
+        comptime_invalidate_object(environment, destination.object);
     }
 }
 
@@ -242,7 +183,7 @@ static void probe_operator(probe_t *probe, rpn_operator_t op) {
             operand.value = comptime_binary(left.value, right.value, op);
             probe_push(probe, operand);
         }
-        free(left.fields.items);
+        probe_operand_free(&left);
     } else if (op == RPN_TO_INTEGER) {
         operand.value = comptime_to_integer(right.value);
         probe_push(probe, operand);
@@ -250,37 +191,101 @@ static void probe_operator(probe_t *probe, rpn_operator_t op) {
         operand.value = right.value;
         probe_push(probe, operand);
         probe_push(probe, operand);
-    } else if (op == RPN_RETURN) {
-        if (!probe->has_return) {
+    } else if (op == RPN_RETURN && !probe->flags.auditing_types) {
+        if (!probe->flags.has_return) {
             probe->returned = right.value;
         } else if (!comptime_values_equal(probe->returned, right.value)) {
             probe->returned = (comptime_value_t){0};
         }
-        probe->has_return = true;
-        probe->stopped = true;
+        probe->flags.has_return = true;
+        probe->flags.stopped = true;
     }
-    free(right.fields.items);
+    probe_operand_free(&right);
 }
 
-static void probe_step(probe_t *probe, const rpn_step_t *step) {
+static void probe_audit_attribute_index(rpn_step_t *step, comptime_value_t index) {
+    if (step->index->is_comptime) {
+        if (index.known) {
+            step->index = comptime_make_constant(index, step->source_line);
+        } else {
+            report_semantic_error(step->source_line,
+                "Cannot determine comptime index '%s' when checking discarded source",
+                step->index->key);
+        }
+    }
+    if (step->index != NULL && step->index->usage == SYMBOL_LEXEME && index.known && !index.floating) {
+        if (index.number < 0) {
+            report_semantic_error(step->source_line,
+                "Attribute position %ld does not exist in class '%s'",
+                (long)index.number, step->receiver->type_symbol->key);
+        } else {
+            class_attribute_at(step->receiver->type_symbol, (size_t)index.number, step->source_line);
+        }
+    }
+}
+
+static void probe_attribute(probe_t *probe, rpn_step_t *step) {
+    probe_operand_t operand = {0};
+    map_node_t *object = comptime_resolve_object(step->receiver, probe->receiver);
+    map_node_t *type = step->receiver->type_symbol;
+    comptime_value_t index = comptime_read_symbol(&probe->environment, step->index, probe->receiver);
+    if (probe->flags.auditing_types) {
+        probe_audit_attribute_index(step, index);
+    } else if (step->index->is_comptime && !index.known) {
+        probe->flags.needs_iteration = true;
+    }
+    map_node_t *field = comptime_select_field(type, index);
+    if (probe->flags.validating && step->kind == RPN_ATTRIBUTE &&
+        !step->index->is_comptime && step->index->usage != SYMBOL_LEXEME) {
+        probe_validate_object(probe, (comptime_value_t){
+            .object = object,
+            .object_type = type
+        });
+    }
+    if (step->kind == RPN_ATTRIBUTE_DESTINATION) {
+        operand.destination = (sp_destination_t){
+            .symbol = field,
+            .object = object,
+            .kind = step->kind
+        };
+    } else if (field != NULL) {
+        operand.value = comptime_object_field(
+            (comptime_value_t){.object = object, .object_type = type},
+            field, &probe->environment);
+    }
+    if (probe->flags.validating && step->kind == RPN_ATTRIBUTE && field != NULL &&
+        field->is_comptime && !operand.value.known) {
+        report_semantic_error(step->source_line, "Comptime attribute '%s' has no known value",
+                              field->key);
+    }
+    probe_push(probe, operand);
+}
+
+static void probe_step(probe_t *probe, size_t pc) {
+    rpn_step_t local_step = probe->input->steps[pc];
+    rpn_step_t *step = &local_step;
+    if (probe->flags.auditing_types) {
+        probe->resolved.steps[pc] = local_step;
+        step = &probe->resolved.steps[pc];
+    }
     probe_operand_t operand = {0};
     probe->line = step->source_line;
     switch (step->kind) {
         case RPN_SYMBOL:
             operand.value = comptime_read_symbol(&probe->environment, step->value.symbol, probe->receiver);
-            if (probe->validating && step->value.symbol->is_comptime && !operand.value.known) {
+            if (probe->flags.validating && step->value.symbol->is_comptime && !operand.value.known) {
                 report_semantic_error(step->source_line, "Comptime '%s' has no known value",
                                       step->value.symbol->key);
             }
             operand.value.object_type = step->value.symbol->type_symbol;
-            if (operand.value.object_type) {
+            if (operand.value.object_type != NULL) {
                 operand.value.object = comptime_resolve_object(step->value.symbol, probe->receiver);
             }
             probe_push(probe, operand);
             break;
         case RPN_DESTINATION:
         case RPN_ARGUMENT_DESTINATION:
-            operand.destination = (probe_destination_t){
+            operand.destination = (sp_destination_t){
                 .symbol = step->value.symbol,
                 .kind = step->kind,
                 .object = step->value.symbol->usage == SYMBOL_ATTRIBUTE ? probe->receiver : NULL
@@ -288,57 +293,28 @@ static void probe_step(probe_t *probe, const rpn_step_t *step) {
             probe_push(probe, operand);
             break;
         case RPN_ATTRIBUTE:
-        case RPN_ATTRIBUTE_DESTINATION: {
-            const map_node_t *object = comptime_resolve_object(step->receiver, probe->receiver);
-            comptime_value_t index = comptime_read_symbol(&probe->environment, step->index, probe->receiver);
-            const map_node_t *field = comptime_select_field(object ? object->type_symbol : NULL, index);
-            if (step->index->is_comptime && !index.known) {
-                probe->needs_iteration = true;
-            }
-            if (probe->validating && step->kind == RPN_ATTRIBUTE &&
-                !step->index->is_comptime && step->index->usage != SYMBOL_LEXEME) {
-                probe_validate_object(probe, (comptime_value_t){
-                    .object = object,
-                    .object_type = object ? object->type_symbol : NULL
-                });
-            }
-            if (step->kind == RPN_ATTRIBUTE_DESTINATION) {
-                operand.destination = (probe_destination_t){
-                    .symbol = field,
-                    .object = object,
-                    .kind = step->kind
-                };
-            } else if (field) {
-                operand.value = comptime_object_field(
-                    (comptime_value_t){.object = object, .object_type = object->type_symbol},
-                    field, &probe->environment);
-            }
-            if (probe->validating && step->kind == RPN_ATTRIBUTE && field &&
-                field->is_comptime && !operand.value.known) {
-                report_semantic_error(step->source_line, "Comptime attribute '%s' has no known value",
-                                      field->key);
-            }
-            probe_push(probe, operand);
+        case RPN_ATTRIBUTE_DESTINATION:
+            probe_attribute(probe, step);
             break;
-        }
         case RPN_CALL_FRAME: {
-            probe_call_t *call = memory_resize(NULL, sizeof(*call));
-            *call = (probe_call_t){
+            sp_pending_call_t *call = memory_resize(NULL, sizeof(*call));
+            *call = (sp_pending_call_t){
                 .source = sp_find_template(probe->state, step->value.symbol),
                 .receiver = comptime_resolve_object(step->receiver, probe->receiver),
+                .errors = global_errors,
                 .parent = probe->pending
             };
             probe->pending = call;
             break;
         }
         case RPN_CALL: {
-            probe_call_t *call = probe->pending;
+            sp_pending_call_t *call = probe->pending;
             if (call == NULL) {
                 break;
             }
             operand.value = probe_invoke(probe, call);
             probe->pending = call->parent;
-            free(call->arguments.items);
+            comptime_environment_free(&call->arguments);
             free(call);
             probe_push(probe, operand);
             break;
@@ -354,10 +330,70 @@ static void probe_step(probe_t *probe, const rpn_step_t *step) {
 }
 
 static comptime_value_t probe_condition(probe_t *probe, rpn_control_t control) {
-    sp_probe_range(probe, control.start, control.branch, false);
+    sp_probe_range(probe, control.start, control.branch);
     probe_operand_t condition = probe_pop(probe);
-    free(condition.fields.items);
+    probe_operand_free(&condition);
     return condition.value;
+}
+
+static void probe_audit_loop(probe_t *probe, rpn_control_t control) {
+    int errors = global_errors;
+    for (;;) {
+        comptime_environment_t before = comptime_copy_environment(&probe->environment);
+        sp_probe_range(probe, control.branch + 2, control.body_end);
+        if (errors == global_errors) {
+            types_check_slice(&probe->resolved, probe->function, probe->input,
+                              control.branch + 2, control.body_end);
+        }
+        if (errors != global_errors) {
+            comptime_environment_free(&before);
+            return;
+        }
+        comptime_value_t condition = probe_condition(probe, control);
+        if (errors == global_errors) {
+            types_check_slice(&probe->resolved, probe->function, probe->input,
+                              control.start, control.branch + 2);
+        }
+        bool stable = comptime_environments_equal(&before, &probe->environment);
+        if (!condition.known) {
+            comptime_environment_replace(&probe->environment,
+                comptime_join_environments(&before, &probe->environment));
+        }
+        comptime_environment_free(&before);
+        if (errors != global_errors || !condition.known || condition.number == 0 || stable) {
+            return;
+        }
+    }
+}
+
+static void probe_audit_control(probe_t *probe, rpn_control_t control, comptime_value_t condition) {
+    if (control.loop && condition.known && condition.number != 0 &&
+        (sp_has_comptime_effects(probe->state, probe->input, control.branch + 2, control.body_end) ||
+         sp_requires_iteration(probe->state, probe->input, control.branch + 2, control.body_end,
+                               &probe->environment, probe->receiver))) {
+        if (types_check_slice(&probe->resolved, probe->function, probe->input,
+                              control.start, control.branch + 2)) {
+            probe_audit_loop(probe, control);
+        }
+        return;
+    }
+    comptime_environment_t original = comptime_copy_environment(&probe->environment);
+    sp_probe_range(probe, control.branch + 2, control.body_end);
+    comptime_environment_t true_environment = probe->environment;
+    probe->environment = comptime_copy_environment(&original);
+    if (control.has_else) {
+        sp_probe_range(probe, control.false_start, control.end);
+    }
+    comptime_environment_t result;
+    if (condition.known && (!control.loop || condition.number == 0)) {
+        result = comptime_copy_environment(
+            condition.number != 0 ? &true_environment : &probe->environment);
+    } else {
+        result = comptime_join_environments(&true_environment, &probe->environment);
+    }
+    comptime_environment_free(&original);
+    comptime_environment_free(&true_environment);
+    comptime_environment_replace(&probe->environment, result);
 }
 
 static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t condition) {
@@ -372,91 +408,97 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
         .invoking = probe->invoking
     };
     comptime_forget_runtime(&attempt.environment);
-    sp_probe_range(&attempt, control.branch + 2, control.body_end, true);
-    bool needs_iteration = attempt.needs_iteration;
+    sp_probe_range(&attempt, control.branch + 2, control.body_end);
+    bool needs_iteration = attempt.flags.needs_iteration;
     bool expand = needs_iteration ||
                   sp_has_comptime_effects(probe->state, probe->input, control.branch + 2, control.body_end);
     probe_destroy(&attempt);
     if (!expand || !condition.known) {
-        if (probe->validating) {
-            bool previous = probe->unknown_control;
-            probe->unknown_control = true;
+        if (probe->flags.validating) {
+            bool previous = probe->flags.unknown_control;
+            probe->flags.unknown_control = true;
             comptime_forget_runtime(&probe->environment);
-            sp_probe_range(probe, control.branch + 2, control.body_end, true);
-            probe->unknown_control = previous;
-            probe->stopped = false;
+            sp_probe_range(probe, control.branch + 2, control.body_end);
+            probe->flags.unknown_control = previous;
+            probe->flags.stopped = false;
         }
-        probe->needs_iteration |= needs_iteration;
+        probe->flags.needs_iteration |= needs_iteration;
         comptime_forget_runtime(&probe->environment);
         return;
     }
-    while (condition.known && condition.number != 0 && !probe->stopped) {
-        sp_probe_range(probe, control.branch + 2, control.body_end, true);
-        if (probe->stopped || probe->needs_iteration) {
+    while (condition.known && condition.number != 0 && !probe->flags.stopped) {
+        sp_probe_range(probe, control.branch + 2, control.body_end);
+        if (probe->flags.stopped || probe->flags.needs_iteration) {
             return;
         }
         condition = probe_condition(probe, control);
     }
     if (!condition.known) {
-        probe->needs_iteration = true;
+        probe->flags.needs_iteration = true;
     }
 }
 
 static void probe_if(probe_t *probe, rpn_control_t control, comptime_value_t condition) {
     if (condition.known) {
         if (condition.number != 0) {
-            sp_probe_range(probe, control.branch + 2, control.body_end, true);
+            sp_probe_range(probe, control.branch + 2, control.body_end);
         } else if (control.has_else) {
-            sp_probe_range(probe, control.false_start, control.end, true);
+            sp_probe_range(probe, control.false_start, control.end);
         }
         return;
     }
-    bool previous_control = probe->unknown_control;
-    probe->unknown_control = true;
+    bool previous_control = probe->flags.unknown_control;
+    probe->flags.unknown_control = true;
     comptime_environment_t original = comptime_copy_environment(&probe->environment);
-    sp_probe_range(probe, control.branch + 2, control.body_end, true);
-    bool stopped = probe->stopped;
+    sp_probe_range(probe, control.branch + 2, control.body_end);
+    bool stopped = probe->flags.stopped;
     comptime_environment_t left = probe->environment;
     probe->environment = original;
-    probe->stopped = false;
+    probe->flags.stopped = false;
     if (control.has_else) {
-        sp_probe_range(probe, control.false_start, control.end, true);
+        sp_probe_range(probe, control.false_start, control.end);
     }
-    probe->stopped &= stopped;
-    comptime_environment_t joined = comptime_join_environments(&left, &probe->environment);
-    free(left.items);
-    free(probe->environment.items);
-    probe->environment = joined;
-    probe->unknown_control = previous_control;
+    probe->flags.stopped &= stopped;
+    comptime_environment_replace(&probe->environment,
+        comptime_join_environments(&left, &probe->environment));
+    comptime_environment_free(&left);
+    probe->flags.unknown_control = previous_control;
 }
 
 static void probe_control(probe_t *probe, rpn_control_t control) {
     comptime_value_t condition = probe_condition(probe, control);
-    if (control.loop) {
+    if (probe->flags.auditing_types) {
+        probe_audit_control(probe, control, condition);
+    } else if (control.loop) {
         probe_loop(probe, control, condition);
     } else {
         probe_if(probe, control, condition);
     }
 }
 
-void sp_probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first) {
-    if (!probe->controls) {
+void sp_probe_range(probe_t *probe, size_t begin, size_t end) {
+    if (probe->controls == NULL) {
         probe->controls = rpn_index_controls(probe->input);
     }
-    for (size_t pc = begin; pc < end && !probe->stopped && !probe->needs_iteration; pc++) {
-        size_t branch = (pc != begin || inspect_first) && probe->controls[pc] ? probe->controls[pc] - 1 : end;
+    semantic_origin_t previous = set_semantic_origin((semantic_origin_t){probe->input, begin});
+    for (size_t pc = begin;
+         pc < end && !probe->flags.stopped && (probe->flags.auditing_types || !probe->flags.needs_iteration);
+         pc++) {
+        set_semantic_origin((semantic_origin_t){probe->input, pc});
+        size_t branch = probe->controls[pc] != 0 ? probe->controls[pc] - 1 : end;
         if (branch < end) {
             rpn_control_t control = rpn_describe_control(probe->input, pc, branch);
             probe_control(probe, control);
             pc = control.end - 1;
         } else {
-            probe_step(probe, &probe->input->steps[pc]);
+            probe_step(probe, pc);
         }
     }
+    set_semantic_origin(previous);
 }
 
-bool sp_requires_iteration(const specialize_state_t *state, const rpn_t *input, size_t begin, size_t end,
-                           const comptime_environment_t *environment, const map_node_t *receiver) {
+bool sp_requires_iteration(specialize_state_t *state, const rpn_t *input, size_t begin, size_t end,
+                           const comptime_environment_t *environment, map_node_t *receiver) {
     probe_t probe = {
         .state = state,
         .input = input,
@@ -464,23 +506,33 @@ bool sp_requires_iteration(const specialize_state_t *state, const rpn_t *input, 
         .receiver = receiver
     };
     comptime_forget_runtime(&probe.environment);
-    sp_probe_range(&probe, begin, end, true);
-    bool result = probe.needs_iteration;
+    sp_probe_range(&probe, begin, end);
+    bool result = probe.flags.needs_iteration;
     probe_destroy(&probe);
     return result;
 }
 
-comptime_value_t sp_evaluate_call(const specialize_state_t *state, function_template_t *source,
-    comptime_environment_t *environment, const comptime_environment_t *arguments,
-    const map_node_t *receiver, bool unknown_entry, int line) {
+comptime_value_t sp_evaluate_call(specialize_state_t *state, function_template_t *source,
+                                  comptime_environment_t *environment,
+                                  const comptime_environment_t *arguments,
+                                  map_node_t *receiver, bool unknown_entry, int line) {
+    if (source == NULL || sp_find_active_instance(state, source) != NULL) {
+        return (comptime_value_t){0};
+    }
+    for (const evaluation_frame_t *frame = state->evaluating; frame != NULL; frame = frame->parent) {
+        if (frame->function == source->symbol) {
+            return (comptime_value_t){0};
+        }
+    }
+    evaluation_frame_t frame = {source->symbol, state->evaluating};
+    state->evaluating = &frame;
     probe_t probe = {
         .state = state,
         .input = source->body,
         .receiver = receiver,
         .environment = comptime_call_environment(environment, arguments, source->symbol),
-        .validating = true,
-        .function = source->symbol,
-        .external_unknown = unknown_entry
+        .flags = {.validating = true, .external_unknown = unknown_entry},
+        .function = source->symbol
     };
     for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
         const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
@@ -489,11 +541,35 @@ comptime_value_t sp_evaluate_call(const specialize_state_t *state, function_temp
                                   parameter->key);
         }
     }
-    types_check_discarded(source->body, source->symbol, 0, source->body->count,
-                          &probe.environment, receiver);
-    sp_probe_range(&probe, 0, source->body->count, true);
+    sp_check_discarded(state, source->body, source->symbol, 0, source->body->count,
+                       &probe.environment, receiver);
+    sp_probe_range(&probe, 0, source->body->count);
     sp_apply_effects(source, &probe.environment, receiver, environment, receiver);
-    comptime_value_t returned = probe.needs_iteration ? (comptime_value_t){0} : probe.returned;
+    comptime_value_t returned = probe.flags.needs_iteration ? (comptime_value_t){0} : probe.returned;
     probe_destroy(&probe);
+    state->evaluating = frame.parent;
     return returned;
+}
+
+bool sp_check_discarded(specialize_state_t *state, const rpn_t *body, map_node_t *function,
+                        size_t begin, size_t end, const comptime_environment_t *environment,
+                        map_node_t *receiver) {
+    int errors = global_errors;
+    probe_t probe = {
+        .state = state,
+        .input = body,
+        .resolved = {.count = body->count, .capacity = body->count},
+        .environment = comptime_copy_environment(environment),
+        .receiver = receiver,
+        .flags = {.auditing_types = true},
+        .function = function
+    };
+    probe.resolved.steps = memory_zero(body->count + 1, sizeof(*body->steps));
+    memcpy(probe.resolved.steps, body->steps, body->count * sizeof(*body->steps));
+    sp_probe_range(&probe, begin, end);
+    if (errors == global_errors) {
+        types_check_slice(&probe.resolved, function, body, begin, end);
+    }
+    probe_destroy(&probe);
+    return errors == global_errors;
 }

@@ -43,16 +43,16 @@ typedef enum {
 typedef struct {
     rpn_step_kind_t kind;
     union {
-        const map_node_t *symbol;
+        map_node_t *symbol;
         rpn_operator_t operator;
         size_t target;
     } value;
     int source_line;
-    const map_node_t *receiver;
-    const map_node_t *index;
+    map_node_t *receiver;
+    map_node_t *index;
     size_t control_start;
-    const map_node_t *loop_variable;
-    const map_node_t *capture;
+    map_node_t *loop_variable;
+    map_node_t *capture;
 } rpn_step_t;
 
 typedef struct {
@@ -77,11 +77,11 @@ rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t bran
 void rpn_init(rpn_t *rpn);
 void rpn_free(rpn_t *rpn);
 
-size_t rpn_emit_symbol(rpn_t *rpn, const map_node_t *symbol, int line);
-size_t rpn_emit_destination(rpn_t *rpn, const map_node_t *symbol, int line);
+size_t rpn_emit_symbol(rpn_t *rpn, map_node_t *symbol, int line);
+size_t rpn_emit_destination(rpn_t *rpn, map_node_t *symbol, int line);
 size_t rpn_emit_operator(rpn_t *rpn, rpn_operator_t operator, int line);
 size_t rpn_emit_branch_false(rpn_t *rpn, size_t control_start,
-                             const map_node_t *loop_variable, int line);
+                             map_node_t *loop_variable, int line);
 size_t rpn_emit_branch(rpn_t *rpn, size_t target, int line);
 size_t rpn_append_step(rpn_t *rpn, rpn_step_t step);
 bool rpn_append_sequence(rpn_t *rpn, const rpn_t *source);

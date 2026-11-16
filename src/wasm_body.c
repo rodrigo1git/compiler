@@ -90,11 +90,11 @@ static size_t alloc_temp(body_emitter_t *e, type_t type, int line) {
     snprintf(key, sizeof(key), "@tmp_%zu_%zu", body_id(e), id);
     map_node_t *s = map_put(symbol_table, key, "ID");
     symbol_set_usage(s, SYMBOL_AUXILIARY);
-    s->owner = (map_node_t *)layout_source(e->body->symbol);
+    s->owner = layout_source(e->body->symbol);
     s->declaration_line = line;
-    s->type_symbol = (map_node_t *)type.class_symbol;
+    s->type_symbol = type.class_symbol;
     if (!s->declared_type) {
-        s->declared_type = strdup(type_name(type));
+        s->declared_type = memory_strdup(type_name(type));
     }
     return id;
 }
@@ -119,7 +119,7 @@ static void emit_fail_if(FILE *out, int indent, int code, int line) {
 }
 
 static void emit_float_const(body_emitter_t *e, const char *key) {
-    char *text = strdup(key);
+    char *text = memory_strdup(key);
     for (char *p = text; *p; p++) {
         if (*p == 's') {
             *p = 'e';

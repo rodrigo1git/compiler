@@ -5,32 +5,20 @@
 #include "../include/comptime_objects.h"
 #include "../include/diagnostics.h"
 #include "../include/classes.h"
-#include "../include/types.h"
-
-typedef struct {
-    const map_node_t *symbol;
-    rpn_step_kind_t kind;
-    const map_node_t *object;
-    const map_node_t *receiver;
-    const map_node_t *index;
-} destination_t;
 
 typedef struct {
     comptime_value_t value;
-    destination_t destination;
+    sp_destination_t destination;
     size_t start;
     size_t end;
     bool removable;
 } operand_t;
 
-typedef struct pending_call {
-    function_template_t *source;
-    const map_node_t *receiver;
-    comptime_environment_t arguments;
-    size_t frame_step;
-    int errors;
-    struct pending_call *parent;
-} pending_call_t;
+typedef struct {
+    map_node_t *object;
+    map_node_t *field;
+    bool runtime_index;
+} attribute_access_t;
 
 struct transform_context {
     specialize_state_t *state;
@@ -38,10 +26,10 @@ struct transform_context {
     rpn_t *output;
     comptime_environment_t *environment;
     map_node_t *function;
-    const map_node_t *receiver;
+    map_node_t *receiver;
     operand_t *stack;
     size_t count;
-    pending_call_t *pending;
+    sp_pending_call_t *pending;
     bool external_unknown;
     bool stopped;
     bool has_return;
@@ -94,14 +82,23 @@ static void record_return(context_t *context, comptime_value_t value) {
 }
 
 static operand_t process_condition(context_t *context, rpn_control_t control, bool unknown_control) {
-    sp_transform_range(context, control.start, control.branch, unknown_control, false);
+    sp_range_options_t options = {.unknown_control = unknown_control, .inspect_first = false};
+    sp_transform_range(context, control.start, control.branch, options);
     return pop(context, context->input->steps[control.branch].source_line);
 }
 
 static void check_discarded(context_t *context, size_t begin, size_t end) {
     if (begin < end) {
-        types_check_discarded(context->input, context->function, begin, end, context->environment,
-                              context->receiver);
+        sp_check_discarded(context->state, context->input, context->function, begin, end,
+                           context->environment, context->receiver);
+    }
+}
+
+static void check_dead_branch(context_t *context, rpn_control_t control, bool taken) {
+    if (taken && control.has_else) {
+        check_discarded(context, control.false_start, control.end);
+    } else if (!taken) {
+        check_discarded(context, control.branch + 2, control.body_end);
     }
 }
 
@@ -110,31 +107,29 @@ static void process_if(context_t *context, rpn_control_t control, bool unknown_c
     size_t condition_output = context->output->count;
     operand_t condition = process_condition(context, control, unknown_control);
     if (condition.value.known) {
+        bool taken = condition.value.number != 0;
         discard(context, condition, line);
-        if (condition.value.number != 0 && control.has_else) {
-            check_discarded(context, control.false_start, control.end);
-        } else if (condition.value.number == 0) {
-            check_discarded(context, control.branch + 2, control.body_end);
-        }
-        if (condition.value.number != 0) {
-            sp_transform_range(context, control.branch + 2, control.body_end, unknown_control, true);
+        check_dead_branch(context, control, taken);
+        sp_range_options_t branch_options = {.unknown_control = unknown_control, .inspect_first = true};
+        if (taken) {
+            sp_transform_range(context, control.branch + 2, control.body_end, branch_options);
         } else if (control.has_else) {
-            sp_transform_range(context, control.false_start, control.end, unknown_control, true);
+            sp_transform_range(context, control.false_start, control.end, branch_options);
         }
         return;
     }
     size_t false_target = rpn_emit_branch_false(context->output, condition_output + 1, NULL, line);
     comptime_environment_t original = comptime_copy_environment(context->environment);
-    sp_transform_range(context, control.branch + 2, control.body_end, true, true);
+    sp_range_options_t runtime_options = {.unknown_control = true, .inspect_first = true};
+    sp_transform_range(context, control.branch + 2, control.body_end, runtime_options);
     bool true_stopped = context->stopped;
     comptime_environment_t true_environment = comptime_copy_environment(context->environment);
     context->stopped = false;
     if (control.has_else) {
         size_t end_target = rpn_emit_branch(context->output, 0, line);
         rpn_patch_to_end(context->output, false_target);
-        free(context->environment->items);
-        *context->environment = comptime_copy_environment(&original);
-        sp_transform_range(context, control.false_start, control.end, true, true);
+        comptime_environment_replace(context->environment, comptime_copy_environment(&original));
+        sp_transform_range(context, control.false_start, control.end, runtime_options);
         context->stopped = true_stopped && context->stopped;
         rpn_patch_to_end(context->output, end_target);
     } else {
@@ -142,10 +137,9 @@ static void process_if(context_t *context, rpn_control_t control, bool unknown_c
     }
     comptime_environment_t joined =
         comptime_join_environments(&true_environment, control.has_else ? context->environment : &original);
-    free(context->environment->items);
-    free(original.items);
-    free(true_environment.items);
-    *context->environment = joined;
+    comptime_environment_replace(context->environment, joined);
+    comptime_environment_free(&original);
+    comptime_environment_free(&true_environment);
 }
 
 static void process_loop(context_t *context, rpn_control_t control, bool unknown_control) {
@@ -165,35 +159,37 @@ static void process_loop(context_t *context, rpn_control_t control, bool unknown
                                        context->environment, context->receiver);
     }
     if (expand && condition.value.known && (!unknown_control || !effects)) {
+        sp_range_options_t body_options = {.unknown_control = unknown_control, .inspect_first = true};
         for (;;) {
             discard(context, condition, line);
             if (condition.value.number == 0 || context->stopped) {
                 break;
             }
             int errors = global_errors;
-            sp_transform_range(context, control.branch + 2, control.body_end, unknown_control, true);
+            sp_transform_range(context, control.branch + 2, control.body_end, body_options);
             if (context->stopped || global_errors != errors) {
                 break;
             }
             condition = process_condition(context, control, unknown_control);
             if (!condition.value.known) {
                 report_semantic_error(line, "Compile-time loop control became unknown");
-                sp_transform_range(context, control.branch + 2, control.body_end, true, true);
+                sp_range_options_t fallback_options = {.unknown_control = true, .inspect_first = true};
+                sp_transform_range(context, control.branch + 2, control.body_end, fallback_options);
                 break;
             }
         }
         return;
     }
-    const map_node_t *loop_variable = context->input->steps[control.branch].loop_variable;
+    map_node_t *loop_variable = context->input->steps[control.branch].loop_variable;
     size_t false_target = rpn_emit_branch_false(context->output, condition_output + 1, loop_variable, line);
     comptime_environment_t original = comptime_copy_environment(context->environment);
     comptime_forget_runtime(context->environment);
-    sp_transform_range(context, control.branch + 2, control.body_end, true, true);
+    sp_range_options_t runtime_options = {.unknown_control = true, .inspect_first = true};
+    sp_transform_range(context, control.branch + 2, control.body_end, runtime_options);
     context->stopped = false;
     rpn_emit_branch(context->output, condition_output + 1, line);
     rpn_patch_to_end(context->output, false_target);
-    free(context->environment->items);
-    *context->environment = original;
+    comptime_environment_replace(context->environment, original);
     comptime_forget_runtime(context->environment);
 }
 
@@ -219,18 +215,16 @@ static void evaluate_binary(context_t *context, rpn_step_t step) {
     push(context, result);
 }
 
-static void assign_comptime(context_t *context, destination_t destination, comptime_value_t value,
+static void assign_comptime(context_t *context, sp_destination_t destination, comptime_value_t value,
                             bool unknown_control, int line) {
-    const map_node_t *symbol = destination.symbol;
+    map_node_t *symbol = destination.symbol;
     bool argument = destination.kind == RPN_ARGUMENT_DESTINATION;
-    bool local = symbol->owner == context->function ||
-                 (destination.object != NULL && destination.object->owner == context->function);
-    bool forbidden = !argument && symbol->usage != SYMBOL_AUXILIARY &&
-                     (unknown_control || (context->external_unknown && !local));
+    bool forbidden = sp_is_forbidden_comptime_write(symbol, destination.object, context->function,
+                                                    argument, unknown_control, context->external_unknown);
     if (!comptime_validate_assignment(symbol, value, forbidden, line)) {
         return;
     }
-    const map_node_t *constant = comptime_make_constant(value, line);
+    map_node_t *constant = comptime_make_constant(value, line);
     if (constant == NULL) {
         return;
     }
@@ -242,76 +236,92 @@ static void assign_comptime(context_t *context, destination_t destination, compt
     }
 }
 
-static void assign_value(context_t *context, destination_t destination, operand_t assigned,
-                         bool unknown_control, int line) {
-    comptime_value_t value = assigned.value;
-    const map_node_t *symbol = destination.symbol;
-    bool argument = destination.kind == RPN_ARGUMENT_DESTINATION;
-    if (symbol != NULL && symbol->is_comptime) {
-        assign_comptime(context, destination, value, unknown_control, line);
-        discard(context, assigned, line);
-        return;
-    }
+static void emit_runtime_assignment(context_t *context, sp_destination_t destination, int line) {
     rpn_step_t step = {
         .kind = destination.kind,
-        .value.symbol = symbol,
+        .value.symbol = destination.symbol,
         .source_line = line,
         .receiver = destination.receiver,
         .index = destination.index
     };
     emit(context, step);
     rpn_emit_operator(context->output, RPN_ASSIGN, line);
-    if (argument && symbol != NULL && symbol->type_symbol != NULL && context->pending != NULL) {
-        comptime_copy_t copy = {
-            .source = context->environment,
-            .destination = &context->pending->arguments,
-            .function = context->function,
-            .argument = true,
-            .external_unknown = context->external_unknown
-        };
-        comptime_copy_object_fields(&copy, symbol, symbol->type_symbol, value, line);
+}
+
+static void copy_argument_fields(context_t *context, map_node_t *symbol, comptime_value_t value, int line) {
+    if (symbol == NULL || symbol->type_symbol == NULL || context->pending == NULL) {
+        return;
+    }
+    comptime_copy_t copy = {
+        .source = context->environment,
+        .destination = &context->pending->arguments,
+        .function = context->function,
+        .argument = true,
+        .external_unknown = context->external_unknown
+    };
+    comptime_copy_object_fields(&copy, symbol, symbol->type_symbol, value, line);
+}
+
+static void copy_local_fields(context_t *context, sp_destination_t destination, comptime_value_t *value,
+                              bool unknown_control, int line) {
+    map_node_t *symbol = destination.symbol;
+    if (symbol == NULL || symbol->type_symbol == NULL) {
+        return;
+    }
+    map_node_t *object =
+        destination.kind == RPN_ATTRIBUTE_DESTINATION || symbol->usage == SYMBOL_ATTRIBUTE
+            ? comptime_object_location(destination.object, symbol)
+            : symbol;
+    comptime_copy_t copy = {
+        .source = context->environment,
+        .destination = context->environment,
+        .function = context->function,
+        .unknown_control = unknown_control,
+        .external_unknown = context->external_unknown
+    };
+    comptime_copy_object_fields(&copy, object, symbol->type_symbol, *value, line);
+    value->object = object;
+    value->object_type = symbol->type_symbol;
+    value->object_snapshot = NULL;
+}
+
+static void assign_value(context_t *context, sp_destination_t destination, operand_t assigned,
+                         bool unknown_control, int line) {
+    comptime_value_t value = assigned.value;
+    map_node_t *symbol = destination.symbol;
+    bool argument = destination.kind == RPN_ARGUMENT_DESTINATION;
+    if (symbol != NULL && symbol->is_comptime) {
+        assign_comptime(context, destination, value, unknown_control, line);
+        discard(context, assigned, line);
+        return;
+    }
+    emit_runtime_assignment(context, destination, line);
+    if (argument) {
+        copy_argument_fields(context, symbol, value, line);
     }
     if (symbol != NULL) {
         class_check_copy(symbol->type_symbol, value.object_type, line);
     }
-    if (!argument && symbol != NULL && symbol->type_symbol != NULL) {
-        const map_node_t *object =
-            destination.kind == RPN_ATTRIBUTE_DESTINATION || symbol->usage == SYMBOL_ATTRIBUTE
-                ? comptime_object_location(destination.object, symbol)
-                : symbol;
-        comptime_copy_t copy = {
-            .source = context->environment,
-            .destination = context->environment,
-            .function = context->function,
-            .unknown_control = unknown_control,
-            .external_unknown = context->external_unknown
-        };
-        comptime_copy_object_fields(&copy, object, symbol->type_symbol, value, line);
-        value.object = object;
-        value.object_type = symbol->type_symbol;
-        value.object_snapshot = NULL;
-    }
-    if (!argument && destination.kind == RPN_ATTRIBUTE_DESTINATION && symbol == NULL) {
-        for (size_t i = 0; i < context->environment->count; i++) {
-            if (context->environment->items[i].object == destination.object) {
-                context->environment->items[i].value = (comptime_value_t){0};
-            }
+    if (!argument) {
+        copy_local_fields(context, destination, &value, unknown_control, line);
+        if (destination.kind == RPN_ATTRIBUTE_DESTINATION && symbol == NULL) {
+            comptime_invalidate_object(context->environment, destination.object);
         }
-    }
-    if (symbol != NULL && !argument) {
-        comptime_set(context->environment, symbol, destination.object, value);
+        if (symbol != NULL) {
+            comptime_set(context->environment, symbol, destination.object, value);
+        }
     }
 }
 
 static void process_symbol(context_t *context, rpn_step_t step) {
     operand_t operand = {.start = context->output->count, .removable = true};
-    const map_node_t *symbol = step.value.symbol;
+    map_node_t *symbol = step.value.symbol;
     operand.value = comptime_read_symbol(context->environment, symbol, context->receiver);
     if (symbol->is_comptime) {
         if (!operand.value.known) {
             report_semantic_error(step.source_line, "Comptime '%s' has no known value", symbol->key);
         } else {
-            const map_node_t *constant = comptime_make_constant(operand.value, step.source_line);
+            map_node_t *constant = comptime_make_constant(operand.value, step.source_line);
             if (constant != NULL) {
                 step.value.symbol = constant;
             }
@@ -329,15 +339,8 @@ static void process_symbol(context_t *context, rpn_step_t step) {
     push(context, operand);
 }
 
-typedef struct {
-    const map_node_t *object;
-    map_node_t *field;
-    bool runtime_index;
-} attribute_access_t;
-
-static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step) {
-    const map_node_t *object = comptime_resolve_object(step->receiver, context->receiver);
-    const map_node_t *index = step->index;
+static comptime_value_t resolve_attribute_index(context_t *context, rpn_step_t *step) {
+    map_node_t *index = step->index;
     comptime_value_t selected = comptime_read_symbol(context->environment, index, context->receiver);
     if (index->is_comptime) {
         if (!selected.known) {
@@ -346,20 +349,30 @@ static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step
             step->index = comptime_make_constant(selected, step->source_line);
         }
     }
-    bool runtime_index = !index->is_comptime && index->usage != SYMBOL_LEXEME;
-    map_node_t *attribute = (map_node_t *)comptime_select_field(object->type_symbol, selected);
-    if (runtime_index && selected.known &&
-        (selected.number < 0 || selected.number >= object->type_symbol->class_info->effective_attributes.count)) {
-        selected.known = false;
+    return selected;
+}
+
+static map_node_t *select_attribute_field(const map_node_t *object, comptime_value_t *selected,
+                                          bool runtime_index, int line) {
+    map_node_t *attribute = comptime_select_field(object->type_symbol, *selected);
+    if (runtime_index && selected->known &&
+        (selected->number < 0 || selected->number >= object->type_symbol->class_info->effective_attributes.count)) {
+        selected->known = false;
     }
-    if (selected.known && !selected.floating) {
-        if (selected.number < 0) {
-            report_semantic_error(step->source_line, "Attribute position %ld does not exist in class '%s'",
-                                  (long)selected.number, object->type_symbol->key);
+    if (selected->known && !selected->floating) {
+        if (selected->number < 0) {
+            report_semantic_error(line, "Attribute position %ld does not exist in class '%s'",
+                                  (long)selected->number, object->type_symbol->key);
         } else {
-            attribute = class_attribute_at(object->type_symbol, (size_t)selected.number, step->source_line);
+            attribute = class_attribute_at(object->type_symbol, (size_t)selected->number, line);
         }
     }
+    return attribute;
+}
+
+static void capture_dynamic_attribute(context_t *context, rpn_step_t *step, map_node_t *object,
+                                      const map_node_t *attribute, comptime_value_t selected,
+                                      bool runtime_index) {
     if (((attribute == NULL && !selected.known) || runtime_index) &&
         class_has_comptime(object->type_symbol)) {
         if (step->kind == RPN_ATTRIBUTE) {
@@ -371,13 +384,22 @@ static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step
                                   "Attribute position must be known when accessing comptime attributes");
         }
     }
+}
+
+static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step) {
+    map_node_t *object = comptime_resolve_object(step->receiver, context->receiver);
+    map_node_t *index = step->index;
+    comptime_value_t selected = resolve_attribute_index(context, step);
+    bool runtime_index = !index->is_comptime && index->usage != SYMBOL_LEXEME;
+    map_node_t *attribute = select_attribute_field(object, &selected, runtime_index, step->source_line);
+    capture_dynamic_attribute(context, step, object, attribute, selected, runtime_index);
     return (attribute_access_t){object, attribute, runtime_index};
 }
 
 static void process_attribute(context_t *context, rpn_step_t step) {
     operand_t operand = {.start = context->output->count, .removable = true};
     attribute_access_t access = resolve_attribute(context, &step);
-    const map_node_t *object = access.object;
+    map_node_t *object = access.object;
     map_node_t *attribute = access.field;
     bool runtime_index = access.runtime_index;
     if (step.kind == RPN_ATTRIBUTE_DESTINATION) {
@@ -414,8 +436,8 @@ static void process_attribute(context_t *context, rpn_step_t step) {
 }
 
 static void begin_call(context_t *context, rpn_step_t step) {
-    pending_call_t *pending = memory_resize(NULL, sizeof(*pending));
-    *pending = (pending_call_t){
+    sp_pending_call_t *pending = memory_resize(NULL, sizeof(*pending));
+    *pending = (sp_pending_call_t){
         .source = sp_find_template(context->state, step.value.symbol),
         .receiver = comptime_resolve_object(step.receiver, context->receiver),
         .frame_step = context->output->count,
@@ -428,13 +450,13 @@ static void begin_call(context_t *context, rpn_step_t step) {
 
 static void process_call(context_t *context, rpn_step_t step, bool unknown_control) {
     operand_t operand = {.start = context->output->count, .removable = true};
-    pending_call_t *pending = context->pending;
+    sp_pending_call_t *pending = context->pending;
     if (pending == NULL || pending->source == NULL) {
         report_semantic_error(step.source_line, "Cannot resolve intermediate call");
         return;
     }
     function_instance_t *instance = sp_find_active_instance(context->state, pending->source);
-    if (!instance && global_errors == pending->errors) {
+    if (instance == NULL && global_errors == pending->errors) {
         instance = sp_instantiate(context->state, pending->source, context->environment,
                                   &pending->arguments, pending->receiver,
                                   unknown_control || context->external_unknown, step.source_line);
@@ -459,7 +481,7 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
         sp_forget_call_writes(context->environment, pending->source);
     }
     context->pending = pending->parent;
-    free(pending->arguments.items);
+    comptime_environment_free(&pending->arguments);
     free(pending);
 }
 
@@ -504,13 +526,12 @@ static void process_operator(context_t *context, rpn_step_t step, bool unknown_c
     }
 }
 
-void sp_transform_range(context_t *context, size_t begin, size_t end, bool unknown_control,
-                        bool inspect_first_control) {
+void sp_transform_range(context_t *context, size_t begin, size_t end, sp_range_options_t options) {
     semantic_origin_t previous_origin = set_semantic_origin((semantic_origin_t){context->input, begin});
     for (size_t pc = begin; pc < end && !context->stopped; pc++) {
         set_semantic_origin((semantic_origin_t){context->input, pc});
-        if ((pc != begin || inspect_first_control) && context->controls[pc] != 0) {
-            pc = transform_control(context, pc, context->controls[pc] - 1, unknown_control) - 1;
+        if ((pc != begin || options.inspect_first) && context->controls[pc] != 0) {
+            pc = transform_control(context, pc, context->controls[pc] - 1, options.unknown_control) - 1;
             if (context->stopped) {
                 check_discarded(context, pc + 1, end);
             }
@@ -547,10 +568,10 @@ void sp_transform_range(context_t *context, size_t begin, size_t end, bool unkno
                 begin_call(context, step);
                 break;
             case RPN_CALL:
-                process_call(context, step, unknown_control);
+                process_call(context, step, options.unknown_control);
                 break;
             case RPN_OPERATOR:
-                process_operator(context, step, unknown_control);
+                process_operator(context, step, options.unknown_control);
                 break;
             case RPN_TARGET:
                 report_semantic_error(step.source_line, "Unexpected standalone jump target");
@@ -566,32 +587,26 @@ void sp_transform_range(context_t *context, size_t begin, size_t end, bool unkno
     set_semantic_origin(previous_origin);
 }
 
-void sp_transform(specialize_state_t *state, const rpn_t *input, rpn_t *output,
-                  comptime_environment_t *environment, map_node_t *function, const map_node_t *receiver,
-                  bool external_unknown, comptime_value_t *returned) {
+void sp_transform(const sp_transform_request_t *request) {
     context_t context = {
-        .state = state,
-        .input = input,
-        .output = output,
-        .environment = environment,
-        .function = function,
-        .receiver = receiver,
-        .external_unknown = external_unknown
+        .state = request->state,
+        .input = request->input,
+        .output = request->output,
+        .environment = request->environment,
+        .function = request->function,
+        .receiver = request->receiver,
+        .external_unknown = request->external_unknown
     };
-    context.controls = rpn_index_controls(input);
-    sp_transform_range(&context, 0, input->count, false, true);
+    context.controls = rpn_index_controls(request->input);
+    sp_range_options_t initial_options = {.unknown_control = false, .inspect_first = true};
+    sp_transform_range(&context, 0, request->input->count, initial_options);
     if (context.count != 0) {
-        report_semantic_error(function != NULL ? function->declaration_line : 1,
+        report_semantic_error(request->function != NULL ? request->function->declaration_line : 1,
                               "Intermediate body leaves an incomplete expression");
     }
-    while (context.pending != NULL) {
-        pending_call_t *previous = context.pending->parent;
-        free(context.pending->arguments.items);
-        free(context.pending);
-        context.pending = previous;
-    }
-    if (returned != NULL) {
-        *returned = context.returned;
+    sp_pending_free_all(&context.pending);
+    if (request->returned != NULL) {
+        *request->returned = context.returned;
     }
     free(context.controls);
     free(context.stack);

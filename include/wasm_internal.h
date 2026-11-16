@@ -14,7 +14,6 @@
 #define INT16_SIGN_EXTEND_SHIFT 16
 #define FLOAT32_MAX_ABS_STR "3.40282347e38"
 
-/* Debe coincidir con las claves de runtime/host.mjs. */
 typedef enum {
     WASM_ERR_FLOAT_OVERFLOW     = 1,
     WASM_ERR_INT_OVERFLOW       = 2,

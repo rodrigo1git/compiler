@@ -246,12 +246,12 @@ static void write_copy_helper(wasm_module_t *mod) {
     FILE *out = mod->out;
     wasm_emit_line(out, 1, "(func $copy_object (param $destination i32) (param $source i32)");
     for (size_t i = 0; i < mod->layout.count; i++) {
-        const map_node_t *dst = mod->layout.items[i].symbol;
+        map_node_t *dst = mod->layout.items[i].symbol;
         if (dst->usage != SYMBOL_CLASS) {
             continue;
         }
         for (size_t j = 0; j < mod->layout.count; j++) {
-            const map_node_t *src = mod->layout.items[j].symbol;
+            map_node_t *src = mod->layout.items[j].symbol;
             if (src->usage != SYMBOL_CLASS || !types_compatible((type_t){TYPE_OBJECT, dst}, (type_t){TYPE_OBJECT, src})) {
                 continue;
             }

@@ -25,12 +25,10 @@ static void class_stack_push(class_stack_t *stack, map_node_t *type) {
 }
 
 void class_set_code(map_node_t *symbol, map_node_t *code) {
-    if (symbol == NULL || code == NULL) return;
-    symbol->class_info->class_code = strdup(code->key);
-    if (symbol->class_info->class_code == NULL) {
-        fprintf(stderr, "Fatal error: Cannot allocate class information\n");
-        exit(1);
+    if (symbol == NULL || code == NULL) {
+        return;
     }
+    symbol->class_info->class_code = memory_strdup(code->key);
 }
 
 void class_add_base(map_node_t *class_symbol, map_node_t *base) {

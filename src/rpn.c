@@ -43,7 +43,7 @@ size_t rpn_append_step(rpn_t *rpn, rpn_step_t step) {
     return rpn->count;
 }
 
-size_t rpn_emit_symbol(rpn_t *rpn, const map_node_t *symbol, int line) {
+size_t rpn_emit_symbol(rpn_t *rpn, map_node_t *symbol, int line) {
     if (symbol == NULL) {
         return 0;
     }
@@ -54,7 +54,7 @@ size_t rpn_emit_symbol(rpn_t *rpn, const map_node_t *symbol, int line) {
     });
 }
 
-size_t rpn_emit_destination(rpn_t *rpn, const map_node_t *symbol, int line) {
+size_t rpn_emit_destination(rpn_t *rpn, map_node_t *symbol, int line) {
     if (symbol == NULL) {
         return 0;
     }
@@ -77,7 +77,7 @@ size_t rpn_emit_operator(rpn_t *rpn, rpn_operator_t operator, int line) {
 }
 
 size_t rpn_emit_branch_false(rpn_t *rpn, size_t control_start,
-                             const map_node_t *loop_variable, int line) {
+                             map_node_t *loop_variable, int line) {
     size_t target_address = rpn_append_step(rpn, (rpn_step_t){
         .kind = RPN_TARGET,
         .value.target = 0,
