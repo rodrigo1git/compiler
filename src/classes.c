@@ -45,7 +45,6 @@ static void append_distinct(symbol_list_t *list, map_node_t *symbol) {
     symbol_list_append(list, symbol);
 }
 
-/* TP3 p.11: own declaration first, then inherited candidates, never first-base wins. */
 static void find_members(map_node_t *class_symbol, const char *name,
                          symbol_list_t *matches, bool *unresolved) {
     class_stack_t stack = {0};
@@ -251,6 +250,6 @@ bool class_check_containment(void) {
 }
 
 bool class_has_comptime(const map_node_t *class_symbol) {
-    /* Computed for the immutable class graph by class_check_containment, before specialization. */
+
     return class_symbol && class_symbol->class_info->has_comptime;
 }

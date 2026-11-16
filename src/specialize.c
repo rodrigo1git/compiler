@@ -57,7 +57,7 @@ bool specialize_print(FILE *stream) {
             !rpn_print(stream, &instance->body))
             return false;
     }
-    /* Source templates remain symbolic, even when concrete instances exist. */
+
     for (function_template_t *source = state.templates; source != NULL; source = source->next) {
         if (!source->contextual) continue;
         if (fprintf(stream, "\n--- TEMPLATE %s ---\n", source->symbol->key) < 0 ||
@@ -72,7 +72,7 @@ comptime_value_t specialize_evaluate_call(const map_node_t *symbol, comptime_env
                                           bool unknown_entry, int line) {
     function_template_t *source = sp_find_template(&state, symbol);
     if (!source || sp_find_active_instance(&state, source)) return (comptime_value_t){0};
-    /* Validation owns only abstract environments, never executable instances. */
+
     for (const evaluation_frame_t *frame = state.evaluating; frame; frame = frame->parent)
         if (frame->function == source->symbol) return (comptime_value_t){0};
     evaluation_frame_t frame = {source->symbol, state.evaluating};

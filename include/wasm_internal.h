@@ -39,6 +39,8 @@ typedef struct {
     size_t count;
 } wasm_module_t;
 
+typedef struct body_emitter body_emitter_t;
+void wasm_emit_range(body_emitter_t *e, size_t begin, size_t end);
 void wasm_emit_line(FILE *out, int indent, const char *format, ...);
 void wasm_emit_block(FILE *out, int indent, const char *format, ...)
     __attribute__((format(printf, 3, 4)));
@@ -46,4 +48,4 @@ void wasm_emit_runtime(wasm_module_t *mod);
 void wasm_prepare_bodies(wasm_module_t *mod);
 void wasm_write_body(wasm_module_t *mod, body_t *body);
 
-#endif /* WASM_INTERNAL_H */
+#endif

@@ -149,7 +149,7 @@ void report_parser_error(int line, const char *message) {
 }
 
 void begin_lexical_recovery(void) {
-    /* Reporting a range error in a parser action does not return YYerror. */
+
     finish_error_recovery();
     recovery.lexical = true;
 }
@@ -160,18 +160,18 @@ void begin_syntax_error(int line, const char *unexpected, const char *context) {
     recovery.line = line;
     recovery.unexpected = unexpected;
     diagnostic_append(&recovery.context, "%s", context ? context : "");
-    /* Count at detection, even if no recovery production can reduce. */
+
     global_errors++;
 }
 
 void report_syntax_error(int line, const char *message) {
-    /* Diagnostic productions without `error` detect independent problems. */
+
     global_errors++;
     write_diagnostic("Syntax", line, message);
 }
 
 void report_recovered_syntax_error(int line, const char *message) {
-    /* Bison already counted this error; YYerror was reported by the lexer. */
+
     if (!recovery.pending) return;
     write_diagnostic("Syntax", line, message);
     recovery.pending = false;

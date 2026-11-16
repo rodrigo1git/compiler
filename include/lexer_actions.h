@@ -37,4 +37,4 @@ int sa_operator_error(char c);
 
 int check_reserved_words(const char* word);
 
-#endif /* LEXER_ACTIONS_H */
+#endif

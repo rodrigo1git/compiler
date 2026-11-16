@@ -26,7 +26,6 @@ struct scope_names {
     scope_name_t *last;
 };
 
-/* Parent links form the active scope stack; frames outlive their symbol references. */
 static scope_t *current_scope;
 static scope_t *allocated_scopes;
 static unsigned int anonymous_scopes;
@@ -118,7 +117,7 @@ scope_t *scope_begin(map_node_t *name, symbol_usage_t usage, scope_type_t type, 
     map_node_t *symbol = declare(name, usage, type, line);
     char anonymous[48];
     const char *scope_name = name != NULL ? name->key : NULL;
-    /* A rejected declaration must not modify the original declaration's scope. */
+
     if (symbol == NULL) {
         snprintf(anonymous, sizeof(anonymous), "<invalid%u>", ++anonymous_scopes);
         scope_name = anonymous;
@@ -131,7 +130,7 @@ scope_t *scope_begin(map_node_t *name, symbol_usage_t usage, scope_type_t type, 
 
 void scope_end(scope_t *scope) {
     if (scope == NULL || !scope->active) return;
-    /* Destructors also restore the stack when Bison abandons a declaration. */
+
     while (current_scope != NULL) {
         scope_t *closed = current_scope;
         current_scope = closed->parent;

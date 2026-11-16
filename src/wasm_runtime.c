@@ -8,20 +8,8 @@ typedef enum {
     LOOKUP_TYPE_BY_POS
 } field_lookup_mode_t;
 
-static void write_memory_helpers(wasm_module_t *mod);
-static void write_object_helpers(wasm_module_t *mod);
-static void write_field_helper(wasm_module_t *mod, const char *name, field_lookup_mode_t mode);
-static void write_copy_helper(wasm_module_t *mod);
-
-void wasm_emit_runtime(wasm_module_t *mod) {
-    write_memory_helpers(mod);
-    write_object_helpers(mod);
-    write_copy_helper(mod);
-}
-
 static void write_memory_helpers(wasm_module_t *mod) {
     FILE *out = mod->out;
-    /* The exclusive end may be 2^32. Keep it wide even though addresses are i32. */
     wasm_emit_block(out, 1,
         "(func $allocate (param $size i32) (param $line i32) (result i32)\n"
         "  (local $old i64) (local $end i64) (local $pages i64)\n"
@@ -83,6 +71,54 @@ static void write_memory_helpers(wasm_module_t *mod) {
         ")");
 }
 
+static void write_field_helper(wasm_module_t *mod, const char *name, field_lookup_mode_t mode) {
+    FILE *out = mod->out;
+    wasm_emit_line(out, 1, "(func $%s (param $object i32) (param $index i32) (param $line i32) (result i32)", name);
+    for (size_t i = 0; i < mod->layout.count; i++) {
+        const map_node_t *kind = mod->layout.items[i].symbol;
+        if (kind->usage != SYMBOL_CLASS) {
+            continue;
+        }
+        wasm_emit_block(out, 2,
+            "local.get $object\n"
+            "i32.load\n"
+            "i32.const %zu\n"
+            "i32.eq\n"
+            "if",
+            mod->layout.items[i].id);
+        for (size_t j = 0; j < kind->class_info->effective_attributes.count; j++) {
+            const map_node_t *field = kind->class_info->effective_attributes.items[j];
+            size_t key = (mode == LOOKUP_ADDR_BY_ID) ? layout_id(&mod->layout, field) : j;
+            wasm_emit_block(out, 3,
+                "local.get $index\n"
+                "i32.const %zu\n"
+                "i32.eq\n"
+                "if",
+                key);
+            if (mode == LOOKUP_TYPE_BY_POS) {
+                wasm_emit_line(out, 4, "i32.const %d", type_of_symbol(field).kind);
+            } else {
+                wasm_emit_block(out, 4,
+                    "local.get $object\n"
+                    "i32.const %" PRIu64 "\n"
+                    "i32.add",
+                    layout_field_offset(&mod->layout, kind, j));
+            }
+            wasm_emit_block(out, 3,
+                "  return\n"
+                "end");
+        }
+        wasm_emit_line(out, 2, "end");
+    }
+    wasm_emit_block(out, 1,
+        "  i32.const %d\n"
+        "  local.get $line\n"
+        "  call $fail\n"
+        "  unreachable\n"
+        ")",
+        WASM_ERR_INVALID_FIELD);
+}
+
 static void write_object_helpers(wasm_module_t *mod) {
     FILE *out = mod->out;
 
@@ -107,7 +143,6 @@ static void write_object_helpers(wasm_module_t *mod) {
         "  unreachable\n"
         ")");
 
-    /* Keep traversal tasks in linear memory rather than the engine's call stack. */
     wasm_emit_block(out, 1,
         "(func $init_task (param $object i32) (param $kind i32) (param $line i32) (local $task i32)\n"
         "  i32.const 8\n"
@@ -207,54 +242,6 @@ static void write_object_helpers(wasm_module_t *mod) {
     write_field_helper(mod, "field_type", LOOKUP_TYPE_BY_POS);
 }
 
-static void write_field_helper(wasm_module_t *mod, const char *name, field_lookup_mode_t mode) {
-    FILE *out = mod->out;
-    wasm_emit_line(out, 1, "(func $%s (param $object i32) (param $index i32) (param $line i32) (result i32)", name);
-    for (size_t i = 0; i < mod->layout.count; i++) {
-        const map_node_t *kind = mod->layout.items[i].symbol;
-        if (kind->usage != SYMBOL_CLASS) {
-            continue;
-        }
-        wasm_emit_block(out, 2,
-            "local.get $object\n"
-            "i32.load\n"
-            "i32.const %zu\n"
-            "i32.eq\n"
-            "if",
-            mod->layout.items[i].id);
-        for (size_t j = 0; j < kind->class_info->effective_attributes.count; j++) {
-            const map_node_t *field = kind->class_info->effective_attributes.items[j];
-            size_t key = (mode == LOOKUP_ADDR_BY_ID) ? layout_id(&mod->layout, field) : j;
-            wasm_emit_block(out, 3,
-                "local.get $index\n"
-                "i32.const %zu\n"
-                "i32.eq\n"
-                "if",
-                key);
-            if (mode == LOOKUP_TYPE_BY_POS) {
-                wasm_emit_line(out, 4, "i32.const %d", type_of_symbol(field).kind);
-            } else {
-                wasm_emit_block(out, 4,
-                    "local.get $object\n"
-                    "i32.const %" PRIu64 "\n"
-                    "i32.add",
-                    layout_field_offset(&mod->layout, kind, j));
-            }
-            wasm_emit_block(out, 3,
-                "  return\n"
-                "end");
-        }
-        wasm_emit_line(out, 2, "end");
-    }
-    wasm_emit_block(out, 1,
-        "  i32.const %d\n"
-        "  local.get $line\n"
-        "  call $fail\n"
-        "  unreachable\n"
-        ")",
-        WASM_ERR_INVALID_FIELD);
-}
-
 static void write_copy_helper(wasm_module_t *mod) {
     FILE *out = mod->out;
     wasm_emit_line(out, 1, "(func $copy_object (param $destination i32) (param $source i32)");
@@ -268,8 +255,6 @@ static void write_copy_helper(wasm_module_t *mod) {
             if (src->usage != SYMBOL_CLASS || !types_compatible((type_t){TYPE_OBJECT, dst}, (type_t){TYPE_OBJECT, src})) {
                 continue;
             }
-            /* Compatible layouts have identical field types, including nested tags.
-               Preserve only the destination's own tag and copy its entire payload. */
             wasm_emit_block(out, 2,
                 "local.get $destination\n"
                 "i32.load\n"
@@ -299,4 +284,10 @@ static void write_copy_helper(wasm_module_t *mod) {
     wasm_emit_block(out, 1,
         "  unreachable\n"
         ")");
+}
+
+void wasm_emit_runtime(wasm_module_t *mod) {
+    write_memory_helpers(mod);
+    write_object_helpers(mod);
+    write_copy_helper(mod);
 }

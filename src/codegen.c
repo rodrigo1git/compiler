@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../include/codegen.h"
+#include "../include/comptime_values.h"
 #include "../include/diagnostics.h"
 #include "../include/classes.h"
 #include "../include/specialize.h"
@@ -55,7 +56,9 @@ bool codegen_finalize(void) {
     return specialize_program(&program);
 }
 
-const rpn_t *codegen_source_body(void) { return &program; }
+const rpn_t *codegen_source_body(void) {
+    return &program;
+}
 
 static rpn_t *new_fragment(void) {
     rpn_t *fragment = memory_resize(NULL, sizeof(*fragment));
@@ -64,20 +67,17 @@ static rpn_t *new_fragment(void) {
 }
 
 static void emit_fragment(rpn_t *fragment) {
-    if (fragment == NULL) return;
+    if (fragment == NULL) {
+        return;
+    }
     rpn_append_sequence(current_sequence, fragment);
     codegen_free(fragment);
-}
-
-static void append_operator(rpn_t *body, rpn_operator_t operator, int line) {
-    rpn_append_step(body, (rpn_step_t){.kind = RPN_OPERATOR,
-        .value.operator = operator, .source_line = line});
 }
 
 static void append_assignment(rpn_t *value, rpn_step_t destination, int line) {
     destination.source_line = line;
     rpn_append_step(value, destination);
-    append_operator(value, RPN_ASSIGN, line);
+    rpn_emit_operator(value, RPN_ASSIGN, line);
 }
 
 struct codegen_arguments {
@@ -108,8 +108,12 @@ codegen_arguments_t *codegen_arguments_append(codegen_arguments_t *arguments, rp
 }
 
 void codegen_arguments_free(codegen_arguments_t *arguments) {
-    if (arguments == NULL) return;
-    for (size_t i = 0; i < arguments->count; i++) codegen_free(arguments->items[i]);
+    if (arguments == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < arguments->count; i++) {
+        codegen_free(arguments->items[i]);
+    }
     free(arguments->items);
     free(arguments);
 }
@@ -119,7 +123,7 @@ codegen_order_t *codegen_order_append(codegen_order_t *order, map_node_t *consta
         order = memory_resize(NULL, sizeof(*order));
         *order = (codegen_order_t){0};
     }
-    /* Preserve malformed constants as positions, so counts do not change on recovery. */
+
     order->constants.items = memory_resize(order->constants.items,
         (order->constants.count + 1) * sizeof(*order->constants.items));
     order->constants.items[order->constants.count++] = constant;
@@ -127,16 +131,22 @@ codegen_order_t *codegen_order_append(codegen_order_t *order, map_node_t *consta
 }
 
 void codegen_order_free(codegen_order_t *order) {
-    if (order == NULL) return;
+    if (order == NULL) {
+        return;
+    }
     free(order->constants.items);
     free(order);
 }
 
 static void validate_argument_count(const codegen_call_t *call) {
-    if (call->function != NULL && call->arguments != NULL &&
-        call->arguments->count != call->function->function_info->parameters.count)
+    if (call->function == NULL || call->arguments == NULL) {
+        return;
+    }
+    size_t expected = call->function->function_info->parameters.count;
+    if (call->arguments->count != expected) {
         report_semantic_error(call->line, "Call to '%s' has %zu arguments; expected %zu",
-            call->function->key, call->arguments->count, call->function->function_info->parameters.count);
+            call->function->key, call->arguments->count, expected);
+    }
 }
 
 codegen_call_t *codegen_call_begin(map_node_t *function, map_node_t *receiver,
@@ -148,14 +158,17 @@ codegen_call_t *codegen_call_begin(map_node_t *function, map_node_t *receiver,
 }
 
 void codegen_call_free(codegen_call_t *call) {
-    if (call == NULL) return;
+    if (call == NULL) {
+        return;
+    }
     codegen_arguments_free(call->arguments);
     free(call);
 }
 
-/* Return a one-based position, or zero for an invalid/recovered constant. */
 static size_t evaluation_position(const map_node_t *constant, size_t count, int line) {
-    if (constant == NULL) return 0;
+    if (constant == NULL) {
+        return 0;
+    }
     if (strcmp(constant->value, "INTEGER") != 0) {
         report_semantic_error(line, "Evaluation order positions must be INTEGER constants");
         return 0;
@@ -168,7 +181,6 @@ static size_t evaluation_position(const map_node_t *constant, size_t count, int 
     return (size_t)position;
 }
 
-/* The call and order exist; validate everything needed before emission. */
 static size_t *validate_evaluation_order(const codegen_call_t *call, const codegen_order_t *order) {
     size_t count = call->function->function_info->parameters.count;
     if (order->constants.count != count) {
@@ -176,41 +188,64 @@ static size_t *validate_evaluation_order(const codegen_call_t *call, const codeg
             call->function->key, order->constants.count, count);
         return NULL;
     }
-    if (call->arguments->count != count) return NULL;
+    if (call->arguments->count != count) {
+        return NULL;
+    }
     size_t *positions = memory_resize(NULL, count * sizeof(*positions));
     bool unique = true;
     for (size_t i = 0; i < count; i++) {
         size_t position = evaluation_position(order->constants.items[i], count, call->line);
-        if (position == 0) { free(positions); return NULL; }
+        if (position == 0) {
+            free(positions);
+            return NULL;
+        }
         positions[i] = position - 1;
-        for (size_t j = 0; j < i; j++)
+        for (size_t j = 0; j < i; j++) {
             if (positions[j] == positions[i]) {
                 report_semantic_error(call->line, "Evaluation order repeats position %zu", position);
                 unique = false;
             }
+        }
     }
-    for (size_t i = 0; i < count; i++)
-        if (call->arguments->items[i] == NULL) { free(positions); return NULL; }
-    if (!unique) { free(positions); return NULL; }
+    for (size_t i = 0; i < count; i++) {
+        if (call->arguments->items[i] == NULL) {
+            free(positions);
+            return NULL;
+        }
+    }
+    if (!unique) {
+        free(positions);
+        return NULL;
+    }
     return positions;
 }
 
 static rpn_t *emit_call(const codegen_call_t *call, const size_t *positions) {
     size_t count = call->function->function_info->parameters.count;
     rpn_t *result = new_fragment();
-    /* TP3 pp.5,7: evaluate and copy in the explicit order, retaining formal positions.
-       A pending frame keeps nested/recursive calls independent of the caller's frame. */
-    rpn_append_step(result, (rpn_step_t){.kind = RPN_CALL_FRAME,
-        .value.symbol = call->function, .receiver = call->receiver, .source_line = call->line});
+
+    rpn_append_step(result, (rpn_step_t){
+        .kind = RPN_CALL_FRAME,
+        .value.symbol = call->function,
+        .receiver = call->receiver,
+        .source_line = call->line
+    });
     for (size_t i = 0; i < count; i++) {
         size_t position = positions[i];
         rpn_append_sequence(result, call->arguments->items[position]);
-        rpn_append_step(result, (rpn_step_t){.kind = RPN_ARGUMENT_DESTINATION,
-            .value.symbol = call->function->function_info->parameters.items[position], .source_line = call->line});
-        append_operator(result, RPN_ASSIGN, call->line);
+        rpn_append_step(result, (rpn_step_t){
+            .kind = RPN_ARGUMENT_DESTINATION,
+            .value.symbol = call->function->function_info->parameters.items[position],
+            .source_line = call->line
+        });
+        rpn_emit_operator(result, RPN_ASSIGN, call->line);
     }
-    rpn_append_step(result, (rpn_step_t){.kind = RPN_CALL,
-        .value.symbol = call->function, .receiver = call->receiver, .source_line = call->line});
+    rpn_append_step(result, (rpn_step_t){
+        .kind = RPN_CALL,
+        .value.symbol = call->function,
+        .receiver = call->receiver,
+        .source_line = call->line
+    });
     return result;
 }
 
@@ -230,9 +265,13 @@ rpn_t *codegen_call_end(codegen_call_t *call, codegen_order_t *order) {
 
 codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int line) {
     codegen_attribute_t attribute = {.object = object, .index = index, .line = line};
-    if (object == NULL || index == NULL) return (codegen_attribute_t){0};
+    if (object == NULL || index == NULL) {
+        return (codegen_attribute_t){0};
+    }
     map_node_t *class_symbol = object->type_symbol;
-    if (!class_build_layout(class_symbol, line)) return (codegen_attribute_t){0};
+    if (!class_build_layout(class_symbol, line)) {
+        return (codegen_attribute_t){0};
+    }
     if (strcmp(index->value, "INTEGER") == 0) {
         long position = strtol(index->key, NULL, 10);
         if (position < 0 || (size_t)position >= class_symbol->class_info->effective_attributes.count) {
@@ -241,18 +280,27 @@ codegen_attribute_t codegen_attribute(map_node_t *object, map_node_t *index, int
             return (codegen_attribute_t){0};
         }
         attribute.member = class_attribute_at(class_symbol, (size_t)position, line);
-        if (attribute.member == NULL) return (codegen_attribute_t){0};
+        if (attribute.member == NULL) {
+            return (codegen_attribute_t){0};
+        }
     }
     return attribute;
 }
 
 static rpn_step_t attribute_step(codegen_attribute_t attribute, rpn_step_kind_t kind) {
-    return (rpn_step_t){.kind = kind, .value.symbol = attribute.member,
-        .receiver = attribute.object, .index = attribute.index, .source_line = attribute.line};
+    return (rpn_step_t){
+        .kind = kind,
+        .value.symbol = attribute.member,
+        .receiver = attribute.object,
+        .index = attribute.index,
+        .source_line = attribute.line
+    };
 }
 
 rpn_t *codegen_attribute_value(codegen_attribute_t attribute) {
-    if (attribute.object == NULL || attribute.index == NULL) return NULL;
+    if (attribute.object == NULL || attribute.index == NULL) {
+        return NULL;
+    }
     rpn_t *value = new_fragment();
     rpn_append_step(value, attribute_step(attribute, RPN_ATTRIBUTE));
     return value;
@@ -280,29 +328,35 @@ void codegen_attribute_assignment(codegen_attribute_t attribute, rpn_t *value) {
         codegen_free(value);
         return;
     }
-    if (attribute.index->usage != SYMBOL_LEXEME)
+    if (attribute.index->usage != SYMBOL_LEXEME) {
         attribute = save_attribute_index(attribute);
+    }
     append_assignment(value, attribute_step(attribute, RPN_ATTRIBUTE_DESTINATION), attribute.line);
     emit_fragment(value);
 }
 
 void codegen_free(rpn_t *fragment) {
-    if (fragment == NULL) return;
+    if (fragment == NULL) {
+        return;
+    }
     rpn_free(fragment);
     free(fragment);
 }
 
 rpn_t *codegen_value(map_node_t *symbol, int line) {
-    if (symbol == NULL) return NULL;
+    if (symbol == NULL) {
+        return NULL;
+    }
     rpn_t *fragment = new_fragment();
-    rpn_append_symbol(fragment, symbol);
-    fragment->steps[0].source_line = line;
+    rpn_emit_symbol(fragment, symbol, line);
     return fragment;
 }
 
 rpn_t *codegen_unary(rpn_t *value, rpn_operator_t operator, int line) {
-    if (value == NULL) return NULL;
-    append_operator(value, operator, line);
+    if (value == NULL) {
+        return NULL;
+    }
+    rpn_emit_operator(value, operator, line);
     return value;
 }
 
@@ -315,7 +369,7 @@ rpn_t *codegen_binary(rpn_t *left, rpn_t *right,
     }
     rpn_append_sequence(left, right);
     codegen_free(right);
-    append_operator(left, operator, line);
+    rpn_emit_operator(left, operator, line);
     return left;
 }
 
@@ -324,9 +378,10 @@ rpn_t *codegen_target(rpn_t *targets, map_node_t *symbol, int line) {
         codegen_free(targets);
         return NULL;
     }
-    if (targets == NULL) targets = new_fragment();
-    rpn_append_destination(targets, symbol);
-    targets->steps[targets->count - 1].source_line = line;
+    if (targets == NULL) {
+        targets = new_fragment();
+    }
+    rpn_emit_destination(targets, symbol, line);
     return targets;
 }
 
@@ -336,10 +391,10 @@ rpn_t *codegen_assignment_expression(rpn_t *targets, rpn_t *value) {
         codegen_free(value);
         return NULL;
     }
-    /* Assign right to left while retaining a value for the enclosing expression. */
+
     for (size_t i = targets->count; i > 0; i--) {
         rpn_step_t target = targets->steps[i - 1];
-        append_operator(value, RPN_DUPLICATE, target.source_line);
+        rpn_emit_operator(value, RPN_DUPLICATE, target.source_line);
         append_assignment(value, target, target.source_line);
     }
     codegen_free(targets);
@@ -374,7 +429,9 @@ void codegen_return(rpn_t *value, int line) {
 }
 
 codegen_function_t *codegen_function_begin(map_node_t *symbol, int line) {
-    if (symbol == NULL) return NULL;
+    if (symbol == NULL) {
+        return NULL;
+    }
     if (symbol->declared_type == NULL ||
         (strcmp(symbol->declared_type, "INTEGER") != 0 &&
          strcmp(symbol->declared_type, "SINGLEF") != 0)) {
@@ -382,12 +439,18 @@ codegen_function_t *codegen_function_begin(map_node_t *symbol, int line) {
         return NULL;
     }
     codegen_function_t *function = memory_resize(NULL, sizeof(*function));
-    *function = (codegen_function_t){.symbol = symbol, .active = true,
-                                     .parent = current_function};
+    *function = (codegen_function_t){
+        .symbol = symbol,
+        .active = true,
+        .parent = current_function
+    };
     rpn_init(&function->body);
     specialize_register(symbol, &function->body);
-    if (last_function == NULL) functions = function;
-    else last_function->next = function;
+    if (last_function == NULL) {
+        functions = function;
+    } else {
+        last_function->next = function;
+    }
     last_function = function;
     current_function = function;
     current_sequence = &function->body;
@@ -395,95 +458,91 @@ codegen_function_t *codegen_function_begin(map_node_t *symbol, int line) {
 }
 
 void codegen_function_abort(codegen_function_t *function) {
-    if (function == NULL || !function->active) return;
+    if (function == NULL || !function->active) {
+        return;
+    }
     while (current_function != NULL) {
         codegen_function_t *closed = current_function;
         current_function = closed->parent;
         closed->active = false;
-        if (closed == function) break;
+        if (closed == function) {
+            break;
+        }
     }
     current_sequence = current_function != NULL ? &current_function->body : &program;
 }
 
 void codegen_function_end(codegen_function_t *function) {
-    if (function == NULL || !function->active) return;
+    if (function == NULL || !function->active) {
+        return;
+    }
     bool floating = strcmp(function->symbol->declared_type, "SINGLEF") == 0;
     map_node_t *zero = map_put(symbol_table, floating ? "0.0" : "0$i",
                                floating ? "SINGLEF" : "INTEGER");
-    /* Falling through a function returns zero; explicit RET steps exit earlier. */
+
     codegen_return(codegen_value(zero, function->symbol->declaration_line),
                    function->symbol->declaration_line);
     codegen_function_abort(function);
 }
 
-static size_t append_branch(rpn_operator_t operator, int line) {
-    size_t target = rpn_reserve_target(current_sequence);
-    current_sequence->steps[target - 1].source_line = line;
-    append_operator(current_sequence, operator, line);
-    return target;
-}
-
 size_t codegen_if_begin(rpn_t *condition, int line) {
-    if (condition == NULL) return 0;
+    if (condition == NULL) {
+        return 0;
+    }
     size_t start = current_sequence->count + 1;
     rpn_append_sequence(current_sequence, condition);
     codegen_free(condition);
-    size_t target = append_branch(RPN_BRANCH_FALSE, line);
-    current_sequence->steps[target - 1].control_start = start;
-    return target;
+    return rpn_emit_branch_false(current_sequence, start, NULL, line);
 }
 
 size_t codegen_if_else(size_t false_target, int line) {
-    if (false_target == 0) return 0;
-    size_t end_target = append_branch(RPN_BRANCH, line);
-    rpn_patch_target(current_sequence, false_target, current_sequence->count + 1);
+    if (false_target == 0) {
+        return 0;
+    }
+    size_t end_target = rpn_emit_branch(current_sequence, 0, line);
+    rpn_patch_to_end(current_sequence, false_target);
     return end_target;
 }
 
 void codegen_if_end(size_t target) {
-    if (target != 0) rpn_patch_target(current_sequence, target, current_sequence->count + 1);
-}
-
-static double constant_value(const map_node_t *symbol) {
-    char *text = memory_resize(NULL, strlen(symbol->key) + 1);
-    strcpy(text, symbol->key);
-    for (size_t i = 0; text[i] != '\0'; i++) {
-        if (text[i] == 's') text[i] = 'e';
+    if (target != 0) {
+        rpn_patch_to_end(current_sequence, target);
     }
-    double value = strtod(text, NULL);
-    free(text);
-    return value;
 }
 
 codegen_loop_t codegen_for_begin(map_node_t *variable, map_node_t *initial,
                                 map_node_t *final, map_node_t *step, int line) {
     codegen_loop_t loop = {0};
-    if (variable == NULL || initial == NULL ||
-        final == NULL || step == NULL) return loop;
+    if (variable == NULL || initial == NULL || final == NULL || step == NULL) {
+        return loop;
+    }
 
-    bool ascending = constant_value(initial) <= constant_value(final);
+    bool ascending = comptime_read_constant(initial).number <= comptime_read_constant(final).number;
     loop.variable = variable;
     loop.step = step;
     loop.update_operator = ascending ? RPN_ADD : RPN_SUBTRACT;
     loop.source_line = line;
+
     codegen_assignment(variable, codegen_value(initial, line), line);
     loop.condition_target = current_sequence->count + 1;
+
     rpn_t *condition = codegen_binary(codegen_value(variable, line),
-                                     codegen_value(final, line),
-                                     ascending ? RPN_LESS : RPN_GREATER, line);
-    loop.exit_target = codegen_if_begin(condition, line);
-    current_sequence->steps[loop.exit_target - 1].loop = true;
-    current_sequence->steps[loop.exit_target - 1].loop_variable = variable;
+                                      codegen_value(final, line),
+                                      ascending ? RPN_LESS : RPN_GREATER, line);
+    rpn_append_sequence(current_sequence, condition);
+    codegen_free(condition);
+    loop.exit_target = rpn_emit_branch_false(current_sequence, loop.condition_target, variable, line);
     return loop;
 }
 
 void codegen_for_end(codegen_loop_t loop) {
-    if (loop.exit_target == 0) return;
+    if (loop.exit_target == 0) {
+        return;
+    }
     rpn_t *update = codegen_binary(codegen_value(loop.variable, loop.source_line),
-                                  codegen_value(loop.step, loop.source_line),
-                                  loop.update_operator, loop.source_line);
+                                   codegen_value(loop.step, loop.source_line),
+                                   loop.update_operator, loop.source_line);
     codegen_assignment(loop.variable, update, loop.source_line);
-    size_t target = append_branch(RPN_BRANCH, loop.source_line);
-    rpn_patch_target(current_sequence, target, loop.condition_target);
-    rpn_patch_target(current_sequence, loop.exit_target, current_sequence->count + 1);
+    rpn_emit_branch(current_sequence, loop.condition_target, loop.source_line);
+    rpn_patch_to_end(current_sequence, loop.exit_target);
 }

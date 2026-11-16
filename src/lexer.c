@@ -20,8 +20,6 @@ static int read_input_char(bool *is_synthetic) {
     int c = fgetc(source_file);
     *is_synthetic = false;
 
-    /* A single artificial delimiter finalizes lookahead-based tokens at EOF.
-       It is never counted as a real line or pushed back into the file. */
     if (c == EOF && !input_state.eof_delimiter_sent) {
         input_state.eof_delimiter_sent = true;
         *is_synthetic = true;

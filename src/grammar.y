@@ -19,7 +19,7 @@
       finish_error_recovery(); \
       yyerrok; \
   } while (0)
-  /* Return the consumed ';' to outer recovery instead of skipping the next statement. */
+
   #define RECOVER_STATEMENT(location, message) do { \
       if (is_lexical_recovery()) SYNERR(location, message); \
       else RECERR(location, message); \
@@ -40,7 +40,6 @@
     } function_guard_t;
   }
 
-  /* Token declarations */
   %union {
     map_node_t *symbol_ref;
     scope_t *scope;
@@ -81,12 +80,12 @@
   %destructor { codegen_arguments_free($$); } <arguments>
   %destructor { codegen_order_free($$); } <order>
   %destructor { codegen_call_free($$); } <call>
-      /* Relational and assignment operators */
-  %token TOKEN_ASSIGN          /* := */
-  %token TOKEN_EQUAL           /* == */
-  %token TOKEN_NOT_EQUAL       /* != */
-  %token TOKEN_LESS_EQUAL      /* <= */
-  %token TOKEN_GREATER_EQUAL   /* >= */
+
+  %token TOKEN_ASSIGN
+  %token TOKEN_EQUAL
+  %token TOKEN_NOT_EQUAL
+  %token TOKEN_LESS_EQUAL
+  %token TOKEN_GREATER_EQUAL
 
   %define parse.error custom
   %define parse.lac full
@@ -94,9 +93,7 @@
 
 %start statements
 
-%% /* Grammar rules */
-
-/* Compilation unit */
+%%
 
 statements:
       program_name decl_list TOKEN_BEGIN statement TOKEN_END ';'
@@ -119,8 +116,6 @@ decl_list:
     | class_def
     | func_def
     ;
-
-/* Declarations */
 
 var_decl:
       type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
@@ -155,8 +150,6 @@ primitive_type:
       TOKEN_INTEGER { $$ = (scope_type_t){"INTEGER", NULL}; }
     | TOKEN_SINGLEF { $$ = (scope_type_t){"SINGLEF", NULL}; }
     ;
-
-/* Classes */
 
 class_def:
       class_header TOKEN_BEGIN class_body TOKEN_END ';' { class_complete(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
@@ -196,8 +189,6 @@ extends_id_list:
     | extends_id_list ',' TOKEN_ID { scope_base($3, @3.first_line); }
     ;
 
-/* Functions and methods */
-
 func_def:
       function_header decl_list TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
     | function_header TOKEN_BEGIN compound_stmt TOKEN_END ';' { codegen_function_end($1.code); scope_end($1.scope); trace_printf("[SYNTAX] Line %d: Function definition\n", @1.first_line); }
@@ -206,7 +197,6 @@ func_def:
     | function_header TOKEN_BEGIN compound_stmt YYEOF { codegen_function_abort($1.code); scope_end($1.scope); SYNERR(@3, "Missing end of function"); YYABORT; }
     ;
 
-/* Open the scope before parameters and local declarations are recognized. */
 function_prefix:
       type TOKEN_FUNCTION TOKEN_ID '(' { $$.scope = scope_begin($3, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = codegen_function_begin(scope_symbol($$.scope), @3.first_line); }
     | type TOKEN_FUNCTION error '(' { RECERR(@3, "Missing function name"); RECOVER(); $$.scope = scope_begin(NULL, SYMBOL_FUNCTION, $1, @3.first_line); $$.code = NULL; }
@@ -242,8 +232,6 @@ method_header:
       method_prefix param_decl_list ')' { $$ = $1; }
     | method_prefix error ')' { $$ = $1; RECERR(@2, "Malformed formal parameter list"); RECOVER(); }
     ;
-
-/* Statements */
 
 statement:
       compound_stmt
@@ -347,8 +335,6 @@ for_header:
     | TOKEN_ID TOKEN_ASSIGN constant TOKEN_TO for_final for_by for_step for_repeat { $$ = (codegen_loop_t){0}; scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@1, "Missing 'from' in FOR loop"); }
     ;
 
-/* Recover each component before parsing the next component or the body.
-   At end of input, stop instead of retrying a component that cannot be supplied. */
 for_identifier:
       TOKEN_ID { $$ = scope_resolve($1, SCOPE_VALUE, @1.first_line); }
     | error { $$ = NULL; RECERR(@1, "Missing identifier in FOR loop"); if (yychar == YYEOF) YYABORT; RECOVER(); }
@@ -388,8 +374,6 @@ for_repeat:
       TOKEN_REPEAT
     | %empty { SYNERR(@$, "Missing 'repeat' in FOR loop"); }
     ;
-
-/* Expressions */
 
 expr:
       expr '+' term { $$ = codegen_binary($1, $3, RPN_ADD, @2.first_line); }
@@ -476,7 +460,6 @@ call:
     | call_arguments { $$ = NULL; codegen_call_free($1); SYNERR(@1, "Missing order for parameter evaluation and assignment"); }
     ;
 
-/* Recover closed arguments locally; stop at ';' when the closing delimiter is missing. */
 call_arguments:
       TOKEN_ID '(' arg_list ')' { $$ = codegen_call_begin(scope_resolve($1, SCOPE_CALLABLE, @1.first_line), NULL, $3, @1.first_line); }
     | TOKEN_ID '.' TOKEN_ID '(' arg_list ')' { map_node_t *object = scope_object($1, @1.first_line); $$ = codegen_call_begin(class_resolve_method(object, $3, @3.first_line), object, $5, @1.first_line); }
@@ -537,7 +520,37 @@ void yyerror(const char *message) {
     report_parser_error(current_line, message);
 }
 
-static const char *friendly_symbol_name(yysymbol_kind_t symbol);
+static const char *friendly_symbol_name(yysymbol_kind_t symbol) {
+    const char *name = yysymbol_name(symbol);
+    if (strcmp(name, "TOKEN_ID") == 0) return "identifier";
+    if (strcmp(name, "TOKEN_CONST") == 0) return "constant";
+    if (strcmp(name, "TOKEN_CHAIN") == 0) return "string literal";
+    if (strcmp(name, "TOKEN_INTEGER") == 0) return "'integer'";
+    if (strcmp(name, "TOKEN_SINGLEF") == 0) return "'singlef'";
+    if (strcmp(name, "TOKEN_BEGIN") == 0) return "'begin'";
+    if (strcmp(name, "TOKEN_END") == 0) return "'end'";
+    if (strcmp(name, "TOKEN_IF") == 0) return "'if'";
+    if (strcmp(name, "TOKEN_END_IF") == 0) return "'end_if'";
+    if (strcmp(name, "TOKEN_ELSE") == 0) return "'else'";
+    if (strcmp(name, "TOKEN_ASSIGN") == 0) return "':='";
+    if (strcmp(name, "TOKEN_EQUAL") == 0) return "'=='";
+    if (strcmp(name, "TOKEN_NOT_EQUAL") == 0) return "'!='";
+    if (strcmp(name, "TOKEN_LESS_EQUAL") == 0) return "'<='";
+    if (strcmp(name, "TOKEN_GREATER_EQUAL") == 0) return "'>='";
+    if (strcmp(name, "TOKEN_FUNCTION") == 0) return "'function'";
+    if (strcmp(name, "TOKEN_CLASS") == 0) return "'class'";
+    if (strcmp(name, "TOKEN_TOI") == 0) return "'toi'";
+    if (strcmp(name, "TOKEN_POUT") == 0) return "'pout'";
+    if (strcmp(name, "TOKEN_RET") == 0) return "'ret'";
+    if (strcmp(name, "TOKEN_COMPTIME") == 0) return "'comptime'";
+    if (strcmp(name, "TOKEN_FROM") == 0) return "'from'";
+    if (strcmp(name, "TOKEN_TO") == 0) return "'to'";
+    if (strcmp(name, "TOKEN_BY") == 0) return "'by'";
+    if (strcmp(name, "TOKEN_REPEAT") == 0) return "'repeat'";
+    if (strcmp(name, "TOKEN_EXTENDS") == 0) return "'extends'";
+    if (symbol == YYSYMBOL_YYEOF) return "end of file";
+    return name;
+}
 
 static int yyreport_syntax_error(const yypcontext_t *ctx) {
     yysymbol_kind_t expected[YYNTOKENS];
@@ -584,36 +597,4 @@ static int yyreport_syntax_error(const yypcontext_t *ctx) {
                         recovered_error_context);
     free(recovered_error_context);
     return 0;
-}
-
-static const char *friendly_symbol_name(yysymbol_kind_t symbol) {
-    const char *name = yysymbol_name(symbol);
-    if (strcmp(name, "TOKEN_ID") == 0) return "identifier";
-    if (strcmp(name, "TOKEN_CONST") == 0) return "constant";
-    if (strcmp(name, "TOKEN_CHAIN") == 0) return "string literal";
-    if (strcmp(name, "TOKEN_INTEGER") == 0) return "'integer'";
-    if (strcmp(name, "TOKEN_SINGLEF") == 0) return "'singlef'";
-    if (strcmp(name, "TOKEN_BEGIN") == 0) return "'begin'";
-    if (strcmp(name, "TOKEN_END") == 0) return "'end'";
-    if (strcmp(name, "TOKEN_IF") == 0) return "'if'";
-    if (strcmp(name, "TOKEN_END_IF") == 0) return "'end_if'";
-    if (strcmp(name, "TOKEN_ELSE") == 0) return "'else'";
-    if (strcmp(name, "TOKEN_ASSIGN") == 0) return "':='";
-    if (strcmp(name, "TOKEN_EQUAL") == 0) return "'=='";
-    if (strcmp(name, "TOKEN_NOT_EQUAL") == 0) return "'!='";
-    if (strcmp(name, "TOKEN_LESS_EQUAL") == 0) return "'<='";
-    if (strcmp(name, "TOKEN_GREATER_EQUAL") == 0) return "'>='";
-    if (strcmp(name, "TOKEN_FUNCTION") == 0) return "'function'";
-    if (strcmp(name, "TOKEN_CLASS") == 0) return "'class'";
-    if (strcmp(name, "TOKEN_TOI") == 0) return "'toi'";
-    if (strcmp(name, "TOKEN_POUT") == 0) return "'pout'";
-    if (strcmp(name, "TOKEN_RET") == 0) return "'ret'";
-    if (strcmp(name, "TOKEN_COMPTIME") == 0) return "'comptime'";
-    if (strcmp(name, "TOKEN_FROM") == 0) return "'from'";
-    if (strcmp(name, "TOKEN_TO") == 0) return "'to'";
-    if (strcmp(name, "TOKEN_BY") == 0) return "'by'";
-    if (strcmp(name, "TOKEN_REPEAT") == 0) return "'repeat'";
-    if (strcmp(name, "TOKEN_EXTENDS") == 0) return "'extends'";
-    if (symbol == YYSYMBOL_YYEOF) return "end of file";
-    return name;
 }

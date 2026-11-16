@@ -8,9 +8,9 @@ typedef enum {
     TYPE_SINGLEF,
     TYPE_CHAIN,
     TYPE_OBJECT,
-    /* Candidate field types for a variable-position attribute. */
+
     TYPE_CANDIDATES,
-    /* Depends on comptime arguments; also propagates through expressions. */
+
     TYPE_COMPTIME_PENDING
 } type_kind_t;
 typedef struct { type_kind_t kind; const map_node_t *class_symbol; } type_t;
@@ -23,6 +23,8 @@ bool types_check_discarded(const rpn_t *body, const map_node_t *function,
                            size_t begin, size_t end,
                            const comptime_environment_t *environment,
                            const map_node_t *receiver);
+typedef struct type_resolution type_resolution_t;
 bool types_check_sources(const rpn_t *main_body);
 bool types_check_specializations(void);
+void types_resolve_range(type_resolution_t *context, size_t begin, size_t end);
 #endif

@@ -1,4 +1,4 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include "../include/lexer.h"
 #include "../include/lexer_actions.h"
 #include "../include/symbol_table.h"
@@ -14,13 +14,11 @@
 
 FILE *source_file = NULL;
 int token_start_line = 1;
-extern int yyparse();
 
 int main(int argc, char *argv[]) {
-    // Keep traces and diagnostics on separate lines when their streams are merged.
+
     setvbuf(stdout, NULL, _IOLBF, 0);
 
-    // Validate args
     if (argc < 2) {
         printf("Error: Missing input file.\n");
         return 1;
@@ -48,7 +46,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Open source file
     source_file = fopen(input_path, "r");
     if (!source_file) {
         printf("Error opening file: %s\n", input_path);
@@ -71,7 +68,6 @@ int main(int argc, char *argv[]) {
     }
     lexer_reset_input();
 
-    // Parse
     init_symbol_table();
     codegen_init();
     set_trace_enabled(trace);

@@ -90,4 +90,4 @@ void print_symbol_table(void);
 void map_purge_provisional(hash_map_t *map);
 void symbol_list_append(symbol_list_t *list, map_node_t *symbol);
 
-#endif /* SYMBOL_TABLE_H */
+#endif

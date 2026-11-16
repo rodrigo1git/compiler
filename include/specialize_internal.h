@@ -1,7 +1,6 @@
 #ifndef SPECIALIZE_INTERNAL_H
 #define SPECIALIZE_INTERNAL_H
 
-/* Private to the five specialize modules. Other compiler phases use specialize.h. */
 #include "specialize.h"
 
 typedef struct function_template {
@@ -33,8 +32,6 @@ typedef struct evaluation_frame {
     const struct evaluation_frame *parent;
 } evaluation_frame_t;
 
-/* The coordinator owns the registry and concrete bodies. Source bodies/symbols
-   are borrowed; instances own their bodies and before/after environments. */
 typedef struct {
     function_template_t *templates;
     function_template_t *last_template;
@@ -47,8 +44,6 @@ typedef struct {
 
 function_template_t *sp_find_template(const specialize_state_t *state, const map_node_t *symbol);
 
-/* Effect summaries are computed before transforming bodies. Applying effects
-   mutates only the supplied caller environment, including private probe copies. */
 void sp_analyze_effects(specialize_state_t *state);
 bool sp_has_comptime_effects(const specialize_state_t *state, const rpn_t *input, size_t begin, size_t end);
 void sp_forget_call_writes(comptime_environment_t *environment, const function_template_t *source);
@@ -63,12 +58,15 @@ function_instance_t *sp_instantiate(specialize_state_t *state, function_template
                                     const map_node_t *receiver, bool unknown_entry, int line);
 void sp_destroy_instances(specialize_state_t *state);
 
-/* Transform owns its traversal stack; the caller owns input/output/environment. */
+typedef struct transform_context context_t;
+void sp_transform_range(context_t *context, size_t begin, size_t end, bool unknown_control,
+                        bool inspect_first_control);
 void sp_transform(specialize_state_t *state, const rpn_t *input, rpn_t *output,
                   comptime_environment_t *environment, map_node_t *function, const map_node_t *receiver,
                   bool external_unknown, comptime_value_t *returned);
 
-/* Probe never emits IR, instances or diagnostics, and copies its input environment. */
+typedef struct probe probe_t;
+void sp_probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first);
 bool sp_requires_iteration(const specialize_state_t *state, const rpn_t *input, size_t begin, size_t end,
                            const comptime_environment_t *environment, const map_node_t *receiver);
 

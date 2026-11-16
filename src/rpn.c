@@ -3,6 +3,8 @@
 #include <string.h>
 #include "../include/rpn.h"
 
+#define RPN_INITIAL_CAPACITY 16
+
 static const char *operator_text(rpn_operator_t operator) {
     static const char *const names[] = {
         "+", "-", "*", "/", ":=", "<", ">", "<=", ">=", "==", "!=", "BF", "BI", "DUP",
@@ -28,7 +30,7 @@ size_t rpn_append_step(rpn_t *rpn, rpn_step_t step) {
             fprintf(stderr, "Fatal error: RPN capacity exceeded\n");
             exit(1);
         }
-        size_t capacity = rpn->capacity == 0 ? 16 : rpn->capacity * 2;
+        size_t capacity = rpn->capacity == 0 ? RPN_INITIAL_CAPACITY : rpn->capacity * 2;
         rpn_step_t *steps = realloc(rpn->steps, capacity * sizeof(*steps));
         if (steps == NULL) {
             fprintf(stderr, "Fatal error: Cannot allocate RPN steps\n");
@@ -41,33 +43,75 @@ size_t rpn_append_step(rpn_t *rpn, rpn_step_t step) {
     return rpn->count;
 }
 
-size_t rpn_append_symbol(rpn_t *rpn, const map_node_t *symbol) {
-    if (symbol == NULL) return 0;
-    return rpn_append_step(rpn, (rpn_step_t){.kind = RPN_SYMBOL, .value.symbol = symbol});
+size_t rpn_emit_symbol(rpn_t *rpn, const map_node_t *symbol, int line) {
+    if (symbol == NULL) {
+        return 0;
+    }
+    return rpn_append_step(rpn, (rpn_step_t){
+        .kind = RPN_SYMBOL,
+        .value.symbol = symbol,
+        .source_line = line
+    });
 }
 
-size_t rpn_append_destination(rpn_t *rpn, const map_node_t *symbol) {
-    if (symbol == NULL) return 0;
-    return rpn_append_step(rpn, (rpn_step_t){.kind = RPN_DESTINATION, .value.symbol = symbol});
+size_t rpn_emit_destination(rpn_t *rpn, const map_node_t *symbol, int line) {
+    if (symbol == NULL) {
+        return 0;
+    }
+    return rpn_append_step(rpn, (rpn_step_t){
+        .kind = RPN_DESTINATION,
+        .value.symbol = symbol,
+        .source_line = line
+    });
 }
 
-size_t rpn_append_operator(rpn_t *rpn, rpn_operator_t operator) {
-    if (operator_text(operator) == NULL) return 0;
-    return rpn_append_step(rpn, (rpn_step_t){.kind = RPN_OPERATOR, .value.operator = operator});
+size_t rpn_emit_operator(rpn_t *rpn, rpn_operator_t operator, int line) {
+    if (operator_text(operator) == NULL) {
+        return 0;
+    }
+    return rpn_append_step(rpn, (rpn_step_t){
+        .kind = RPN_OPERATOR,
+        .value.operator = operator,
+        .source_line = line
+    });
 }
 
-size_t rpn_reserve_target(rpn_t *rpn) {
-    return rpn_append_step(rpn, (rpn_step_t){.kind = RPN_TARGET, .value.target = 0});
+size_t rpn_emit_branch_false(rpn_t *rpn, size_t control_start,
+                             const map_node_t *loop_variable, int line) {
+    size_t target_address = rpn_append_step(rpn, (rpn_step_t){
+        .kind = RPN_TARGET,
+        .value.target = 0,
+        .source_line = line,
+        .control_start = control_start,
+        .loop_variable = loop_variable
+    });
+    rpn_emit_operator(rpn, RPN_BRANCH_FALSE, line);
+    return target_address;
+}
+
+size_t rpn_emit_branch(rpn_t *rpn, size_t target, int line) {
+    size_t target_address = rpn_append_step(rpn, (rpn_step_t){
+        .kind = RPN_TARGET,
+        .value.target = target,
+        .source_line = line
+    });
+    rpn_emit_operator(rpn, RPN_BRANCH, line);
+    return target_address;
 }
 
 bool rpn_append_sequence(rpn_t *rpn, const rpn_t *source) {
-    if (rpn == source) return false;
+    if (rpn == source) {
+        return false;
+    }
     size_t offset = rpn->count;
     for (size_t i = 0; i < source->count; i++) {
         rpn_step_t step = source->steps[i];
-        if (step.kind == RPN_TARGET && step.value.target != 0)
+        if (step.kind == RPN_TARGET && step.value.target != 0) {
             step.value.target += offset;
-        if (step.control_start != 0) step.control_start += offset;
+        }
+        if (step.control_start != 0) {
+            step.control_start += offset;
+        }
         rpn_append_step(rpn, step);
     }
     return true;
@@ -75,52 +119,105 @@ bool rpn_append_sequence(rpn_t *rpn, const rpn_t *source) {
 
 bool rpn_patch_target(rpn_t *rpn, size_t address, size_t target) {
     if (address == 0 || address > rpn->count ||
-        target == 0 || target > rpn->count + 1) return false;
+        target == 0 || target > rpn->count + 1) {
+        return false;
+    }
     rpn_step_t *step = &rpn->steps[address - 1];
-    if (step->kind != RPN_TARGET || step->value.target != 0) return false;
+    if (step->kind != RPN_TARGET || step->value.target != 0) {
+        return false;
+    }
     step->value.target = target;
     return true;
+}
+
+bool rpn_patch_to_end(rpn_t *rpn, size_t address) {
+    return rpn_patch_target(rpn, address, rpn->count + 1);
 }
 
 bool rpn_is_complete(const rpn_t *rpn) {
     for (size_t i = 0; i < rpn->count; i++) {
         const rpn_step_t *step = &rpn->steps[i];
         if (step->kind == RPN_TARGET &&
-            (step->value.target == 0 || step->value.target > rpn->count + 1))
+            (step->value.target == 0 || step->value.target > rpn->count + 1)) {
             return false;
+        }
     }
     return true;
 }
 
-/* Quoting chains keeps their contents distinct from operators and numeric operands. */
 static int print_symbol(FILE *stream, size_t address, const map_node_t *symbol) {
-    if (strcmp(symbol->value, "CHAIN") != 0)
+    if (strcmp(symbol->value, "CHAIN") != 0) {
         return fprintf(stream, "%zu %s\n", address, symbol->key);
+    }
 
-    if (fprintf(stream, "%zu \"", address) < 0) return -1;
+    if (fprintf(stream, "%zu \"", address) < 0) {
+        return -1;
+    }
     const unsigned char *text = (const unsigned char *)symbol->key;
     for (size_t i = 0; text[i] != '\0'; i++) {
         int result;
         switch (text[i]) {
-            case '"': result = fputs("\\\"", stream); break;
-            case '\\': result = fputs("\\\\", stream); break;
-            case '\n': result = fputs("\\n", stream); break;
-            case '\r': result = fputs("\\r", stream); break;
-            case '\t': result = fputs("\\t", stream); break;
+            case '"':
+                result = fputs("\\\"", stream);
+                break;
+            case '\\':
+                result = fputs("\\\\", stream);
+                break;
+            case '\n':
+                result = fputs("\\n", stream);
+                break;
+            case '\r':
+                result = fputs("\\r", stream);
+                break;
+            case '\t':
+                result = fputs("\\t", stream);
+                break;
             default:
-                if (text[i] < 0x20 || text[i] == 0x7f)
+                if (text[i] < 0x20 || text[i] == 0x7f) {
                     result = fprintf(stream, "\\u%04x", (unsigned int)text[i]);
-                else
+                } else {
                     result = fputc(text[i], stream);
+                }
                 break;
         }
-        if (result < 0) return -1;
+        if (result < 0) {
+            return -1;
+        }
     }
     return fputs("\"\n", stream);
 }
 
+static int print_call_step(FILE *stream, size_t address, const rpn_step_t *step) {
+    const char *verb = step->kind == RPN_CALL_FRAME ? "FRAME" : "CALL";
+    if (fprintf(stream, "%zu %s %s", address, verb, step->value.symbol->key) < 0) {
+        return -1;
+    }
+    if (step->receiver != NULL && fprintf(stream, " ON %s", step->receiver->key) < 0) {
+        return -1;
+    }
+    return fputc('\n', stream);
+}
+
+static int print_attribute_step(FILE *stream, size_t address, const rpn_step_t *step) {
+    const char *prefix = "";
+    if (step->kind == RPN_ATTRIBUTE_DESTINATION) {
+        prefix = "DEST ";
+    } else if (step->kind == RPN_INDEX_CHECK) {
+        prefix = "CHECK_INDEX ";
+    }
+
+    int result = fprintf(stream, "%zu %s%s[%s]\n", address, prefix,
+                         step->receiver->key, step->index->key);
+    if (result >= 0 && step->capture != NULL) {
+        result = fprintf(stream, "  capture: %s\n", step->capture->key);
+    }
+    return result;
+}
+
 bool rpn_print(FILE *stream, const rpn_t *rpn) {
-    if (!rpn_is_complete(rpn)) return false;
+    if (!rpn_is_complete(rpn)) {
+        return false;
+    }
     for (size_t i = 0; i < rpn->count; i++) {
         const rpn_step_t *step = &rpn->steps[i];
         int result;
@@ -131,12 +228,7 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
                 break;
             case RPN_CALL_FRAME:
             case RPN_CALL:
-                result = fprintf(stream, "%zu %s %s", i + 1,
-                    step->kind == RPN_CALL_FRAME ? "FRAME" : "CALL", step->value.symbol->key);
-                if (result < 0) return false;
-                if (step->receiver != NULL && fprintf(stream, " ON %s", step->receiver->key) < 0)
-                    return false;
-                result = fputc('\n', stream);
+                result = print_call_step(stream, i + 1, step);
                 break;
             case RPN_ARGUMENT_DESTINATION:
                 result = fprintf(stream, "%zu ARG %s\n", i + 1, step->value.symbol->key);
@@ -147,11 +239,7 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
             case RPN_ATTRIBUTE:
             case RPN_INDEX_CHECK:
             case RPN_ATTRIBUTE_DESTINATION:
-                result = fprintf(stream, "%zu %s%s[%s]\n", i + 1,
-                    step->kind == RPN_ATTRIBUTE_DESTINATION ? "DEST " : step->kind == RPN_INDEX_CHECK ? "CHECK_INDEX " : "",
-                    step->receiver->key, step->index->key);
-                if (step->capture && result >= 0)
-                    result = fprintf(stream, "  capture: %s\n", step->capture->key);
+                result = print_attribute_step(stream, i + 1, step);
                 break;
             case RPN_OPERATOR:
                 result = fprintf(stream, "%zu %s\n", i + 1, operator_text(step->value.operator));
@@ -162,7 +250,9 @@ bool rpn_print(FILE *stream, const rpn_t *rpn) {
             default:
                 return false;
         }
-        if (result < 0) return false;
+        if (result < 0) {
+            return false;
+        }
     }
     return !ferror(stream);
 }
@@ -173,11 +263,13 @@ static bool is_operator(const rpn_step_t *step, rpn_operator_t operator) {
 
 rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t branch) {
     size_t false_start = input->steps[branch].value.target - 1;
-    rpn_control_t control = {.start = start,
-                            .branch = branch,
-                            .false_start = false_start,
-                            .body_end = false_start,
-                            .end = false_start};
+    rpn_control_t control = {
+        .start = start,
+        .branch = branch,
+        .false_start = false_start,
+        .body_end = false_start,
+        .end = false_start
+    };
     if (false_start >= 2 && is_operator(&input->steps[false_start - 1], RPN_BRANCH) &&
         input->steps[false_start - 2].kind == RPN_TARGET) {
         size_t destination = input->steps[false_start - 2].value.target - 1;
@@ -195,8 +287,14 @@ rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t bran
 
 size_t *rpn_index_controls(const rpn_t *body) {
     size_t *index = calloc(body->count + 1, sizeof(*index));
-    if (!index) { fprintf(stderr, "Cannot allocate RPN control index\n"); exit(1); }
-    for (size_t i = 0; i < body->count; i++)
-        if (body->steps[i].control_start) index[body->steps[i].control_start - 1] = i + 1;
+    if (!index) {
+        fprintf(stderr, "Cannot allocate RPN control index\n");
+        exit(1);
+    }
+    for (size_t i = 0; i < body->count; i++) {
+        if (body->steps[i].control_start) {
+            index[body->steps[i].control_start - 1] = i + 1;
+        }
+    }
     return index;
 }

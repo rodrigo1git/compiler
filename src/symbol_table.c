@@ -83,12 +83,11 @@ static void print_list(const char *label, const symbol_list_t *list) {
     printf("]");
 }
 
-// djb2 hash function
 static unsigned long hash_func(const char* str) {
     unsigned long hash = 5381;
     int c;
     while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; 
+        hash = ((hash << 5) + hash) + c;
     }
     return hash;
 }
@@ -112,7 +111,7 @@ hash_map_t* map_create(int capacity) {
 map_node_t *map_get(hash_map_t* map, const char* key, const char* value) {
     unsigned long index = hash_func(key) % map->capacity;
     map_node_t* current = map->buckets[index];
-    
+
     while (current != NULL) {
         if (strcmp(current->key, key) == 0 && strcmp(current->value, value) == 0) return current;
         current = current->next;
@@ -142,7 +141,7 @@ map_node_t *map_put(hash_map_t* map, const char* key, const char* value) {
         fprintf(stderr, "Fatal error: Cannot allocate symbol text\n");
         exit(1);
     }
-    
+
     new_node->provisional = false;
     new_node->next = map->buckets[index];
     map->buckets[index] = new_node;
@@ -237,11 +236,10 @@ void print_symbol_table(void) {
 
 void init_symbol_table(void) {
     if (symbol_table == NULL) {
-        symbol_table = map_create(256); 
+        symbol_table = map_create(256);
     }
 }
 
-/* Call only after yyparse returns: parser values borrow these nodes. */
 void map_purge_provisional(hash_map_t *map) {
     for (int i = 0; i < map->capacity; i++) {
         map_node_t **link = &map->buckets[i];

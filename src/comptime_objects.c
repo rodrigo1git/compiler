@@ -69,7 +69,6 @@ comptime_value_t comptime_object_field(comptime_value_t object, const map_node_t
     return result;
 }
 
-/* Grow traversal storage geometrically; all object walks use heap-backed frames. */
 static void *grow_object_stack(void *items, size_t *capacity, size_t needed, size_t item_size) {
     if (needed <= *capacity) return items;
     *capacity = *capacity ? memory_multiply(*capacity, 2) : 16;
@@ -97,7 +96,7 @@ typedef struct {
 
 map_node_t *comptime_capture_object(comptime_value_t value, const comptime_environment_t *environment,
                                     unsigned int *serial, int line) {
-    /* Source type checking has already rejected cyclic containment. */
+
     if (!class_has_comptime(value.object_type)) return NULL;
     map_node_t *root = capture_snapshot(value, serial, line);
     size_t count = 1, capacity = 0;
@@ -147,7 +146,7 @@ static copy_frame_t copy_frame(const comptime_copy_t *copy, const map_node_t *ob
                                const map_node_t *type, comptime_value_t source) {
     size_t count = type->class_info->effective_attributes.count;
     copy_frame_t frame = {object, type, memory_zero(count, sizeof(*frame.fields)), 0, false};
-    /* Read siblings before writing any of them, including when source aliases destination. */
+
     for (size_t i = 0; i < count; i++)
         if (source.object_type && i < source.object_type->class_info->effective_attributes.count)
             frame.fields[i] = comptime_object_field(source, source.object_type->class_info->effective_attributes.items[i],
@@ -157,7 +156,7 @@ static copy_frame_t copy_frame(const comptime_copy_t *copy, const map_node_t *ob
 
 void comptime_copy_object_fields(const comptime_copy_t *copy, const map_node_t *object,
                                  const map_node_t *type, comptime_value_t source, int line) {
-    /* Source type checking has already rejected cyclic containment. */
+
     if (!type) return;
     size_t count = 1, capacity = 0;
     copy_frame_t *stack = grow_object_stack(NULL, &capacity, count, sizeof(*stack));
