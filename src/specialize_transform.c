@@ -32,8 +32,7 @@ struct transform_context {
     sp_pending_call_t *pending;
     bool external_unknown;
     bool stopped;
-    bool has_return;
-    comptime_value_t returned;
+    sp_return_state_t returns;
     size_t *controls;
 };
 
@@ -70,15 +69,6 @@ static void materialize_object(context_t *context, operand_t *operand, int line)
     }
     emit(context, (rpn_step_t){.kind = RPN_OBJECT_VALUE, .value.symbol = snapshot, .source_line = line});
     operand->value.object_snapshot = snapshot;
-}
-
-static void record_return(context_t *context, comptime_value_t value) {
-    if (!context->has_return) {
-        context->returned = value;
-    } else if (!comptime_values_equal(context->returned, value)) {
-        context->returned = (comptime_value_t){0};
-    }
-    context->has_return = true;
 }
 
 static operand_t process_condition(context_t *context, rpn_control_t control, bool unknown_control) {
@@ -128,7 +118,7 @@ static void process_if(context_t *context, rpn_control_t control, bool unknown_c
     if (control.has_else) {
         size_t end_target = rpn_emit_branch(context->output, 0, line);
         rpn_patch_to_end(context->output, false_target);
-        comptime_environment_replace(context->environment, comptime_copy_environment(&original));
+        comptime_environment_assign_owned(context->environment, comptime_copy_environment(&original));
         sp_transform_range(context, control.false_start, control.end, runtime_options);
         context->stopped = true_stopped && context->stopped;
         rpn_patch_to_end(context->output, end_target);
@@ -137,7 +127,7 @@ static void process_if(context_t *context, rpn_control_t control, bool unknown_c
     }
     comptime_environment_t joined =
         comptime_join_environments(&true_environment, control.has_else ? context->environment : &original);
-    comptime_environment_replace(context->environment, joined);
+    comptime_environment_assign_owned(context->environment, joined);
     comptime_environment_free(&original);
     comptime_environment_free(&true_environment);
 }
@@ -189,7 +179,7 @@ static void process_loop(context_t *context, rpn_control_t control, bool unknown
     context->stopped = false;
     rpn_emit_branch(context->output, condition_output + 1, line);
     rpn_patch_to_end(context->output, false_target);
-    comptime_environment_replace(context->environment, original);
+    comptime_environment_assign_owned(context->environment, original);
     comptime_forget_runtime(context->environment);
 }
 
@@ -352,31 +342,30 @@ static comptime_value_t resolve_attribute_index(context_t *context, rpn_step_t *
     return selected;
 }
 
-static map_node_t *select_attribute_field(const map_node_t *object, comptime_value_t *selected,
+static map_node_t *select_attribute_field(map_node_t *type, comptime_value_t *selected,
                                           bool runtime_index, int line) {
-    map_node_t *attribute = comptime_select_field(object->type_symbol, *selected);
-    if (runtime_index && selected->known &&
-        (selected->number < 0 || selected->number >= object->type_symbol->class_info->effective_attributes.count)) {
+    map_node_t *attribute = comptime_select_field(type, *selected);
+    if (runtime_index && attribute == NULL) {
         selected->known = false;
     }
-    if (selected->known && !selected->floating) {
+    if (type != NULL && selected->known && !selected->floating) {
         if (selected->number < 0) {
             report_semantic_error(line, "Attribute position %ld does not exist in class '%s'",
-                                  (long)selected->number, object->type_symbol->key);
+                                  (long)selected->number, type->key);
         } else {
-            attribute = class_attribute_at(object->type_symbol, (size_t)selected->number, line);
+            attribute = class_attribute_at(type, (size_t)selected->number, line);
         }
     }
     return attribute;
 }
 
 static void capture_dynamic_attribute(context_t *context, rpn_step_t *step, map_node_t *object,
-                                      const map_node_t *attribute, comptime_value_t selected,
-                                      bool runtime_index) {
+                                      map_node_t *type, const map_node_t *attribute,
+                                      comptime_value_t selected, bool runtime_index) {
     if (((attribute == NULL && !selected.known) || runtime_index) &&
-        class_has_comptime(object->type_symbol)) {
+        class_has_comptime(type)) {
         if (step->kind == RPN_ATTRIBUTE) {
-            comptime_value_t receiver = {.object_type = object->type_symbol, .object = object};
+            comptime_value_t receiver = {.object_type = type, .object = object};
             step->capture = comptime_capture_object(receiver, context->environment, &context->state->serial,
                                                     step->source_line);
         } else {
@@ -388,11 +377,12 @@ static void capture_dynamic_attribute(context_t *context, rpn_step_t *step, map_
 
 static attribute_access_t resolve_attribute(context_t *context, rpn_step_t *step) {
     map_node_t *object = comptime_resolve_object(step->receiver, context->receiver);
+    map_node_t *type = object != NULL ? object->type_symbol : step->receiver->type_symbol;
     map_node_t *index = step->index;
     comptime_value_t selected = resolve_attribute_index(context, step);
     bool runtime_index = !index->is_comptime && index->usage != SYMBOL_LEXEME;
-    map_node_t *attribute = select_attribute_field(object, &selected, runtime_index, step->source_line);
-    capture_dynamic_attribute(context, step, object, attribute, selected, runtime_index);
+    map_node_t *attribute = select_attribute_field(type, &selected, runtime_index, step->source_line);
+    capture_dynamic_attribute(context, step, object, type, attribute, selected, runtime_index);
     return (attribute_access_t){object, attribute, runtime_index};
 }
 
@@ -436,15 +426,9 @@ static void process_attribute(context_t *context, rpn_step_t step) {
 }
 
 static void begin_call(context_t *context, rpn_step_t step) {
-    sp_pending_call_t *pending = memory_resize(NULL, sizeof(*pending));
-    *pending = (sp_pending_call_t){
-        .source = sp_find_template(context->state, step.value.symbol),
-        .receiver = comptime_resolve_object(step.receiver, context->receiver),
-        .frame_step = context->output->count,
-        .errors = global_errors,
-        .parent = context->pending
-    };
-    context->pending = pending;
+    sp_pending_push(&context->pending, sp_find_template(context->state, step.value.symbol),
+                    comptime_resolve_object(step.receiver, context->receiver),
+                    context->output->count, global_errors);
     emit(context, step);
 }
 
@@ -480,9 +464,7 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
     if (instance == NULL) {
         sp_forget_call_writes(context->environment, pending->source);
     }
-    context->pending = pending->parent;
-    comptime_environment_free(&pending->arguments);
-    free(pending);
+    sp_pending_pop(&context->pending);
 }
 
 static void process_operator(context_t *context, rpn_step_t step, bool unknown_control) {
@@ -514,7 +496,7 @@ static void process_operator(context_t *context, rpn_step_t step, bool unknown_c
             if (operand.value.object_type != NULL) {
                 report_semantic_error(step.source_line, "Object returns are not allowed");
             }
-            record_return(context, operand.value);
+            sp_record_return(&context->returns, operand.value);
             context->stopped = true;
         }
         emit(context, step);
@@ -606,7 +588,7 @@ void sp_transform(const sp_transform_request_t *request) {
     }
     sp_pending_free_all(&context.pending);
     if (request->returned != NULL) {
-        *request->returned = context.returned;
+        *request->returned = context.returns.value;
     }
     free(context.controls);
     free(context.stack);

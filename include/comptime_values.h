@@ -38,8 +38,8 @@ void comptime_set(comptime_environment_t *environment, map_node_t *symbol,
 void comptime_invalidate_object(comptime_environment_t *environment, const map_node_t *object);
 comptime_environment_t comptime_copy_environment(const comptime_environment_t *source);
 void comptime_environment_free(comptime_environment_t *environment);
-void comptime_environment_replace(comptime_environment_t *destination,
-                                  comptime_environment_t source);
+void comptime_environment_assign_owned(comptime_environment_t *destination,
+                                       comptime_environment_t source);
 void comptime_forget_runtime(comptime_environment_t *environment);
 comptime_environment_t comptime_join_environments(const comptime_environment_t *left,
                                                   const comptime_environment_t *right);

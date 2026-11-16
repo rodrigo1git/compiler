@@ -18,13 +18,43 @@ function_template_t *sp_find_template(const specialize_state_t *state, const map
     return NULL;
 }
 
+sp_pending_call_t *sp_pending_push(sp_pending_call_t **pending, function_template_t *source,
+                                   map_node_t *receiver, size_t frame_step, int errors) {
+    sp_pending_call_t *call = memory_resize(NULL, sizeof(*call));
+    *call = (sp_pending_call_t){
+        .source = source,
+        .receiver = receiver,
+        .frame_step = frame_step,
+        .errors = errors,
+        .parent = *pending
+    };
+    *pending = call;
+    return call;
+}
+
+void sp_pending_pop(sp_pending_call_t **pending) {
+    if (*pending == NULL) {
+        return;
+    }
+    sp_pending_call_t *parent = (*pending)->parent;
+    comptime_environment_free(&(*pending)->arguments);
+    free(*pending);
+    *pending = parent;
+}
+
 void sp_pending_free_all(sp_pending_call_t **pending) {
     while (*pending != NULL) {
-        sp_pending_call_t *parent = (*pending)->parent;
-        comptime_environment_free(&(*pending)->arguments);
-        free(*pending);
-        *pending = parent;
+        sp_pending_pop(pending);
     }
+}
+
+void sp_record_return(sp_return_state_t *state, comptime_value_t value) {
+    if (!state->has_value) {
+        state->value = value;
+    } else if (!comptime_values_equal(state->value, value)) {
+        state->value = (comptime_value_t){0};
+    }
+    state->has_value = true;
 }
 
 bool sp_is_forbidden_comptime_write(const map_node_t *symbol, const map_node_t *object,

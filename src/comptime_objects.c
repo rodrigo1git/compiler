@@ -282,7 +282,7 @@ void comptime_objects_destroy(void) {
 
 map_node_t *comptime_select_field(const map_node_t *type, comptime_value_t index) {
     if (!type || !index.known || index.floating || index.number < 0 ||
-        index.number >= type->class_info->effective_attributes.count) {
+        (size_t)index.number >= type->class_info->effective_attributes.count) {
         return NULL;
     }
     return type->class_info->effective_attributes.items[(size_t)index.number];

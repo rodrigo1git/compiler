@@ -132,7 +132,7 @@ limpieza de símbolos embebidos; también puede ejecutarse con ASan/UBSan.
 
 ## Inventario individual
 
-Este inventario cubre **366 funciones C propias**, públicas y static, de
+Este inventario cubre **368 funciones C propias**, públicas y static, de
 src/*.c y los tres ayudantes escritos en grammar.y. Excluye funciones generadas
 por Bison y funciones de bibliotecas. Los enlaces apuntan al archivo y línea de
 esta versión. Las fichas de infraestructura se vinculan al requisito que apoyan;
@@ -258,7 +258,7 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | [comptime_invalidate_object](../src/comptime_values.c#L59) | Olvida todas las asociaciones del entorno pertenecientes al objeto indicado ante escritura posicional dinámica. | T22 T29 |
 | [comptime_copy_environment](../src/comptime_values.c#L67) | Copia el array de asociaciones del entorno; las identidades de símbolos y capturas siguen prestadas. | T22 |
 | [comptime_environment_free](../src/comptime_values.c#L77) | Libera el array de asociaciones del entorno y reinicia su puntero y contador. | G10 T22 |
-| [comptime_environment_replace](../src/comptime_values.c#L82) | Reemplaza un entorno liberando primero sus asociaciones previas. | G10 T22 |
+| [comptime_environment_assign_owned](../src/comptime_values.c#L82) | Reemplaza un entorno liberando primero sus asociaciones previas y tomando posesión del recibido. | G10 T22 |
 | [comptime_forget_runtime](../src/comptime_values.c#L88) | Vuelve desconocidas las asociaciones ordinarias, conservando las declaradas comptime. | T22 |
 | [comptime_join_environments](../src/comptime_values.c#L96) | Combina caminos conservando sólo los valores numéricos conocidos iguales en ambos; el resto pasa a desconocido. | T22 |
 | [comptime_make_constant](../src/comptime_values.c#L114) | Comprueba representabilidad, escribe el literal del tipo adecuado e interna la constante; reutiliza su referencia si ya está disponible. | G02 T03 T07 T22 |
@@ -428,18 +428,21 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
 | [sp_find_template](../src/specialize.c#L9) | Busca la declaración fuente de una función, normalizando antes una referencia a instancia especializada. | G06 T22 |
-| [sp_pending_free_all](../src/specialize.c#L21) | Libera la pila enlazada de llamadas pendientes y sus entornos de argumentos. | G10 T19 T22 |
-| [sp_is_forbidden_comptime_write](../src/specialize.c#L30) | Determina si una escritura sobre un símbolo comptime está prohibida por ocurrir bajo control desconocido o fuera de la función actual. | G08 T22 |
-| [specialize_init](../src/specialize.c#L40) | Inicializa la sesión privada con registros y cadena de evaluación vacíos; reinicia ubicaciones lógicas y orígenes diagnósticos. Conserva la API pública. | G05 T22 |
-| [specialize_register](../src/specialize.c#L47) | Registra una función fuente con referencia prestada a su cuerpo retenido. | G05 G06 T22 |
-| [specialize_program](../src/specialize.c#L59) | Coordina análisis de efectos, transformación del principal e instanciación de funciones ordinarias no usadas; registra valores comptime finales en TS. El estado pertenece a la sesión. | G05 G06 T22 |
-| [specialize_print](../src/specialize.c#L86) | Imprime principal, instancias ejecutables y plantillas contextuales, incluidas las no invocadas; comprueba saltos completos mediante rpn_print. | G05 G07 T22 |
-| [specialize_source_count](../src/specialize.c#L111) | Cuenta declaraciones registradas; no crea cuerpos ni modifica el registro. | G05 G08 |
-| [specialize_source_body](../src/specialize.c#L115) | Devuelve cuerpo fuente prestado por índice y su símbolo mediante parámetro de salida; NULL si no existe. | G05 G08 |
-| [specialize_instance_count](../src/specialize.c#L127) | Cuenta instancias concretas del registro; no especializa nuevas llamadas. | G05 G09 |
-| [specialize_instance_body](../src/specialize.c#L131) | Devuelve cuerpo concreto prestado por índice y símbolo de instancia; NULL si no existe. | G05 G09 |
-| [specialize_main_body](../src/specialize.c#L143) | Devuelve referencia prestada al principal transformado, válido hasta specialize_destroy. | G05 G09 |
-| [specialize_destroy](../src/specialize.c#L147) | Libera identidades, principal, instancias y plantillas mediante sus propietarios, limpia orígenes y reinicia la sesión. No libera cuerpos fuente ni símbolos prestados. | G10 T22 |
+| [sp_pending_push](../src/specialize.c#L21) | Reserva un marco de llamada pendiente, inicializa su origen/receptor y lo apila sobre la lista activa. | G06 T19 |
+| [sp_pending_pop](../src/specialize.c#L35) | Retira la llamada pendiente del tope, libera sus argumentos y avanza al padre. | G10 T19 |
+| [sp_pending_free_all](../src/specialize.c#L45) | Libera la pila enlazada de llamadas pendientes mediante sp_pending_pop. | G10 T19 T22 |
+| [sp_record_return](../src/specialize.c#L51) | Acumula el valor de retorno conocido en un estado compartido y lo invalida si difiere entre caminos. | G06 T22 |
+| [sp_is_forbidden_comptime_write](../src/specialize.c#L60) | Determina si una escritura sobre un símbolo comptime está prohibida por ocurrir bajo control desconocido o fuera de la función actual. | G08 T22 |
+| [specialize_init](../src/specialize.c#L70) | Inicializa la sesión privada con registros y cadena de evaluación vacíos; reinicia ubicaciones lógicas y orígenes diagnósticos. Conserva la API pública. | G05 T22 |
+| [specialize_register](../src/specialize.c#L77) | Registra una función fuente con referencia prestada a su cuerpo retenido. | G05 G06 T22 |
+| [specialize_program](../src/specialize.c#L89) | Coordina análisis de efectos, transformación del principal e instanciación de funciones ordinarias no usadas; registra valores comptime finales en TS. El estado pertenece a la sesión. | G05 G06 T22 |
+| [specialize_print](../src/specialize.c#L116) | Imprime principal, instancias ejecutables y plantillas contextuales, incluidas las no invocadas; comprueba saltos completos mediante rpn_print. | G05 G07 T22 |
+| [specialize_source_count](../src/specialize.c#L141) | Cuenta declaraciones registradas; no crea cuerpos ni modifica el registro. | G05 G08 |
+| [specialize_source_body](../src/specialize.c#L145) | Devuelve cuerpo fuente prestado por índice y su símbolo mediante parámetro de salida; NULL si no existe. | G05 G08 |
+| [specialize_instance_count](../src/specialize.c#L157) | Cuenta instancias concretas del registro; no especializa nuevas llamadas. | G05 G09 |
+| [specialize_instance_body](../src/specialize.c#L161) | Devuelve cuerpo concreto prestado por índice y símbolo de instancia; NULL si no existe. | G05 G09 |
+| [specialize_main_body](../src/specialize.c#L173) | Devuelve referencia prestada al principal transformado, válido hasta specialize_destroy. | G05 G09 |
+| [specialize_destroy](../src/specialize.c#L177) | Libera identidades, principal, instancias y plantillas mediante sus propietarios, limpia orígenes y reinicia la sesión. No libera cuerpos fuente ni símbolos prestados. | G10 T22 |
 
 ### specialize_effects.c
 
@@ -472,59 +475,58 @@ Las propiedades generales se describen también en «Propiedad de memoria» arri
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [probe_operand_free](../src/specialize_probe.c#L43) | Libera el entorno de campos capturado en un operando exploratorio. | G10 T22 |
-| [probe_push](../src/specialize_probe.c#L63) | Añade un operando al análisis exploratorio; copia el entorno de campos de objetos para preservar el orden de evaluación. | T18 T19 T22 |
-| [probe_pop](../src/specialize_probe.c#L74) | Retira un operando exploratorio; devuelve un valor desconocido si no hay operandos. | T22 |
-| [probe_destroy](../src/specialize_probe.c#L81) | Libera pila, capturas de entornos, llamadas pendientes y entorno privado de la exploración. | G10 T22 |
-| [probe_invoke](../src/specialize_probe.c#L92) | Comprueba argumentos comptime y analiza el cuerpo fuente en un entorno privado, con formales ordinarios desconocidos. Detecta llamadas cíclicas mediante la cadena de funciones activas y devuelve desconocido para esas llamadas. Devuelve conocimiento y efectos abstractos sin crear instancias ni emitir código. | G06 T19 T22 |
-| [probe_assign](../src/specialize_probe.c#L139) | Actualiza argumentos pendientes o el entorno privado según el destino; copia campos de objetos mediante comptime_copy_object_fields. El llamador libera los operandos. | T18 T19 T22 T24 |
-| [probe_operator](../src/specialize_probe.c#L175) | Consume operandos para aritmética, asignación, conversión, DUP, retorno y descarte de efectos runtime; libera sus capturas y conserva el conocimiento abstracto. | G05 T18 T22 |
-| [probe_audit_attribute_index](../src/specialize_probe.c#L206) | Resuelve índices comptime y valida posiciones constantes enteras sobre el paso copiado al auditar código descartado. | G08 T22 T29 |
-| [probe_attribute](../src/specialize_probe.c#L227) | Evalúa un acceso o destino de atributo en el entorno exploratorio y registra requisitos o errores de campos comptime. | G08 T22 T29 |
-| [probe_step](../src/specialize_probe.c#L264) | Despacha símbolos, destinos, atributos y llamadas del análisis privado; delega operadores y no emite instrucciones ni crea instancias ejecutables. | G05 T19 T22 |
-| [probe_condition](../src/specialize_probe.c#L332) | Analiza la expresión de una condición sobre el estado privado y retira su valor de la pila. | T14 T22 |
-| [probe_audit_loop](../src/specialize_probe.c#L339) | Resuelve y comprueba cada iteración conocida de un ciclo con efectos o requisitos comptime al auditar código descartado. | G07 G08 T14 T22 |
-| [probe_audit_control](../src/specialize_probe.c#L369) | Audita ramas y ciclos en código descartado conservando o uniendo el conocimiento comptime posterior. | G08 T14 T22 |
-| [probe_loop](../src/specialize_probe.c#L399) | Prueba un cuerpo con conocimiento ordinario olvidado en una copia aislada; recorre iteraciones conocidas si son necesarias, sin un máximo de iteraciones. | T14 T22 |
-| [probe_if](../src/specialize_probe.c#L441) | Selecciona un brazo conocido o analiza ambos sobre entornos privados y combina su conocimiento y detención. Conserva los retornos abstractos. | G08 T22 |
-| [probe_control](../src/specialize_probe.c#L468) | Evalúa la condición y delega a probe_audit_control, probe_loop o probe_if según el modo de exploración. | T14 T22 |
-| [sp_probe_range](../src/specialize_probe.c#L479) | Recorre un rango estructurado del cuerpo fuente; se detiene ante retorno o requisito desconocido salvo en auditoría de tipos. | G05 T14 T22 |
-| [sp_requires_iteration](../src/specialize_probe.c#L500) | Olvida valores ordinarios en una copia del entorno y comprueba si el cuerpo necesita conocimiento por iteración para satisfacer requisitos comptime; no emite IR, instancias ni diagnósticos. | G08 T14 T22 |
-| [sp_check_discarded](../src/specialize_probe.c#L554) | Resuelve índices comptime y audita tipos de un rango descartado sobre copias aisladas del cuerpo y del entorno. | G07 G08 T22 T29 |
+| [probe_operand_free](../src/specialize_probe.c#L42) | Libera el entorno de campos capturado en un operando exploratorio. | G10 T22 |
+| [probe_push](../src/specialize_probe.c#L62) | Añade un operando al análisis exploratorio; copia el entorno de campos de objetos para preservar el orden de evaluación. | T18 T19 T22 |
+| [probe_pop](../src/specialize_probe.c#L73) | Retira un operando exploratorio; devuelve un valor desconocido si no hay operandos. | T22 |
+| [probe_destroy](../src/specialize_probe.c#L80) | Libera pila, capturas de entornos, llamadas pendientes y entorno privado de la exploración. | G10 T22 |
+| [probe_invoke](../src/specialize_probe.c#L91) | Comprueba argumentos comptime y analiza el cuerpo fuente en un entorno privado, con formales ordinarios desconocidos. Detecta llamadas cíclicas mediante la cadena de funciones activas y devuelve desconocido para esas llamadas. Devuelve conocimiento y efectos abstractos sin crear instancias ni emitir código. | G06 T19 T22 |
+| [probe_assign](../src/specialize_probe.c#L138) | Actualiza argumentos pendientes o el entorno privado según el destino; copia campos de objetos mediante comptime_copy_object_fields. El llamador libera los operandos. | T18 T19 T22 T24 |
+| [probe_operator](../src/specialize_probe.c#L174) | Consume operandos para aritmética, asignación, conversión, DUP, retorno y descarte de efectos runtime; libera sus capturas y conserva el conocimiento abstracto. | G05 T18 T22 |
+| [probe_audit_attribute_index](../src/specialize_probe.c#L200) | Resuelve índices comptime y valida posiciones constantes enteras sobre el paso copiado al auditar código descartado. | G08 T22 T29 |
+| [probe_attribute](../src/specialize_probe.c#L222) | Evalúa un acceso o destino de atributo en el entorno exploratorio y registra requisitos o errores de campos comptime. | G08 T22 T29 |
+| [probe_step](../src/specialize_probe.c#L259) | Despacha símbolos, destinos, atributos y llamadas del análisis privado; delega operadores y no emite instrucciones ni crea instancias ejecutables. | G05 T19 T22 |
+| [probe_condition](../src/specialize_probe.c#L317) | Analiza la expresión de una condición sobre el estado privado y retira su valor de la pila. | T14 T22 |
+| [probe_audit_loop](../src/specialize_probe.c#L325) | Resuelve y comprueba cada iteración conocida de un ciclo con efectos o requisitos comptime al auditar código descartado. | G07 G08 T14 T22 |
+| [probe_audit_control](../src/specialize_probe.c#L355) | Audita ramas y ciclos en código descartado conservando o uniendo el conocimiento comptime posterior. | G08 T14 T22 |
+| [probe_loop](../src/specialize_probe.c#L385) | Prueba un cuerpo con conocimiento ordinario olvidado en una copia aislada; recorre iteraciones conocidas si son necesarias, sin un máximo de iteraciones. | T14 T22 |
+| [probe_if](../src/specialize_probe.c#L427) | Selecciona un brazo conocido o analiza ambos sobre entornos privados y combina su conocimiento y detención. Conserva los retornos abstractos. | G08 T22 |
+| [probe_control](../src/specialize_probe.c#L454) | Evalúa la condición y delega a probe_audit_control, probe_loop o probe_if según el modo de exploración. | T14 T22 |
+| [sp_probe_range](../src/specialize_probe.c#L465) | Recorre un rango estructurado del cuerpo fuente; se detiene ante retorno o requisito desconocido salvo en auditoría de tipos. | G05 T14 T22 |
+| [sp_requires_iteration](../src/specialize_probe.c#L486) | Olvida valores ordinarios en una copia del entorno y comprueba si el cuerpo necesita conocimiento por iteración para satisfacer requisitos comptime; no emite IR, instancias ni diagnósticos. | G08 T14 T22 |
+| [sp_check_discarded](../src/specialize_probe.c#L540) | Resuelve índices comptime y audita tipos de un rango descartado sobre copias aisladas del cuerpo y del entorno. | G07 G08 T22 T29 |
 
 ### specialize_transform.c
 
 | Función | Contrato y efectos | Requisitos |
 | --- | --- | --- |
-| [push](../src/specialize_transform.c#L40) | Añade un valor a la pila temporal de evaluación, aumentando el array. | T22 |
-| [pop](../src/specialize_transform.c#L45) | Retira el último valor; una pila vacía genera diagnóstico de expresión intermedia inválida. | G05 T22 |
-| [emit](../src/specialize_transform.c#L53) | Añade un paso al cuerpo de salida de la transformación. | G05 T22 |
-| [discard](../src/specialize_transform.c#L57) | Elimina un fragmento descartable al final de la salida o emite DROP cuando deben preservarse sus efectos. | T18 T22 |
-| [materialize_object](../src/specialize_transform.c#L65) | Emite MATERIALIZE con la captura obtenida y asocia esa captura al valor temporal. | G05 T22 T24 |
-| [record_return](../src/specialize_transform.c#L75) | Acumula el valor de retorno; conserva uno conocido sólo si los retornos observados coinciden. | G06 T22 |
-| [process_condition](../src/specialize_transform.c#L84) | Transforma el rango de condición y retira su valor de la pila temporal; conserva sus efectos emitidos. | G05 T22 |
-| [check_discarded](../src/specialize_transform.c#L90) | Audita un rango que se eliminará con una copia del entorno y el receptor actual; conserva aisladas asignaciones y efectos de llamadas en todas las opciones de salida. | G08 T22 |
-| [check_dead_branch](../src/specialize_transform.c#L97) | Audita la rama no tomada de un condicional con condición conocida en compilación. | G08 T22 |
-| [process_if](../src/specialize_transform.c#L105) | Evalúa la condición; audita el brazo descartado cuando es conocida, o conserva ambos brazos y une entornos. Mantiene comprobaciones dependientes antes de eliminar código. | G05 G08 T22 |
-| [process_loop](../src/specialize_transform.c#L145) | Evalúa la condición, audita cuerpos descartados y expande ciclos por escrituras comptime o argumentos que necesitan valores de cada iteración. Mantiene el control externo desconocido, conserva ciclos invariantes runtime y detiene expansiones ante errores o retorno. | G05 G08 T14 T22 |
-| [transform_control](../src/specialize_transform.c#L196) | Procesa IF o ciclo: selecciona ramas conocidas, expande ciclos por efectos o requisitos comptime, o conserva bifurcaciones; combina entornos. | G05 T14 T22 |
-| [evaluate_binary](../src/specialize_transform.c#L206) | Calcula conocimiento del resultado si ambos operandos conocidos tienen tipo compatible; emite igualmente la operación runtime y conserva sus límites. | T03 T07 T22 |
-| [assign_comptime](../src/specialize_transform.c#L218) | Valida control conocido, valor, tipo y error numérico; registra la asociación comptime en entorno o argumentos pendientes, sin escribir una variable runtime. | T22 EC ED EG |
-| [emit_runtime_assignment](../src/specialize_transform.c#L239) | Emite el paso de destino y el operador ASSIGN en el cuerpo especializado de salida. | G05 T18 |
-| [copy_argument_fields](../src/specialize_transform.c#L251) | Copia los campos comptime de un argumento de tipo clase hacia el marco de llamada pendiente. | G06 T19 T22 T24 |
-| [copy_local_fields](../src/specialize_transform.c#L265) | Copia los campos de un objeto asignado localmente o en un atributo y actualiza su identidad lógica. | T22 T24 |
-| [assign_value](../src/specialize_transform.c#L288) | Procesa destinos ordinarios, formales y atributos: vincula comptime o emite la escritura runtime y actualiza/invalida el conocimiento correspondiente. | G06 T18 T22 T24 |
-| [process_symbol](../src/specialize_transform.c#L316) | Consulta constante/entorno, sustituye lecturas comptime y conserva identidad de objetos; emite operando y captura cuando corresponde. | G05 T22 T24 |
-| [resolve_attribute_index](../src/specialize_transform.c#L342) | Evalúa el índice de un atributo y sustituye índices comptime conocidos por su constante en la instrucción. | G07 T22 T29 |
-| [select_attribute_field](../src/specialize_transform.c#L355) | Selecciona el atributo correspondiente a un índice conocido y valida que la posición exista en la clase. | G07 T24 T29 |
-| [capture_dynamic_attribute](../src/specialize_transform.c#L373) | Captura el estado comptime del objeto ante lecturas dinámicas o rechaza escrituras dinámicas sobre clases con comptime. | G07 T22 T24 T29 |
-| [resolve_attribute](../src/specialize_transform.c#L389) | Resuelve receptor concreto, índice, campo y captura dinámica de un acceso posicional a atributo. | G07 T22 T24 T29 |
-| [process_attribute](../src/specialize_transform.c#L399) | Usa el acceso ya resuelto para preparar un destino o emitir una lectura; conserva objetos/capturas y sustituye campos comptime conocidos. | G05 T22 T24 T29 |
-| [begin_call](../src/specialize_transform.c#L438) | Crea un registro propio de llamada pendiente con receptor concreto, argumentos y origen FRAME; resuelve receptores anidados para el entorno y conserva el símbolo original emitido. | G06 T19 |
-| [process_call](../src/specialize_transform.c#L451) | Elige instancia y emite CALL. Una reentrada a una fuente activa usa esa instancia con retorno desconocido; conserva la guardia runtime y evita especialización infinita. Libera la llamada pendiente. | G06 T19 T22 EI |
-| [process_operator](../src/specialize_transform.c#L488) | Despacha aritmética, conversiones, asignaciones, DUP/DROP, salida y retorno; actualiza pila, conocimiento y detención, conservando efectos runtime. | G05 T18 T22 |
-| [sp_transform_range](../src/specialize_transform.c#L529) | Recorre pasos y controles con origen diagnóstico; delega operaciones y audita el resto del rango antes de detenerse por RET. | G05 G07 G08 T22 |
-| [sp_transform](../src/specialize_transform.c#L590) | Recibe la solicitud de transformación y crea un contexto privado de recorrido, con pila, controles y llamadas pendientes. Transforma el cuerpo, devuelve conocimiento de retorno y libera temporales. | G05 T22 |
+| [push](../src/specialize_transform.c#L39) | Añade un valor a la pila temporal de evaluación, aumentando el array. | T22 |
+| [pop](../src/specialize_transform.c#L44) | Retira el último valor; una pila vacía genera diagnóstico de expresión intermedia inválida. | G05 T22 |
+| [emit](../src/specialize_transform.c#L52) | Añade un paso al cuerpo de salida de la transformación. | G05 T22 |
+| [discard](../src/specialize_transform.c#L56) | Elimina un fragmento descartable al final de la salida o emite DROP cuando deben preservarse sus efectos. | T18 T22 |
+| [materialize_object](../src/specialize_transform.c#L64) | Emite MATERIALIZE con la captura obtenida y asocia esa captura al valor temporal. | G05 T22 T24 |
+| [process_condition](../src/specialize_transform.c#L74) | Transforma el rango de condición y retira su valor de la pila temporal; conserva sus efectos emitidos. | G05 T22 |
+| [check_discarded](../src/specialize_transform.c#L80) | Audita un rango que se eliminará con una copia del entorno y el receptor actual; conserva aisladas asignaciones y efectos de llamadas en todas las opciones de salida. | G08 T22 |
+| [check_dead_branch](../src/specialize_transform.c#L87) | Audita la rama no tomada de un condicional con condición conocida en compilación. | G08 T22 |
+| [process_if](../src/specialize_transform.c#L95) | Evalúa la condición; audita el brazo descartado cuando es conocida, o conserva ambos brazos y une entornos. Mantiene comprobaciones dependientes antes de eliminar código. | G05 G08 T22 |
+| [process_loop](../src/specialize_transform.c#L135) | Evalúa la condición, audita cuerpos descartados y expande ciclos por escrituras comptime o argumentos que necesitan valores de cada iteración. Mantiene el control externo desconocido, conserva ciclos invariantes runtime y detiene expansiones ante errores o retorno. | G05 G08 T14 T22 |
+| [transform_control](../src/specialize_transform.c#L186) | Procesa IF o ciclo: selecciona ramas conocidas, expande ciclos por efectos o requisitos comptime, o conserva bifurcaciones; combina entornos. | G05 T14 T22 |
+| [evaluate_binary](../src/specialize_transform.c#L196) | Calcula conocimiento del resultado si ambos operandos conocidos tienen tipo compatible; emite igualmente la operación runtime y conserva sus límites. | T03 T07 T22 |
+| [assign_comptime](../src/specialize_transform.c#L208) | Valida control conocido, valor, tipo y error numérico; registra la asociación comptime en entorno o argumentos pendientes, sin escribir una variable runtime. | T22 EC ED EG |
+| [emit_runtime_assignment](../src/specialize_transform.c#L229) | Emite el paso de destino y el operador ASSIGN en el cuerpo especializado de salida. | G05 T18 |
+| [copy_argument_fields](../src/specialize_transform.c#L241) | Copia los campos comptime de un argumento de tipo clase hacia el marco de llamada pendiente. | G06 T19 T22 T24 |
+| [copy_local_fields](../src/specialize_transform.c#L255) | Copia los campos de un objeto asignado localmente o en un atributo y actualiza su identidad lógica. | T22 T24 |
+| [assign_value](../src/specialize_transform.c#L278) | Procesa destinos ordinarios, formales y atributos: vincula comptime o emite la escritura runtime y actualiza/invalida el conocimiento correspondiente. | G06 T18 T22 T24 |
+| [process_symbol](../src/specialize_transform.c#L306) | Consulta constante/entorno, sustituye lecturas comptime y conserva identidad de objetos; emite operando y captura cuando corresponde. | G05 T22 T24 |
+| [resolve_attribute_index](../src/specialize_transform.c#L332) | Evalúa el índice de un atributo y sustituye índices comptime conocidos por su constante en la instrucción. | G07 T22 T29 |
+| [select_attribute_field](../src/specialize_transform.c#L345) | Selecciona el atributo correspondiente a un índice conocido y valida que la posición exista en la clase. | G07 T24 T29 |
+| [capture_dynamic_attribute](../src/specialize_transform.c#L362) | Captura el estado comptime del objeto ante lecturas dinámicas o rechaza escrituras dinámicas sobre clases con comptime. | G07 T22 T24 T29 |
+| [resolve_attribute](../src/specialize_transform.c#L378) | Resuelve receptor concreto, índice, campo y captura dinámica de un acceso posicional a atributo. | G07 T22 T24 T29 |
+| [process_attribute](../src/specialize_transform.c#L389) | Usa el acceso ya resuelto para preparar un destino o emitir una lectura; conserva objetos/capturas y sustituye campos comptime conocidos. | G05 T22 T24 T29 |
+| [begin_call](../src/specialize_transform.c#L428) | Crea un registro propio de llamada pendiente con receptor concreto, argumentos y origen FRAME; resuelve receptores anidados para el entorno y conserva el símbolo original emitido. | G06 T19 |
+| [process_call](../src/specialize_transform.c#L435) | Elige instancia y emite CALL. Una reentrada a una fuente activa usa esa instancia con retorno desconocido; conserva la guardia runtime y evita especialización infinita. Libera la llamada pendiente. | G06 T19 T22 EI |
+| [process_operator](../src/specialize_transform.c#L470) | Despacha aritmética, conversiones, asignaciones, DUP/DROP, salida y retorno; actualiza pila, conocimiento y detención, conservando efectos runtime. | G05 T18 T22 |
+| [sp_transform_range](../src/specialize_transform.c#L511) | Recorre pasos y controles con origen diagnóstico; delega operaciones y audita el resto del rango antes de detenerse por RET. | G05 G07 G08 T22 |
+| [sp_transform](../src/specialize_transform.c#L572) | Recibe la solicitud de transformación y crea un contexto privado de recorrido, con pila, controles y llamadas pendientes. Transforma el cuerpo, devuelve conocimiento de retorno y libera temporales. | G05 T22 |
 
 
 ### symbol_table.c
@@ -686,5 +688,5 @@ texto: las descripciones se revisan contra los cuerpos de las funciones.
 | [is_operator](../src/rpn.c#L260) | Comprueba categoría y operador de un paso sin interpretar otros miembros de la unión. | Polaca |
 | [rpn_describe_control](../src/rpn.c#L264) | Interpreta destinos de Polaca para describir condición, cuerpo, else y final de IF/FROM. | Polaca |
 | [rpn_index_controls](../src/rpn.c#L288) | Construye un índice por posición de inicio para consultar controles sin búsquedas repetidas. | Polaca |
-| [sp_evaluate_call](../src/specialize_probe.c#L515) | Valida tipos y evalúa una llamada sobre un entorno privado, propagando valores y efectos sin registrar instancias ejecutables. | Evaluación |
-| [probe_validate_object](../src/specialize_probe.c#L47) | Comprueba campos comptime capturados por una lectura sobre un entorno privado, sin emitir snapshots ni instancias. | Evaluación |
+| [sp_evaluate_call](../src/specialize_probe.c#L501) | Valida tipos y evalúa una llamada sobre un entorno privado, propagando valores y efectos sin registrar instancias ejecutables. | Evaluación |
+| [probe_validate_object](../src/specialize_probe.c#L46) | Comprueba campos comptime capturados por una lectura sobre un entorno privado, sin emitir snapshots ni instancias. | Evaluación |

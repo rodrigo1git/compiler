@@ -79,8 +79,8 @@ void comptime_environment_free(comptime_environment_t *environment) {
     *environment = (comptime_environment_t){0};
 }
 
-void comptime_environment_replace(comptime_environment_t *destination,
-                                  comptime_environment_t source) {
+void comptime_environment_assign_owned(comptime_environment_t *destination,
+                                       comptime_environment_t source) {
     free(destination->items);
     *destination = source;
 }

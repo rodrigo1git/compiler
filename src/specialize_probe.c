@@ -20,7 +20,6 @@ typedef struct {
     bool unknown_control;
     bool external_unknown;
     bool stopped;
-    bool has_return;
 } probe_flags_t;
 
 struct probe {
@@ -35,9 +34,9 @@ struct probe {
     sp_pending_call_t *pending;
     const evaluation_frame_t *invoking;
     probe_flags_t flags;
+    sp_return_state_t returns;
     map_node_t *function;
     int line;
-    comptime_value_t returned;
 };
 
 static void probe_operand_free(probe_operand_t *operand) {
@@ -128,10 +127,10 @@ static comptime_value_t probe_invoke(probe_t *probe, sp_pending_call_t *call) {
         .environment = comptime_call_environment(&probe->environment, &call->arguments, source->symbol),
         .invoking = &frame
     };
-    sp_probe_range(&callee, 0, source->body->count);
+    sp_probe_range(&callee, 0, source->body->count, true);
     probe->flags.needs_iteration |= callee.flags.needs_iteration;
     sp_apply_effects(source, &callee.environment, call->receiver, &probe->environment, call->receiver);
-    comptime_value_t returned = callee.returned;
+    comptime_value_t returned = callee.returns.value;
     probe_destroy(&callee);
     return returned;
 }
@@ -192,18 +191,13 @@ static void probe_operator(probe_t *probe, rpn_operator_t op) {
         probe_push(probe, operand);
         probe_push(probe, operand);
     } else if (op == RPN_RETURN && !probe->flags.auditing_types) {
-        if (!probe->flags.has_return) {
-            probe->returned = right.value;
-        } else if (!comptime_values_equal(probe->returned, right.value)) {
-            probe->returned = (comptime_value_t){0};
-        }
-        probe->flags.has_return = true;
+        sp_record_return(&probe->returns, right.value);
         probe->flags.stopped = true;
     }
     probe_operand_free(&right);
 }
 
-static void probe_audit_attribute_index(rpn_step_t *step, comptime_value_t index) {
+static void probe_audit_attribute_index(rpn_step_t *step, map_node_t *type, comptime_value_t index) {
     if (step->index->is_comptime) {
         if (index.known) {
             step->index = comptime_make_constant(index, step->source_line);
@@ -213,13 +207,14 @@ static void probe_audit_attribute_index(rpn_step_t *step, comptime_value_t index
                 step->index->key);
         }
     }
-    if (step->index != NULL && step->index->usage == SYMBOL_LEXEME && index.known && !index.floating) {
+    if (type != NULL && step->index != NULL && step->index->usage == SYMBOL_LEXEME &&
+        index.known && !index.floating) {
         if (index.number < 0) {
             report_semantic_error(step->source_line,
                 "Attribute position %ld does not exist in class '%s'",
-                (long)index.number, step->receiver->type_symbol->key);
+                (long)index.number, type->key);
         } else {
-            class_attribute_at(step->receiver->type_symbol, (size_t)index.number, step->source_line);
+            class_attribute_at(type, (size_t)index.number, step->source_line);
         }
     }
 }
@@ -227,10 +222,10 @@ static void probe_audit_attribute_index(rpn_step_t *step, comptime_value_t index
 static void probe_attribute(probe_t *probe, rpn_step_t *step) {
     probe_operand_t operand = {0};
     map_node_t *object = comptime_resolve_object(step->receiver, probe->receiver);
-    map_node_t *type = step->receiver->type_symbol;
+    map_node_t *type = object != NULL ? object->type_symbol : step->receiver->type_symbol;
     comptime_value_t index = comptime_read_symbol(&probe->environment, step->index, probe->receiver);
     if (probe->flags.auditing_types) {
-        probe_audit_attribute_index(step, index);
+        probe_audit_attribute_index(step, type, index);
     } else if (step->index->is_comptime && !index.known) {
         probe->flags.needs_iteration = true;
     }
@@ -296,26 +291,16 @@ static void probe_step(probe_t *probe, size_t pc) {
         case RPN_ATTRIBUTE_DESTINATION:
             probe_attribute(probe, step);
             break;
-        case RPN_CALL_FRAME: {
-            sp_pending_call_t *call = memory_resize(NULL, sizeof(*call));
-            *call = (sp_pending_call_t){
-                .source = sp_find_template(probe->state, step->value.symbol),
-                .receiver = comptime_resolve_object(step->receiver, probe->receiver),
-                .errors = global_errors,
-                .parent = probe->pending
-            };
-            probe->pending = call;
+        case RPN_CALL_FRAME:
+            sp_pending_push(&probe->pending, sp_find_template(probe->state, step->value.symbol),
+                            comptime_resolve_object(step->receiver, probe->receiver), 0, global_errors);
             break;
-        }
         case RPN_CALL: {
-            sp_pending_call_t *call = probe->pending;
-            if (call == NULL) {
+            if (probe->pending == NULL) {
                 break;
             }
-            operand.value = probe_invoke(probe, call);
-            probe->pending = call->parent;
-            comptime_environment_free(&call->arguments);
-            free(call);
+            operand.value = probe_invoke(probe, probe->pending);
+            sp_pending_pop(&probe->pending);
             probe_push(probe, operand);
             break;
         }
@@ -330,17 +315,18 @@ static void probe_step(probe_t *probe, size_t pc) {
 }
 
 static comptime_value_t probe_condition(probe_t *probe, rpn_control_t control) {
-    sp_probe_range(probe, control.start, control.branch);
+    sp_probe_range(probe, control.start, control.branch, false);
     probe_operand_t condition = probe_pop(probe);
+    comptime_value_t value = condition.value;
     probe_operand_free(&condition);
-    return condition.value;
+    return value;
 }
 
 static void probe_audit_loop(probe_t *probe, rpn_control_t control) {
     int errors = global_errors;
     for (;;) {
         comptime_environment_t before = comptime_copy_environment(&probe->environment);
-        sp_probe_range(probe, control.branch + 2, control.body_end);
+        sp_probe_range(probe, control.branch + 2, control.body_end, true);
         if (errors == global_errors) {
             types_check_slice(&probe->resolved, probe->function, probe->input,
                               control.branch + 2, control.body_end);
@@ -356,7 +342,7 @@ static void probe_audit_loop(probe_t *probe, rpn_control_t control) {
         }
         bool stable = comptime_environments_equal(&before, &probe->environment);
         if (!condition.known) {
-            comptime_environment_replace(&probe->environment,
+            comptime_environment_assign_owned(&probe->environment,
                 comptime_join_environments(&before, &probe->environment));
         }
         comptime_environment_free(&before);
@@ -378,11 +364,11 @@ static void probe_audit_control(probe_t *probe, rpn_control_t control, comptime_
         return;
     }
     comptime_environment_t original = comptime_copy_environment(&probe->environment);
-    sp_probe_range(probe, control.branch + 2, control.body_end);
+    sp_probe_range(probe, control.branch + 2, control.body_end, true);
     comptime_environment_t true_environment = probe->environment;
     probe->environment = comptime_copy_environment(&original);
     if (control.has_else) {
-        sp_probe_range(probe, control.false_start, control.end);
+        sp_probe_range(probe, control.false_start, control.end, true);
     }
     comptime_environment_t result;
     if (condition.known && (!control.loop || condition.number == 0)) {
@@ -393,7 +379,7 @@ static void probe_audit_control(probe_t *probe, rpn_control_t control, comptime_
     }
     comptime_environment_free(&original);
     comptime_environment_free(&true_environment);
-    comptime_environment_replace(&probe->environment, result);
+    comptime_environment_assign_owned(&probe->environment, result);
 }
 
 static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t condition) {
@@ -408,7 +394,7 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
         .invoking = probe->invoking
     };
     comptime_forget_runtime(&attempt.environment);
-    sp_probe_range(&attempt, control.branch + 2, control.body_end);
+    sp_probe_range(&attempt, control.branch + 2, control.body_end, true);
     bool needs_iteration = attempt.flags.needs_iteration;
     bool expand = needs_iteration ||
                   sp_has_comptime_effects(probe->state, probe->input, control.branch + 2, control.body_end);
@@ -418,7 +404,7 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
             bool previous = probe->flags.unknown_control;
             probe->flags.unknown_control = true;
             comptime_forget_runtime(&probe->environment);
-            sp_probe_range(probe, control.branch + 2, control.body_end);
+            sp_probe_range(probe, control.branch + 2, control.body_end, true);
             probe->flags.unknown_control = previous;
             probe->flags.stopped = false;
         }
@@ -427,7 +413,7 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
         return;
     }
     while (condition.known && condition.number != 0 && !probe->flags.stopped) {
-        sp_probe_range(probe, control.branch + 2, control.body_end);
+        sp_probe_range(probe, control.branch + 2, control.body_end, true);
         if (probe->flags.stopped || probe->flags.needs_iteration) {
             return;
         }
@@ -441,25 +427,25 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
 static void probe_if(probe_t *probe, rpn_control_t control, comptime_value_t condition) {
     if (condition.known) {
         if (condition.number != 0) {
-            sp_probe_range(probe, control.branch + 2, control.body_end);
+            sp_probe_range(probe, control.branch + 2, control.body_end, true);
         } else if (control.has_else) {
-            sp_probe_range(probe, control.false_start, control.end);
+            sp_probe_range(probe, control.false_start, control.end, true);
         }
         return;
     }
     bool previous_control = probe->flags.unknown_control;
     probe->flags.unknown_control = true;
     comptime_environment_t original = comptime_copy_environment(&probe->environment);
-    sp_probe_range(probe, control.branch + 2, control.body_end);
+    sp_probe_range(probe, control.branch + 2, control.body_end, true);
     bool stopped = probe->flags.stopped;
     comptime_environment_t left = probe->environment;
     probe->environment = original;
     probe->flags.stopped = false;
     if (control.has_else) {
-        sp_probe_range(probe, control.false_start, control.end);
+        sp_probe_range(probe, control.false_start, control.end, true);
     }
     probe->flags.stopped &= stopped;
-    comptime_environment_replace(&probe->environment,
+    comptime_environment_assign_owned(&probe->environment,
         comptime_join_environments(&left, &probe->environment));
     comptime_environment_free(&left);
     probe->flags.unknown_control = previous_control;
@@ -476,7 +462,7 @@ static void probe_control(probe_t *probe, rpn_control_t control) {
     }
 }
 
-void sp_probe_range(probe_t *probe, size_t begin, size_t end) {
+void sp_probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first) {
     if (probe->controls == NULL) {
         probe->controls = rpn_index_controls(probe->input);
     }
@@ -485,7 +471,7 @@ void sp_probe_range(probe_t *probe, size_t begin, size_t end) {
          pc < end && !probe->flags.stopped && (probe->flags.auditing_types || !probe->flags.needs_iteration);
          pc++) {
         set_semantic_origin((semantic_origin_t){probe->input, pc});
-        size_t branch = probe->controls[pc] != 0 ? probe->controls[pc] - 1 : end;
+        size_t branch = (pc != begin || inspect_first) && probe->controls[pc] != 0 ? probe->controls[pc] - 1 : end;
         if (branch < end) {
             rpn_control_t control = rpn_describe_control(probe->input, pc, branch);
             probe_control(probe, control);
@@ -506,7 +492,7 @@ bool sp_requires_iteration(specialize_state_t *state, const rpn_t *input, size_t
         .receiver = receiver
     };
     comptime_forget_runtime(&probe.environment);
-    sp_probe_range(&probe, begin, end);
+    sp_probe_range(&probe, begin, end, true);
     bool result = probe.flags.needs_iteration;
     probe_destroy(&probe);
     return result;
@@ -543,9 +529,9 @@ comptime_value_t sp_evaluate_call(specialize_state_t *state, function_template_t
     }
     sp_check_discarded(state, source->body, source->symbol, 0, source->body->count,
                        &probe.environment, receiver);
-    sp_probe_range(&probe, 0, source->body->count);
+    sp_probe_range(&probe, 0, source->body->count, true);
     sp_apply_effects(source, &probe.environment, receiver, environment, receiver);
-    comptime_value_t returned = probe.flags.needs_iteration ? (comptime_value_t){0} : probe.returned;
+    comptime_value_t returned = probe.flags.needs_iteration ? (comptime_value_t){0} : probe.returns.value;
     probe_destroy(&probe);
     state->evaluating = frame.parent;
     return returned;
@@ -566,7 +552,7 @@ bool sp_check_discarded(specialize_state_t *state, const rpn_t *body, map_node_t
     };
     probe.resolved.steps = memory_zero(body->count + 1, sizeof(*body->steps));
     memcpy(probe.resolved.steps, body->steps, body->count * sizeof(*body->steps));
-    sp_probe_range(&probe, begin, end);
+    sp_probe_range(&probe, begin, end, true);
     if (errors == global_errors) {
         types_check_slice(&probe.resolved, function, body, begin, end);
     }
