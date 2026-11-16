@@ -147,19 +147,19 @@ new Uint8Array(memory.buffer).fill(255, next, next + 4);
 allocate(4, 12);
 assert.deepEqual([...new Uint8Array(memory.buffer, next, 4)], [0,0,0,0]);
 const before = sp.value;
-assert.throws(() => allocate(65536, 13), /8:13/);
+assert.throws(() => allocate(65536, 13), /7:13/);
 assert.equal(sp.value, before);
 // Exact 4 GiB end reaches grow; exceeding it fails before grow, without wrapping.
 sp.value = 0xfffffff0n;
 const attempts = grows.value;
-assert.throws(() => allocate(16, 14), /8:14/);
+assert.throws(() => allocate(16, 14), /7:14/);
 assert.equal(grows.value, attempts + 1);
-assert.throws(() => allocate(32, 15), /8:15/);
+assert.throws(() => allocate(32, 15), /7:15/);
 assert.equal(grows.value, attempts + 1);
 assert.equal(sp.value, 0xfffffff0n);
 // An i32 size above 2 GiB must be treated as unsigned and attempt growth.
 sp.value = initial;
-assert.throws(() => allocate(-2147483648, 16), /8:16/);
+assert.throws(() => allocate(-2147483648, 16), /7:16/);
 assert.equal(grows.value, attempts + 2);
 '''
     checked(['node', '--input-type=module', '-e', code])

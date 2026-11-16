@@ -14,6 +14,7 @@
 #define INT16_SIGN_EXTEND_SHIFT 16
 #define FLOAT32_MAX_ABS_STR "3.40282347e38"
 
+/* Debe coincidir con las claves de runtime/host.mjs. */
 typedef enum {
     WASM_ERR_FLOAT_OVERFLOW     = 1,
     WASM_ERR_INT_OVERFLOW       = 2,
@@ -21,7 +22,7 @@ typedef enum {
     WASM_ERR_FLOAT_TO_INT_RANGE = 4,
     WASM_ERR_INVALID_FIELD      = 5,
     WASM_ERR_RECURSIVE_CALL     = 6,
-    WASM_ERR_OUT_OF_MEMORY      = 8
+    WASM_ERR_OUT_OF_MEMORY      = 7
 } wasm_runtime_error_t;
 
 typedef struct {

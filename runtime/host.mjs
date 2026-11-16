@@ -1,3 +1,4 @@
+// Debe coincidir con wasm_runtime_error_t en include/wasm_internal.h.
 export const messages = {
     1: 'SINGLEF addition overflow (c)',
     2: 'INTEGER multiplication overflow (d)',
@@ -5,7 +6,7 @@ export const messages = {
     4: 'TOI value is not representable as INTEGER',
     5: 'Attribute index outside the object layout',
     6: 'Recursive function invocation (i)',
-    8: 'Unable to allocate linear memory',
+    7: 'Unable to allocate linear memory',
 };
 
 export async function execute(bytes, print = console.log) {

@@ -141,7 +141,7 @@ reservas de objetos temporales. Los escalares ocupan cuatro bytes; INTEGER sigue
 normalizándose a int16 y SINGLEF usa f32. El tamaño de cada marco se conoce antes
 de emitir cuerpos; `$allocate` reserva tanto el marco principal como los de las
 funciones y limpia el almacenamiento reutilizado. Si faltan páginas, usa
-`memory.grow`; un fallo informa el error 8 y su línea de origen.
+`memory.grow`; un fallo informa el error 7 y su línea de origen.
 
 Los objetos y marcos no tienen topes propios de 1 u 8 MiB y la memoria no tiene
 un techo propio de 16 MiB. Los tamaños se calculan en uint64_t con sumas
