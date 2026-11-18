@@ -243,46 +243,19 @@ static void write_object_helpers(wasm_module_t *mod) {
 }
 
 static void write_copy_helper(wasm_module_t *mod) {
-    FILE *out = mod->out;
-    wasm_emit_line(out, 1, "(func $copy_object (param $destination i32) (param $source i32)");
-    for (size_t i = 0; i < mod->layout.count; i++) {
-        map_node_t *dst = mod->layout.items[i].symbol;
-        if (dst->usage != SYMBOL_CLASS) {
-            continue;
-        }
-        for (size_t j = 0; j < mod->layout.count; j++) {
-            map_node_t *src = mod->layout.items[j].symbol;
-            if (src->usage != SYMBOL_CLASS || !types_compatible((type_t){TYPE_OBJECT, dst}, (type_t){TYPE_OBJECT, src})) {
-                continue;
-            }
-            wasm_emit_block(out, 2,
-                "local.get $destination\n"
-                "i32.load\n"
-                "i32.const %zu\n"
-                "i32.eq\n"
-                "local.get $source\n"
-                "i32.load\n"
-                "i32.const %zu\n"
-                "i32.eq\n"
-                "i32.and\n"
-                "if\n"
-                "  local.get $destination\n"
-                "  i32.const 4\n"
-                "  i32.add\n"
-                "  local.get $source\n"
-                "  i32.const 4\n"
-                "  i32.add\n"
-                "  i32.const %" PRIu64 "\n"
-                "  memory.copy\n"
-                "  return\n"
-                "end",
-                layout_id(&mod->layout, dst),
-                layout_id(&mod->layout, src),
-                layout_class_size(&mod->layout, dst) - 4);
-        }
-    }
-    wasm_emit_block(out, 1,
-        "  unreachable\n"
+    wasm_emit_block(mod->out, 1,
+        "(func $copy_object (param $destination i32) (param $source i32)\n"
+        "  local.get $destination\n"
+        "  i32.const 4\n"
+        "  i32.add\n"
+        "  local.get $source\n"
+        "  i32.const 4\n"
+        "  i32.add\n"
+        "  local.get $destination\n"
+        "  call $object_size\n"
+        "  i32.const 4\n"
+        "  i32.sub\n"
+        "  memory.copy\n"
         ")");
 }
 

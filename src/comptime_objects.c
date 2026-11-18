@@ -208,10 +208,7 @@ static void report_copy_field_error(const comptime_copy_t *copy, const copy_fram
                 field->key, owner_name);
         }
     }
-    if (forbidden && (copy->capture || known)) {
-        report_semantic_error(line, "Cannot modify comptime '%s' under unknown control in object '%s'",
-            field->key, owner_name);
-    } else if (forbidden && !copy->capture) {
+    if (forbidden) {
         report_semantic_error(line, "Cannot modify comptime '%s' under unknown control in object '%s'",
             field->key, owner_name);
     }

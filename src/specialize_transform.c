@@ -321,8 +321,6 @@ static void process_symbol(context_t *context, rpn_step_t step) {
     operand.value.object =
         operand.value.object_type == NULL ? NULL : comptime_resolve_object(symbol, context->receiver);
     operand.value.object_snapshot = NULL;
-    operand.start = context->output->count;
-    operand.removable = true;
     emit(context, step);
     materialize_object(context, &operand, step.source_line);
     operand.end = context->output->count;
@@ -348,15 +346,7 @@ static map_node_t *select_attribute_field(map_node_t *type, comptime_value_t *se
     if (runtime_index && attribute == NULL) {
         selected->known = false;
     }
-    if (type != NULL && selected->known && !selected->floating) {
-        if (selected->number < 0) {
-            report_semantic_error(line, "Attribute position %ld does not exist in class '%s'",
-                                  (long)selected->number, type->key);
-        } else {
-            attribute = class_attribute_at(type, (size_t)selected->number, line);
-        }
-    }
-    return attribute;
+    return sp_attribute_at(type, *selected, line);
 }
 
 static void capture_dynamic_attribute(context_t *context, rpn_step_t *step, map_node_t *object,
@@ -417,8 +407,6 @@ static void process_attribute(context_t *context, rpn_step_t step) {
     operand.value.object =
         operand.value.object_type != NULL ? comptime_object_location(object, attribute) : NULL;
     operand.value.object_snapshot = NULL;
-    operand.start = context->output->count;
-    operand.removable = true;
     emit(context, step);
     materialize_object(context, &operand, step.source_line);
     operand.end = context->output->count;
@@ -439,7 +427,7 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
         report_semantic_error(step.source_line, "Cannot resolve intermediate call");
         return;
     }
-    function_instance_t *instance = sp_find_active_instance(context->state, pending->source);
+    function_instance_t *instance = pending->source->active_instance;
     if (instance == NULL && global_errors == pending->errors) {
         instance = sp_instantiate(context->state, pending->source, context->environment,
                                   &pending->arguments, pending->receiver,
@@ -448,7 +436,7 @@ static void process_call(context_t *context, rpn_step_t step, bool unknown_contr
     if (instance != NULL) {
         context->output->steps[pending->frame_step].value.symbol = instance->symbol;
         step.value.symbol = instance->symbol;
-        if (!instance->active) {
+        if (instance->source->active_instance != instance) {
             operand.value = instance->returned;
             sp_apply_effects(instance->source, &instance->after, instance->receiver, context->environment,
                              pending->receiver);
@@ -508,6 +496,17 @@ static void process_operator(context_t *context, rpn_step_t step, bool unknown_c
     }
 }
 
+static void process_destination(context_t *context, rpn_step_t step) {
+    operand_t value = {
+        .destination = {
+            .symbol = step.value.symbol,
+            .kind = step.kind,
+            .object = step.value.symbol->usage == SYMBOL_ATTRIBUTE ? context->receiver : NULL
+        }
+    };
+    push(context, value);
+}
+
 void sp_transform_range(context_t *context, size_t begin, size_t end, sp_range_options_t options) {
     semantic_origin_t previous_origin = set_semantic_origin((semantic_origin_t){context->input, begin});
     for (size_t pc = begin; pc < end && !context->stopped; pc++) {
@@ -520,20 +519,13 @@ void sp_transform_range(context_t *context, size_t begin, size_t end, sp_range_o
             continue;
         }
         rpn_step_t step = context->input->steps[pc];
-        operand_t value = {0};
-        value.start = context->output->count;
-        value.removable = true;
         switch (step.kind) {
             case RPN_SYMBOL:
                 process_symbol(context, step);
                 break;
             case RPN_DESTINATION:
             case RPN_ARGUMENT_DESTINATION:
-                value.destination.symbol = step.value.symbol;
-                value.destination.kind = step.kind;
-                value.destination.object =
-                    step.value.symbol->usage == SYMBOL_ATTRIBUTE ? context->receiver : NULL;
-                push(context, value);
+                process_destination(context, step);
                 break;
             case RPN_ATTRIBUTE:
             case RPN_ATTRIBUTE_DESTINATION:

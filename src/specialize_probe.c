@@ -2,6 +2,7 @@
 #include "../include/types.h"
 #include "../include/classes.h"
 #include "../include/memory.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../include/specialize_internal.h"
@@ -32,7 +33,6 @@ struct probe {
     probe_operand_t *stack;
     size_t count;
     sp_pending_call_t *pending;
-    const evaluation_frame_t *invoking;
     probe_flags_t flags;
     sp_return_state_t returns;
     map_node_t *function;
@@ -102,36 +102,26 @@ static comptime_value_t probe_invoke(probe_t *probe, sp_pending_call_t *call) {
                                 probe->flags.unknown_control || probe->flags.external_unknown,
                                 probe->line);
     }
-    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
-        const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
-        if (parameter->is_comptime && !comptime_get(&call->arguments, parameter, NULL).known) {
-            probe->flags.needs_iteration = true;
-        }
+    if (!sp_comptime_arguments_known(source, &call->arguments, probe->line, false)) {
+        probe->flags.needs_iteration = true;
     }
-    for (const evaluation_frame_t *frame = probe->invoking; frame != NULL; frame = frame->parent) {
-        if (frame->function != source->symbol) {
-            continue;
-        }
+    if (source->exploring || probe->flags.needs_iteration) {
         sp_forget_call_writes(&probe->environment, source);
         return (comptime_value_t){0};
     }
-    if (probe->flags.needs_iteration) {
-        sp_forget_call_writes(&probe->environment, source);
-        return (comptime_value_t){0};
-    }
-    evaluation_frame_t frame = {source->symbol, probe->invoking};
+    source->exploring = true;
     probe_t callee = {
         .state = probe->state,
         .input = source->body,
         .receiver = call->receiver,
-        .environment = comptime_call_environment(&probe->environment, &call->arguments, source->symbol),
-        .invoking = &frame
+        .environment = comptime_call_environment(&probe->environment, &call->arguments, source->symbol)
     };
     sp_probe_range(&callee, 0, source->body->count, true);
     probe->flags.needs_iteration |= callee.flags.needs_iteration;
     sp_apply_effects(source, &callee.environment, call->receiver, &probe->environment, call->receiver);
     comptime_value_t returned = callee.returns.value;
     probe_destroy(&callee);
+    source->exploring = false;
     return returned;
 }
 
@@ -207,15 +197,8 @@ static void probe_audit_attribute_index(rpn_step_t *step, map_node_t *type, comp
                 step->index->key);
         }
     }
-    if (type != NULL && step->index != NULL && step->index->usage == SYMBOL_LEXEME &&
-        index.known && !index.floating) {
-        if (index.number < 0) {
-            report_semantic_error(step->source_line,
-                "Attribute position %ld does not exist in class '%s'",
-                (long)index.number, type->key);
-        } else {
-            class_attribute_at(type, (size_t)index.number, step->source_line);
-        }
+    if (step->index != NULL && step->index->usage == SYMBOL_LEXEME) {
+        sp_attribute_at(type, index, step->source_line);
     }
 }
 
@@ -390,8 +373,7 @@ static void probe_loop(probe_t *probe, rpn_control_t control, comptime_value_t c
         .state = probe->state,
         .input = probe->input,
         .receiver = probe->receiver,
-        .environment = comptime_copy_environment(&probe->environment),
-        .invoking = probe->invoking
+        .environment = comptime_copy_environment(&probe->environment)
     };
     comptime_forget_runtime(&attempt.environment);
     sp_probe_range(&attempt, control.branch + 2, control.body_end, true);
@@ -485,6 +467,9 @@ void sp_probe_range(probe_t *probe, size_t begin, size_t end, bool inspect_first
 
 bool sp_requires_iteration(specialize_state_t *state, const rpn_t *input, size_t begin, size_t end,
                            const comptime_environment_t *environment, map_node_t *receiver) {
+    for (size_t i = 0; i < state->templates.count; i++) {
+        assert(!state->templates.items[i]->exploring);
+    }
     probe_t probe = {
         .state = state,
         .input = input,
@@ -502,16 +487,10 @@ comptime_value_t sp_evaluate_call(specialize_state_t *state, function_template_t
                                   comptime_environment_t *environment,
                                   const comptime_environment_t *arguments,
                                   map_node_t *receiver, bool unknown_entry, int line) {
-    if (source == NULL || sp_find_active_instance(state, source) != NULL) {
+    if (source == NULL || source->active_instance != NULL || source->evaluating) {
         return (comptime_value_t){0};
     }
-    for (const evaluation_frame_t *frame = state->evaluating; frame != NULL; frame = frame->parent) {
-        if (frame->function == source->symbol) {
-            return (comptime_value_t){0};
-        }
-    }
-    evaluation_frame_t frame = {source->symbol, state->evaluating};
-    state->evaluating = &frame;
+    source->evaluating = true;
     probe_t probe = {
         .state = state,
         .input = source->body,
@@ -520,20 +499,14 @@ comptime_value_t sp_evaluate_call(specialize_state_t *state, function_template_t
         .flags = {.validating = true, .external_unknown = unknown_entry},
         .function = source->symbol
     };
-    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
-        const map_node_t *parameter = source->symbol->function_info->parameters.items[i];
-        if (parameter->is_comptime && !comptime_get(arguments, parameter, NULL).known) {
-            report_semantic_error(line, "Argument for comptime parameter '%s' is not known at compile time",
-                                  parameter->key);
-        }
-    }
+    sp_comptime_arguments_known(source, arguments, line, true);
     sp_check_discarded(state, source->body, source->symbol, 0, source->body->count,
                        &probe.environment, receiver);
     sp_probe_range(&probe, 0, source->body->count, true);
     sp_apply_effects(source, &probe.environment, receiver, environment, receiver);
     comptime_value_t returned = probe.flags.needs_iteration ? (comptime_value_t){0} : probe.returns.value;
     probe_destroy(&probe);
-    state->evaluating = frame.parent;
+    source->evaluating = false;
     return returned;
 }
 

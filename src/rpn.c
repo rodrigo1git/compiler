@@ -273,7 +273,7 @@ rpn_control_t rpn_describe_control(const rpn_t *input, size_t start, size_t bran
     if (false_start >= 2 && is_operator(&input->steps[false_start - 1], RPN_BRANCH) &&
         input->steps[false_start - 2].kind == RPN_TARGET) {
         size_t destination = input->steps[false_start - 2].value.target - 1;
-        if (destination == start) {
+        if (input->steps[branch].loop_variable != NULL) {
             control.loop = true;
             control.body_end = false_start - 2;
         } else if (destination > false_start) {

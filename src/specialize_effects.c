@@ -10,9 +10,10 @@ void sp_forget_call_writes(comptime_environment_t *environment, const function_t
         }
         bool written =
             source->writes_attributes && (binding->object != NULL || binding->symbol->type_symbol != NULL);
+        const map_node_t *root = comptime_object_root(binding->object);
         for (size_t j = 0; j < source->runtime_writes.count; j++) {
             if (source->runtime_writes.items[j] == binding->symbol ||
-                source->runtime_writes.items[j] == comptime_object_root(binding->object)) {
+                source->runtime_writes.items[j] == root) {
                 written = true;
             }
         }
@@ -164,7 +165,8 @@ static void propagate_function_effects(specialize_state_t *state) {
     bool changed;
     do {
         changed = false;
-        for (function_template_t *source = state->templates; source != NULL; source = source->next) {
+        for (size_t t = 0; t < state->templates.count; t++) {
+            function_template_t *source = state->templates.items[t];
             for (size_t i = 0; i < source->body->count; i++) {
                 const rpn_step_t *step = &source->body->steps[i];
                 if (step->kind != RPN_CALL) {
@@ -197,11 +199,12 @@ static void propagate_function_effects(specialize_state_t *state) {
 }
 
 void sp_analyze_effects(specialize_state_t *state) {
-    for (function_template_t *source = state->templates; source; source = source->next) {
-        analyze_function_effects(source);
+    for (size_t i = 0; i < state->templates.count; i++) {
+        analyze_function_effects(state->templates.items[i]);
     }
     propagate_function_effects(state);
-    for (function_template_t *source = state->templates; source; source = source->next) {
+    for (size_t i = 0; i < state->templates.count; i++) {
+        function_template_t *source = state->templates.items[i];
         source->symbol->function_info->comptime_template = source->contextual;
     }
 }

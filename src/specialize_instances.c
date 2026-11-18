@@ -1,19 +1,10 @@
 #include "../include/memory.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../include/specialize_internal.h"
 #include "../include/diagnostics.h"
-
-function_instance_t *sp_find_active_instance(const specialize_state_t *state,
-                                             const function_template_t *source) {
-    for (function_instance_t *instance = state->instances; instance; instance = instance->next) {
-        if (instance->active && instance->source == source) {
-            return instance;
-        }
-    }
-    return NULL;
-}
 
 static bool matches_environment(const function_instance_t *instance,
                                 const comptime_environment_t *environment, const map_node_t *receiver,
@@ -46,25 +37,15 @@ static comptime_environment_t prepare_call_environment(const function_template_t
                                                        const comptime_environment_t *caller,
                                                        const comptime_environment_t *arguments, int line) {
     comptime_environment_t environment = comptime_call_environment(caller, arguments, source->symbol);
-    for (size_t i = 0; i < source->symbol->function_info->parameters.count; i++) {
-        map_node_t *parameter = source->symbol->function_info->parameters.items[i];
-        if (!parameter->is_comptime) {
-            continue;
-        }
-        comptime_value_t argument = comptime_get(arguments, parameter, NULL);
-        if (!argument.known) {
-            report_semantic_error(line, "Argument for comptime parameter '%s' is not known at compile time",
-                                  parameter->key);
-        }
-        comptime_set(&environment, parameter, NULL, argument);
-    }
+    sp_comptime_arguments_known(source, arguments, line, true);
     return environment;
 }
 
 static function_instance_t *find_instance(specialize_state_t *state, function_template_t *source,
                                           const comptime_environment_t *environment,
                                           const map_node_t *receiver, bool unknown_entry) {
-    for (function_instance_t *instance = state->instances; instance != NULL; instance = instance->next) {
+    for (size_t i = 0; i < state->instances.count; i++) {
+        function_instance_t *instance = state->instances.items[i];
         if (instance->source == source &&
             (!source->contextual || matches_environment(instance, environment, receiver, unknown_entry))) {
             return instance;
@@ -81,7 +62,6 @@ static function_instance_t *create_instance(specialize_state_t *state, function_
         .source = source,
         .symbol = source->symbol,
         .before = comptime_copy_environment(environment),
-        .active = true,
         .unknown_entry = unknown_entry,
         .receiver = receiver
     };
@@ -103,13 +83,13 @@ static function_instance_t *create_instance(specialize_state_t *state, function_
                                source->symbol->function_info->parameters.items[i]);
         }
     }
-    if (state->last_instance == NULL) {
-        state->instances = instance;
-    } else {
-        state->last_instance->next = instance;
+    if (state->instances.count == state->instances.capacity) {
+        size_t capacity = state->instances.capacity ? memory_multiply(state->instances.capacity, 2) : 16;
+        state->instances.items = memory_resize(
+            state->instances.items, memory_multiply(capacity, sizeof(*state->instances.items)));
+        state->instances.capacity = capacity;
     }
-    state->last_instance = instance;
-    state->instance_count++;
+    state->instances.items[state->instances.count++] = instance;
     return instance;
 }
 
@@ -144,7 +124,9 @@ function_instance_t *sp_instantiate(specialize_state_t *state, function_template
         comptime_environment_free(&environment);
         return instance;
     }
+    assert(source->active_instance == NULL);
     instance = create_instance(state, source, &environment, receiver, unknown_entry);
+    source->active_instance = instance;
     sp_transform_request_t request = {
         .state = state,
         .input = source->body,
@@ -156,21 +138,20 @@ function_instance_t *sp_instantiate(specialize_state_t *state, function_template
         .returned = &instance->returned
     };
     sp_transform(&request);
-    instance->active = false;
+    source->active_instance = NULL;
     instance->after = environment;
     record_instance_bindings(instance);
     return instance;
 }
 
 void sp_destroy_instances(specialize_state_t *state) {
-    while (state->instances != NULL) {
-        function_instance_t *instance = state->instances;
-        state->instances = instance->next;
+    for (size_t i = 0; i < state->instances.count; i++) {
+        function_instance_t *instance = state->instances.items[i];
         rpn_free(&instance->body);
         comptime_environment_free(&instance->before);
         comptime_environment_free(&instance->after);
         free(instance);
     }
-    state->last_instance = NULL;
-    state->instance_count = 0;
+    free(state->instances.items);
+    state->instances = (sp_instance_list_t){0};
 }
