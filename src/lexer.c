@@ -116,13 +116,11 @@ int yylex(void) {
             set_token_location();
             if (state == ST_CHAIN) {
                 report_lexical_error(token_start_line, "Unclosed string literal");
-                begin_lexical_recovery();
                 yylval.symbol_ref = NULL;
                 return YYerror;
             }
             if (state != 0) {
                 report_lexical_error(token_start_line, "Unexpected end of file within token");
-                begin_lexical_recovery();
                 yylval.symbol_ref = NULL;
                 return YYerror;
             }
@@ -142,7 +140,6 @@ int yylex(void) {
         int next_state = transition_table[state][col];
 
         if (token_id == YYerror) {
-            begin_lexical_recovery();
             if (next_state == F_RET || (next_state == E && is_valid_token_boundary(c))) {
                 if (!is_synthetic) push_back_char(c, line_advanced);
             } else if (next_state == E) {

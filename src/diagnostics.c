@@ -6,9 +6,14 @@
 #include "../include/diagnostics.h"
 #include "../include/memory.h"
 
+typedef enum {
+    RECOVERY_NONE,
+    RECOVERY_SYNTAX,
+    RECOVERY_LEXICAL
+} recovery_state_t;
+
 static struct {
-    bool pending;
-    bool lexical;
+    recovery_state_t state;
     int line;
     const char *unexpected;
     char *context;
@@ -119,10 +124,10 @@ void report_semantic_error(int line, const char *format, ...) {
 }
 
 static void flush_syntax_error(void) {
-    if (recovery.pending) {
+    if (recovery.state == RECOVERY_SYNTAX) {
         write_diagnostic("Syntax", recovery.line,
                          recovery.context && recovery.context[0] ? recovery.context : "Invalid syntax");
-        recovery.pending = false;
+        recovery.state = RECOVERY_NONE;
     }
 }
 
@@ -133,6 +138,7 @@ void finish_error_recovery(void) {
 }
 
 void report_lexical_error(int line, const char *format, ...) {
+    finish_error_recovery();
     va_list args;
     va_start(args, format);
     char *message = format_message(format, args);
@@ -140,6 +146,7 @@ void report_lexical_error(int line, const char *format, ...) {
     write_diagnostic("Lexical", line, message);
     free(message);
     global_errors++;
+    recovery.state = RECOVERY_LEXICAL;
 }
 
 void report_parser_error(int line, const char *message) {
@@ -148,37 +155,30 @@ void report_parser_error(int line, const char *message) {
     write_diagnostic(NULL, line, message);
 }
 
-void begin_lexical_recovery(void) {
-
-    finish_error_recovery();
-    recovery.lexical = true;
-}
-
 void begin_syntax_error(int line, const char *unexpected, const char *context) {
     finish_error_recovery();
-    recovery.pending = true;
+    recovery.state = RECOVERY_SYNTAX;
     recovery.line = line;
     recovery.unexpected = unexpected;
     diagnostic_append(&recovery.context, "%s", context ? context : "");
-
     global_errors++;
 }
 
 void report_syntax_error(int line, const char *message) {
-
     global_errors++;
     write_diagnostic("Syntax", line, message);
 }
 
 void report_recovered_syntax_error(int line, const char *message) {
-
-    if (!recovery.pending) return;
+    if (recovery.state != RECOVERY_SYNTAX) {
+        return;
+    }
     write_diagnostic("Syntax", line, message);
-    recovery.pending = false;
+    recovery.state = RECOVERY_NONE;
 }
 
 void report_recovered_syntax_error_with_context(int line, const char *message) {
-    if (recovery.pending && recovery.context && recovery.context[0]) {
+    if (recovery.state == RECOVERY_SYNTAX && recovery.context && recovery.context[0]) {
         char *detailed = NULL;
         diagnostic_append(&detailed, "%s (%s)", message, recovery.context);
         report_recovered_syntax_error(line, detailed);
@@ -188,16 +188,15 @@ void report_recovered_syntax_error_with_context(int line, const char *message) {
     }
 }
 
+void report_statement_recovery_error(int line, const char *message) {
+    if (recovery.state == RECOVERY_SYNTAX) {
+        report_recovered_syntax_error(line, message);
+    } else if (recovery.state == RECOVERY_LEXICAL) {
+        report_syntax_error(line, message);
+    }
+    finish_error_recovery();
+}
+
 const char *syntax_error_unexpected(void) {
     return recovery.unexpected;
-}
-
-void finish_statement(void) {
-    if (!recovery.pending && !recovery.lexical) {
-        finish_error_recovery();
-    }
-}
-
-int is_lexical_recovery(void) {
-    return recovery.lexical;
 }

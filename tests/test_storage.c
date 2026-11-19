@@ -86,7 +86,6 @@ static void long_diagnostics(void) {
     report_recovered_syntax_error_with_context(11, "Recovered message");
     finish_error_recovery();
     begin_syntax_error(12, "identifier", "flushed context");
-    begin_lexical_recovery();
     finish_error_recovery();
     begin_syntax_error(13, "identifier", NULL);
     finish_error_recovery();

@@ -15,15 +15,13 @@
   #define SYNERR(location, message) report_syntax_error((location).first_line, (message))
   #define RECERR(location, message) report_recovered_syntax_error((location).first_line, (message))
   #define RECOVER() do { \
-      if (is_lexical_recovery() && yychar == YYUNDEF) yyclearin; \
+      if (yychar == YYUNDEF) yyclearin; \
       finish_error_recovery(); \
       yyerrok; \
   } while (0)
 
   #define RECOVER_STATEMENT(location, message) do { \
-      if (is_lexical_recovery()) SYNERR(location, message); \
-      else RECERR(location, message); \
-      finish_error_recovery(); \
+      report_statement_recovery_error((location).first_line, (message)); \
       yychar = ';'; \
       yylloc = (location); \
       YYERROR; \
@@ -118,9 +116,9 @@ decl_list:
     ;
 
 var_decl:
-      type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); finish_statement(); }
-    | TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2, true); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); finish_statement(); }
-    | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); finish_statement(); }
+      type id_list ';' { scope_declare_names($2, $1, false); trace_printf("[SYNTAX] Line %d: Variable declaration\n", @$.first_line); }
+    | TOKEN_COMPTIME type id_list ';' { scope_declare_names($3, $2, true); trace_printf("[SYNTAX] Line %d: Comptime variable declaration\n", @$.first_line); }
+    | TOKEN_COMPTIME TOKEN_ID ';' { SYNERR(@1, "Missing type in comptime declaration"); }
     | type error ';' {
           if (syntax_error_unexpected() != NULL && strcmp(syntax_error_unexpected(), "TOKEN_ASSIGN") == 0)
               RECERR(@2, "Missing begin");
@@ -153,7 +151,7 @@ primitive_type:
 
 class_def:
       class_header TOKEN_BEGIN class_body TOKEN_END ';' { class_complete(scope_symbol($1), @1.first_line); scope_end($1); trace_printf("[SYNTAX] Line %d: Class declaration (Topic 24)\n", @1.first_line); }
-    | class_missing_code class_body TOKEN_END ';' { scope_end($1); finish_statement(); }
+    | class_missing_code class_body TOKEN_END ';' { scope_end($1); }
     | class_header error TOKEN_END ';' { scope_end($1); RECERR(@2, "Missing 'begin' in class declaration"); RECOVER(); }
     | class_header TOKEN_BEGIN error TOKEN_END ';' { scope_end($1); RECERR(@3, "Malformed class body"); RECOVER(); }
     | TOKEN_CLASS TOKEN_ID error TOKEN_END ';' { RECERR(@3, "Malformed class declaration"); RECOVER(); }
@@ -245,19 +243,19 @@ compound_stmt:
     ;
 
 simple_stmt:
-      assign ';' { finish_statement(); }
-    | if_stmt { finish_statement(); }
-    | for_loop { finish_statement(); }
-    | pout_stmt ';' { finish_statement(); }
+      assign ';'
+    | if_stmt
+    | for_loop
+    | pout_stmt ';'
     | pout_stmt error { RECERR(@2, "Missing ';' after pout statement"); RECOVER(); }
-    | ret_stmt ';' { finish_statement(); }
+    | ret_stmt ';'
     | ret_stmt error { RECERR(@2, "Missing ';' after ret statement"); RECOVER(); }
-    | TOKEN_POUT expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in pout statement"); finish_statement(); }
-    | ret_keyword expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in ret statement"); finish_statement(); }
-    | ret_keyword '(' expr ';' { codegen_free($3); SYNERR(@4, "Missing closing parenthesis in ret statement"); finish_statement(); }
-    | TOKEN_ID TOKEN_ASSIGN ';' { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
-    | attr_ref TOKEN_ASSIGN ';' { SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
-    | attr_ref '=' ';' { SYNERR(@3, "Missing expression on the right side of assignment"); finish_statement(); }
+    | TOKEN_POUT expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in pout statement"); }
+    | ret_keyword expr ';' { codegen_free($2); SYNERR(@1, "Missing opening and closing parentheses in ret statement"); }
+    | ret_keyword '(' expr ';' { codegen_free($3); SYNERR(@4, "Missing closing parenthesis in ret statement"); }
+    | TOKEN_ID TOKEN_ASSIGN ';' { scope_resolve($1, SCOPE_VALUE, @1.first_line); SYNERR(@3, "Missing expression on the right side of assignment"); }
+    | attr_ref TOKEN_ASSIGN ';' { SYNERR(@3, "Missing expression on the right side of assignment"); }
+    | attr_ref '=' ';' { SYNERR(@3, "Missing expression on the right side of assignment"); }
     | error ';' { report_recovered_syntax_error_with_context(@1.first_line, "Malformed statement"); RECOVER(); }
     ;
 
@@ -326,7 +324,7 @@ if_else_header:
 
 for_loop:
       for_header stmt_block ';' { codegen_for_end($1); trace_printf("[SYNTAX] Line %d: FROM-REPEAT loop\n", @1.first_line); }
-    | for_header ';' { codegen_for_end($1); SYNERR(@1, "Missing body in FOR loop"); finish_statement(); }
+    | for_header ';' { codegen_for_end($1); SYNERR(@1, "Missing body in FOR loop"); }
     | for_header stmt_block error { codegen_for_end($1); RECERR(@3, "Missing ';' after FOR loop"); RECOVER(); }
     ;
 
